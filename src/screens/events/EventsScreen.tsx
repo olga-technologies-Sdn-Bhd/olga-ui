@@ -1,0 +1,144 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useCallback, useEffect, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ApiError } from '../../api/client';
+import { coreApi, CoreEvent } from '../../api/core';
+import { Avatar } from '../../components/Avatar';
+import { Button } from '../../components/Button';
+import { Card } from '../../components/Card';
+import { EventHero } from '../../components/EventHero';
+import { Pill } from '../../components/Pill';
+import { useLive } from '../../context/LiveContext';
+import { EventsStackParamList } from '../../navigation/types';
+import { colors } from '../../theme/colors';
+
+type Props = NativeStackScreenProps<EventsStackParamList, 'Events'>;
+
+export function EventsScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
+  const { setActiveEvent } = useLive();
+  const [events, setEvents] = useState<CoreEvent[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const data = await coreApi.getEvents();
+      setEvents(data);
+    } catch (e) {
+      setError(e instanceof ApiError ? `Couldn't load events (${e.status})` : "Couldn't reach the server");
+      setEvents([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
+
+  function handleGoLive(event: CoreEvent) {
+    setActiveEvent({ eventId: event.eventId, name: event.name, liveCount: event.liveCount, matchCount: event.matchCount });
+    navigation.getParent()?.navigate('GoLiveTab' as never);
+  }
+
+  const [featured, ...openForSignUp] = events ?? [];
+
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingTop: 20 + insets.top }]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      <View style={styles.topline}>
+        <View>
+          <Text style={styles.eyebrow}>Discover</Text>
+          <Text style={styles.h2}>Events</Text>
+        </View>
+        <Pill label="Kuala Lumpur" />
+      </View>
+
+      {events === null && !error && <Text style={styles.sub}>Loading events…</Text>}
+      {error && <Text style={[styles.sub, { color: colors.danger }]}>{error}</Text>}
+      {events && events.length === 0 && !error && <Text style={styles.sub}>No upcoming events yet.</Text>}
+
+      {featured && (
+        <>
+          <Text style={styles.sectionTitle}>You're going</Text>
+          <Pressable onPress={() => navigation.navigate('EventDetail', { event: featured })}>
+            <Card style={styles.featuredCard}>
+              <View style={styles.eventArt} />
+              <View style={styles.featuredBody}>
+                <View style={styles.eventTop}>
+                  <View>
+                    <Text style={styles.h3}>{featured.name}</Text>
+                    <Text style={styles.sub}>{[featured.venue, featured.startsAt].filter(Boolean).join(' · ')}</Text>
+                  </View>
+                  {typeof featured.liveCount === 'number' && <Pill label={`${featured.liveCount} live`} tone="green" />}
+                </View>
+                {typeof featured.matchCount === 'number' && (
+                  <Text style={[styles.sub, { marginTop: 8 }]}>{featured.matchCount} attendees match your intent</Text>
+                )}
+                <Button label="Go Live in this room" style={{ marginTop: 14 }} onPress={() => handleGoLive(featured)} />
+              </View>
+            </Card>
+          </Pressable>
+        </>
+      )}
+
+      {openForSignUp.length > 0 && (
+        <>
+          <Text style={styles.sectionTitle}>Open for sign-up</Text>
+          <View style={{ gap: 10 }}>
+            {openForSignUp.map((event, i) => (
+              <Card key={event.eventId} style={styles.listRow}>
+                <View style={styles.row}>
+                  <Avatar initials={String(i + 3).padStart(2, '0')} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.h3}>{event.name}</Text>
+                    <Text style={styles.sub}>
+                      {[event.venue, event.attendeeCount ? `${event.attendeeCount} signed up` : null]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Text>
+                    {typeof event.matchCount === 'number' && (
+                      <Text style={styles.match}>{event.matchCount} match your intent</Text>
+                    )}
+                  </View>
+                  <Button label="View" variant="ghost" small onPress={() => navigation.navigate('EventDetail', { event })} />
+                </View>
+              </Card>
+            ))}
+          </View>
+        </>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
+  topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
+  h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
+  h3: { fontSize: 16, fontWeight: '700', color: colors.text },
+  sub: { fontSize: 13, color: colors.muted, marginTop: 4 },
+  match: { fontSize: 13, color: colors.green, fontWeight: '700', marginTop: 4 },
+  sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 6 },
+  featuredCard: { padding: 0, overflow: 'hidden' },
+  eventArt: {
+    height: 118,
+    backgroundColor: '#4a3a72',
+  },
+  featuredBody: { padding: 16 },
+  eventTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+  listRow: { gap: 4 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+});
