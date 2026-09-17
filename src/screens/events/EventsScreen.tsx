@@ -1,14 +1,14 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 import { ApiError } from '../../api/client';
 import { coreApi, CoreEvent } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { EventHero } from '../../components/EventHero';
 import { Pill } from '../../components/Pill';
+import { useTopInset } from '../../components/Screen';
 import { useLive } from '../../context/LiveContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
@@ -16,7 +16,7 @@ import { colors } from '../../theme/colors';
 type Props = NativeStackScreenProps<EventsStackParamList, 'Events'>;
 
 export function EventsScreen({ navigation }: Props) {
-  const insets = useSafeAreaInsets();
+  const topInset = useTopInset();
   const { setActiveEvent } = useLive();
   const [events, setEvents] = useState<CoreEvent[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +53,7 @@ export function EventsScreen({ navigation }: Props) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: 20 + insets.top }]}
+      contentContainerStyle={[styles.content, { paddingTop: 20 + topInset }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <View style={styles.topline}>
@@ -73,7 +73,13 @@ export function EventsScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>You're going</Text>
           <Pressable onPress={() => navigation.navigate('EventDetail', { event: featured })}>
             <Card style={styles.featuredCard}>
-              <View style={styles.eventArt} />
+              <LinearGradient
+                colors={['#ffd2dc', '#ab98ff', '#6b4d91']}
+                locations={[0, 0.45, 1]}
+                start={{ x: 0.15, y: 0.2 }}
+                end={{ x: 0.9, y: 1 }}
+                style={styles.eventArt}
+              />
               <View style={styles.featuredBody}>
                 <View style={styles.eventTop}>
                   <View>
@@ -135,7 +141,6 @@ const styles = StyleSheet.create({
   featuredCard: { padding: 0, overflow: 'hidden' },
   eventArt: {
     height: 118,
-    backgroundColor: '#4a3a72',
   },
   featuredBody: { padding: 16 },
   eventTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
