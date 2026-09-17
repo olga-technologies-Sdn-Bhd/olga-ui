@@ -26,4 +26,5 @@ export type MainTabParamList = {
   HomeTab: undefined;
   GoLiveTab: undefined;
   EventsTab: undefined;
+  ChatTab: undefined;
 };

@@ -6,6 +6,7 @@ type Props = {
   children: React.ReactNode;
   scroll?: boolean;
   style?: ViewStyle;
+  background?: React.ReactNode;
 };
 
 // Android targets edge-to-edge display (OS-enforced on API 35+), so the app
@@ -18,31 +19,36 @@ export function useTopInset() {
   return Math.max(insets.top, androidFallback);
 }
 
-export function Screen({ children, scroll = true, style }: Props) {
+export function Screen({ children, scroll = true, style, background }: Props) {
   const topInset = useTopInset();
   const content = [styles.content, { paddingTop: 20 + topInset }];
+  const containerStyle = [styles.container, background ? styles.transparent : null, style];
 
   const body = scroll ? (
-    <ScrollView style={[styles.container, style]} contentContainerStyle={content} keyboardShouldPersistTaps="handled">
+    <ScrollView style={containerStyle} contentContainerStyle={content} keyboardShouldPersistTaps="handled">
       {children}
     </ScrollView>
   ) : (
-    <View style={[styles.container, content, style]}>{children}</View>
+    <View style={[containerStyle, content]}>{children}</View>
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'android' ? topInset : 0}
-    >
-      {body}
-    </KeyboardAvoidingView>
+    <View style={styles.flex}>
+      {background}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'android' ? topInset : 0}
+      >
+        {body}
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: { flex: 1, backgroundColor: colors.bg },
+  transparent: { backgroundColor: 'transparent' },
   content: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
 });

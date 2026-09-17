@@ -29,7 +29,7 @@ export function ChatComposer({ placeholder, onSubmit, keyboardType = 'default' }
         onSubmitEditing={handleSend}
         returnKeyType="send"
       />
-      <Pressable style={styles.send} onPress={handleSend}>
+      <Pressable style={styles.send} onPress={handleSend} hitSlop={12}>
         <Text style={styles.sendText}>↑</Text>
       </Pressable>
     </View>

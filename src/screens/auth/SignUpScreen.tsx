@@ -1,6 +1,8 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import { AutoImageCarousel } from '../../components/AutoImageCarousel';
 import { Button } from '../../components/Button';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
@@ -10,6 +12,14 @@ import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { AuthStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
+
+const SIGNUP_BG_IMAGES = [
+  require('../../assets/onboarding/signup-bg-1.png'),
+  require('../../assets/onboarding/signup-bg-2.png'),
+  require('../../assets/onboarding/signup-bg-3.png'),
+  require('../../assets/onboarding/signup-bg-4.png'),
+  require('../../assets/onboarding/signup-bg-5.png'),
+];
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
 
@@ -43,7 +53,19 @@ export function SignUpScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen>
+    <Screen
+      background={
+        <>
+          <AutoImageCarousel images={SIGNUP_BG_IMAGES} />
+          <View style={[StyleSheet.absoluteFill, styles.scrim]} />
+          <LinearGradient
+            colors={['rgba(10,8,16,0.15)', 'rgba(10,8,16,0.55)', 'rgba(10,8,16,0.92)']}
+            locations={[0, 0.45, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        </>
+      }
+    >
       <View style={styles.topline}>
         <Text style={styles.logo}>OL-GA</Text>
         <Text style={styles.eyebrow}>Join the room</Text>
@@ -92,14 +114,36 @@ export function SignUpScreen({ navigation }: Props) {
   );
 }
 
+const textShadow = {
+  textShadowColor: 'rgba(0,0,0,0.5)',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 4,
+};
+
 const styles = StyleSheet.create({
+  scrim: { backgroundColor: 'rgba(8,6,12,0.35)' },
   topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  logo: { fontWeight: '800', letterSpacing: 3, fontSize: 14, color: colors.text },
-  eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-  h1: { fontSize: 28, fontWeight: '800', color: colors.text, marginTop: 8 },
-  sub: { fontSize: 14, lineHeight: 20, color: colors.muted },
-  sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 4 },
+  logo: { fontWeight: '800', letterSpacing: 3, fontSize: 14, color: colors.white, ...textShadow },
+  eyebrow: {
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.78)',
+    fontWeight: '700',
+    ...textShadow,
+  },
+  h1: { fontSize: 28, fontWeight: '800', color: colors.white, marginTop: 8, ...textShadow },
+  sub: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.82)', ...textShadow },
+  sectionTitle: {
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.78)',
+    fontWeight: '700',
+    marginTop: 4,
+    ...textShadow,
+  },
   chatStack: { gap: 10, marginTop: 6 },
   loginLink: { alignItems: 'center', marginTop: 8 },
-  linkText: { color: colors.brand, fontWeight: '800' },
+  linkText: { color: colors.brand2, fontWeight: '800' },
 });

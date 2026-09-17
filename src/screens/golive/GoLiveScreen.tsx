@@ -7,6 +7,7 @@ import { nlpApi } from '../../api/nlp';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
+import { PulseRings } from '../../components/PulseRings';
 import { RemovableTag } from '../../components/RemovableTag';
 import { Screen } from '../../components/Screen';
 import { TagInput } from '../../components/TagInput';
@@ -17,13 +18,23 @@ import { colors } from '../../theme/colors';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'GoLive'>;
 
-const SEARCH_STEPS = [
-  "You're live. Looking around the room",
-  'Checking people against your intent',
-  'Ranking your strongest matches',
+// Matches the prototype's `startLiveSearch()` step timings.
+const SEARCH_STEPS: Array<{ delay: number; text: string }> = [
+  { delay: 0, text: "You're live. Looking around the room" },
+  { delay: 1200, text: 'Checking people against your intent' },
+  { delay: 2600, text: 'Ranking your strongest matches' },
+  { delay: 3900, text: 'Found people worth meeting' },
 ];
 
+// Minimum time the searching animation plays before navigating on, even if
+// the API responds sooner — keeps the choreographed steps from being cut off.
+const SEARCH_DURATION_MS = 5000;
+
 const QUICK_TAGS = ['Partnerships', 'Investors', 'Hiring', 'Customers'];
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
 
 export function GoLiveScreen({ navigation }: Props) {
   const { activeEvent, isLive, setIsLive, filters, sessionTags, addSessionTag, removeSessionTag } = useLive();
@@ -51,24 +62,23 @@ export function GoLiveScreen({ navigation }: Props) {
     if (!activeEvent) return;
     setSearching(true);
     setError(null);
-    let step = 0;
-    setStatusText(SEARCH_STEPS[0]);
-    const stepTimer = setInterval(() => {
-      step += 1;
-      if (step < SEARCH_STEPS.length) setStatusText(SEARCH_STEPS[step]);
-    }, 900);
+    setStatusText(SEARCH_STEPS[0].text);
+    const stepTimers = SEARCH_STEPS.slice(1).map(({ delay, text }) => setTimeout(() => setStatusText(text), delay));
 
     try {
-      await coreApi.startLiveMode(activeEvent.eventId, {});
-      setIsLive(true);
-      const result = await nlpApi.requestMatches({ eventId: activeEvent.eventId, minMatch: filters.minMatch });
-      clearInterval(stepTimer);
+      const [result] = await Promise.all([
+        (async () => {
+          await coreApi.startLiveMode(activeEvent.eventId, {});
+          setIsLive(true);
+          return nlpApi.requestMatches({ eventId: activeEvent.eventId, minMatch: filters.minMatch });
+        })(),
+        wait(SEARCH_DURATION_MS),
+      ]);
       navigation.navigate(result.matches?.length ? 'LiveMatches' : 'EmptyRoom');
     } catch (e) {
-      clearInterval(stepTimer);
       setError(e instanceof ApiError ? `Couldn't go live (${e.status})` : "Couldn't reach the server");
     } finally {
-      clearInterval(stepTimer);
+      stepTimers.forEach(clearTimeout);
       setSearching(false);
     }
   }
@@ -108,6 +118,7 @@ export function GoLiveScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.ringWrap}>
+        <PulseRings active={searching} size={132} maxScale={1.75} />
         <View style={styles.halo2}>
           <View style={styles.halo1}>
             <Animated.View style={[styles.ring, { transform: [{ scale: pulse }] }]}>
@@ -182,7 +193,7 @@ const styles = StyleSheet.create({
   eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
   h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
   h3: { fontSize: 15, fontWeight: '700', color: colors.text },
-  ringWrap: { alignItems: 'center', justifyContent: 'center', marginVertical: 10 },
+  ringWrap: { alignItems: 'center', justifyContent: 'center', marginVertical: 26 },
   halo2: {
     width: 164,
     height: 164,
