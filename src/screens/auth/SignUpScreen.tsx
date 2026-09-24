@@ -1,14 +1,13 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { AutoImageCarousel } from '../../components/AutoImageCarousel';
-import { Button } from '../../components/Button';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
-import { OtpInput } from '../../components/OtpInput';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
+import { isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
 import { AuthStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
@@ -23,30 +22,24 @@ const SIGNUP_BG_IMAGES = [
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
 
-type Step = 'name' | 'phone' | 'otp';
-
 export function SignUpScreen({ navigation }: Props) {
-  const { signUp } = useAuth();
-  const [step, setStep] = useState<Step>('name');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
-  function handleNameSubmit(value: string) {
-    setName(value);
-    setStep('phone');
-  }
-
-  function handlePhoneSubmit(value: string) {
-    setPhone(value);
-    setStep('otp');
-  }
-
-  async function handleContinue() {
+  // Microsoft owns the OTP entirely on its hosted page — we only collect the
+  // email here (as a login_hint) and open the browser. No in-app OTP input.
+  async function handleEmailSubmit(value: string) {
+    setEmail(value);
     setLoading(true);
     try {
-      await signUp(name, phone);
+      await login(value);
+      navigation.replace('Onboarding');
+    } catch (error) {
+      setEmail('');
+      if (!isUserCancelledLogin(error)) {
+        Alert.alert('Sign-in failed', 'Something went wrong verifying your email. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -78,38 +71,17 @@ export function SignUpScreen({ navigation }: Props) {
       </Text>
 
       <View style={styles.chatStack}>
-        <ChatBubble from="them" text="Hi — I'm OL-GA. Two quick questions and you're in." />
-        <ChatBubble from="them" text="What should I call you?" />
-        {name !== '' && <ChatBubble from="me" text={name} />}
-
-        {step === 'phone' && (
-          <ChatBubble from="them" text={`Nice to meet you, ${name}. What's your mobile number?`} />
-        )}
-        {phone !== '' && <ChatBubble from="me" text={phone} />}
+        <ChatBubble
+          from="them"
+          text="Hi — I'm OL-GA. What's your email? We'll send a one-time code there — already have an account? Same email signs you back in."
+        />
+        {email !== '' && <ChatBubble from="me" text={email} />}
       </View>
 
-      {step === 'name' && <ChatComposer placeholder="Type your name…" onSubmit={handleNameSubmit} />}
-      {step === 'phone' && (
-        <ChatComposer placeholder="+60 12 345 6789" keyboardType="phone-pad" onSubmit={handlePhoneSubmit} />
+      {email === '' && (
+        <ChatComposer placeholder="you@example.com" keyboardType="email-address" onSubmit={handleEmailSubmit} />
       )}
-
-      {step === 'otp' && (
-        <>
-          <Text style={styles.sectionTitle}>Verification</Text>
-          <OtpInput value={otp} onChange={setOtp} />
-          <Text style={styles.sub}>Code sent to {phone}.</Text>
-
-          <View style={{ gap: 10, marginTop: 6 }}>
-            <Button label="Continue" onPress={handleContinue} loading={loading} disabled={otp.length !== 6} />
-          </View>
-        </>
-      )}
-
-      <Pressable onPress={() => navigation.navigate('Login')} style={styles.loginLink}>
-        <Text style={styles.sub}>
-          Already have an account? <Text style={styles.linkText}>Log in</Text>
-        </Text>
-      </Pressable>
+      {loading && <Text style={styles.sub}>Opening secure sign-in…</Text>}
     </Screen>
   );
 }
@@ -134,16 +106,5 @@ const styles = StyleSheet.create({
   },
   h1: { fontSize: 28, fontWeight: '800', color: colors.white, marginTop: 8, ...textShadow },
   sub: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.82)', ...textShadow },
-  sectionTitle: {
-    fontSize: 11,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.78)',
-    fontWeight: '700',
-    marginTop: 4,
-    ...textShadow,
-  },
   chatStack: { gap: 10, marginTop: 6 },
-  loginLink: { alignItems: 'center', marginTop: 8 },
-  linkText: { color: colors.brand2, fontWeight: '800' },
 });

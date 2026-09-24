@@ -5,7 +5,7 @@ import { colors } from '../theme/colors';
 type Props = {
   placeholder: string;
   onSubmit: (value: string) => void;
-  keyboardType?: 'default' | 'phone-pad';
+  keyboardType?: 'default' | 'phone-pad' | 'email-address';
 };
 
 // Matches the prototype's `.chat-composer` pill input + send button.
@@ -25,6 +25,8 @@ export function ChatComposer({ placeholder, onSubmit, keyboardType = 'default' }
         onChangeText={setValue}
         placeholder={placeholder}
         keyboardType={keyboardType}
+        autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
+        autoCorrect={keyboardType !== 'email-address'}
         style={styles.input}
         onSubmitEditing={handleSend}
         returnKeyType="send"

@@ -1,44 +1,64 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useEntraLogin } from '../auth/useEntraLogin';
 
 type AuthState = {
   isAuthenticated: boolean;
+  isRestoring: boolean;
+  needsOnboarding: boolean;
   name: string | null;
-  // TODO(backend): Olga.Core/olga-nlp-api have no OTP send/verify or
-  // signup/login endpoints yet (see project notes) — these are local
-  // stand-ins so the app flow works end to end; swap for real API calls
-  // once that backend work lands.
-  signUp: (name: string, phone: string) => Promise<void>;
-  requestLoginOtp: (phone: string) => Promise<void>;
-  verifyOtp: (code: string) => Promise<void>;
-  logOut: () => void;
+  mobile: string | null;
+  login: (emailHint?: string) => Promise<void>;
+  completeOnboarding: (name: string, mobile: string) => void;
+  logOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { accessToken, isRestoring, login: entraLogin, logOut: entraLogOut } = useEntraLogin();
+  // Only set on a fresh interactive login, not on session restore — a restored
+  // session belongs to someone who already onboarded in a previous app run.
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [name, setName] = useState<string | null>(null);
+  const [mobile, setMobile] = useState<string | null>(null);
+
+  const login = useCallback(
+    async (emailHint?: string) => {
+      await entraLogin(emailHint);
+      setNeedsOnboarding(true);
+    },
+    [entraLogin]
+  );
+
+  const completeOnboarding = useCallback((enteredName: string, enteredMobile: string) => {
+    // TODO(backend): persist via PATCH /v1/me/profile once Olga.Core actually
+    // validates the Entra access token and links it to a member (see
+    // Olga.Infrastructure/docs/SECURITY_DEBT.md) — local-only for now so the
+    // app flow works end to end.
+    setName(enteredName);
+    setMobile(enteredMobile);
+    setNeedsOnboarding(false);
+  }, []);
+
+  const logOut = useCallback(async () => {
+    await entraLogOut();
+    setName(null);
+    setMobile(null);
+    setNeedsOnboarding(false);
+  }, [entraLogOut]);
 
   const value = useMemo<AuthState>(
     () => ({
-      isAuthenticated,
+      isAuthenticated: Boolean(accessToken),
+      isRestoring,
+      needsOnboarding,
       name,
-      signUp: async (enteredName: string, _phone: string) => {
-        setName(enteredName);
-        setIsAuthenticated(true);
-      },
-      requestLoginOtp: async (_phone: string) => {
-        // no-op stub until Olga.Core exposes an OTP-send endpoint
-      },
-      verifyOtp: async (_code: string) => {
-        setIsAuthenticated(true);
-      },
-      logOut: () => {
-        setIsAuthenticated(false);
-        setName(null);
-      },
+      mobile,
+      login,
+      completeOnboarding,
+      logOut,
     }),
-    [isAuthenticated, name]
+    [accessToken, isRestoring, needsOnboarding, name, mobile, login, completeOnboarding, logOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -84,6 +84,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        // Claimed by react-native-app-auth to catch the olga-dev://auth
+        // redirect back from Entra External ID's hosted sign-in page.
+        manifestPlaceholders = [appAuthRedirectScheme: "olga-dev"]
     }
     signingConfigs {
         debug {
