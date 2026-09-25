@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
-import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
@@ -26,7 +25,6 @@ export function PulseRings({
 }: Props) {
   const { colors } = useTheme();
   const ringColor = color ?? colors.brand;
-  const styles = useMemo(() => makeStyles(colors), [colors]);
   const progresses = useRef(Array.from({ length: count }, () => new Animated.Value(0))).current;
 
   useEffect(() => {
@@ -86,7 +84,7 @@ export function PulseRings({
   );
 }
 
-const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+const styles = StyleSheet.create({
   ring: {
     position: 'absolute',
     top: '50%',
