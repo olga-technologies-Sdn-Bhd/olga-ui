@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '../theme/ThemeContext';
 
 type Size = 'sm' | 'md' | 'lg';
 
@@ -12,21 +14,26 @@ const FONT_SIZES: Record<Size, number> = { sm: 12, md: 15, lg: 18 };
 
 export function Avatar({ initials, size = 'md' }: Props) {
   const dimension = SIZES[size];
+  const { colors } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        base: {
+          backgroundColor: colors.accentSoft,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        text: {
+          fontWeight: '800',
+          color: colors.brand,
+        },
+      }),
+    [colors]
+  );
+
   return (
     <View style={[styles.base, { width: dimension, height: dimension, borderRadius: dimension / 2 }]}>
       <Text style={[styles.text, { fontSize: FONT_SIZES[size] }]}>{initials}</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    backgroundColor: '#eee7ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  text: {
-    fontWeight: '800',
-    color: '#5a4c87',
-  },
-});

@@ -4,7 +4,7 @@ import { Text } from 'react-native';
 import { ComingSoonModal } from '../components/ComingSoonModal';
 import { ChatPlaceholderScreen } from '../screens/chat/ChatPlaceholderScreen';
 import { HomeScreen } from '../screens/home/HomeScreen';
-import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { EventsStack } from './EventsStack';
 import { GoLiveStack } from './GoLiveStack';
 import { MainTabParamList } from './types';
@@ -27,6 +27,7 @@ const LABELS: Record<keyof MainTabParamList, string> = {
 
 export function MainTabs() {
   const [chatComingSoon, setChatComingSoon] = useState(false);
+  const { colors } = useTheme();
 
   return (
     <>
@@ -34,7 +35,8 @@ export function MainTabs() {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarActiveTintColor: colors.brand,
-          tabBarInactiveTintColor: '#9a95a0',
+          tabBarInactiveTintColor: colors.muted,
+          tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.line },
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 18, color }}>{ICONS[route.name as keyof MainTabParamList]}</Text>,
           tabBarLabel: LABELS[route.name as keyof MainTabParamList],
         })}

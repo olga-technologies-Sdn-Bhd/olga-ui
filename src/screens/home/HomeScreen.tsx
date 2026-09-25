@@ -1,5 +1,5 @@
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { coreApi, CoreEvent } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
@@ -10,7 +10,7 @@ import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { MainTabParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 
 type Props = BottomTabScreenProps<MainTabParamList, 'HomeTab'>;
 
@@ -19,10 +19,37 @@ const SAMPLE_INTENT = 'Find telco / GLC distribution partners for an AI workforc
 
 export function HomeScreen({ navigation }: Props) {
   const { name } = useAuth();
+  const { colors } = useTheme();
   const [intent, setIntent] = useState(SAMPLE_INTENT);
   const [draft, setDraft] = useState(SAMPLE_INTENT);
   const [editing, setEditing] = useState(false);
   const [nextEvent, setNextEvent] = useState<CoreEvent | null>(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+        eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
+        eyebrowOnGradient: { color: 'rgba(255,255,255,0.8)' },
+        h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
+        h3: { fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 6 },
+        h3OnGradient: { color: colors.white },
+        sub: { fontSize: 13, color: colors.muted, marginTop: 2 },
+        sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
+        row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+        input: {
+          borderWidth: 1,
+          borderColor: colors.line,
+          borderRadius: 14,
+          padding: 12,
+          backgroundColor: colors.white,
+          color: colors.text,
+          fontSize: 14,
+          minHeight: 44,
+        },
+      }),
+    [colors]
+  );
 
   useEffect(() => {
     coreApi
@@ -48,18 +75,25 @@ export function HomeScreen({ navigation }: Props) {
       </View>
 
       <Card soft>
-        <Text style={[styles.eyebrow, { color: colors.brand }]}>Your intent</Text>
+        <Text style={[styles.eyebrow, styles.eyebrowOnGradient]}>Your intent</Text>
         {editing ? (
           <View style={{ marginTop: 12, gap: 8 }}>
-            <TextInput value={draft} onChangeText={setDraft} style={styles.input} multiline />
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              style={styles.input}
+              placeholderTextColor={colors.muted}
+              multiline
+            />
             <Button label="Save intent" variant="secondary" small onPress={handleSave} disabled={!draft.trim()} />
           </View>
         ) : (
           <>
-            <Text style={styles.h3}>{intent}</Text>
+            <Text style={[styles.h3, styles.h3OnGradient]}>{intent}</Text>
             <Button
               label="Edit intent"
               variant="ghost"
+              onDark
               small
               style={{ marginTop: 12, alignSelf: 'flex-start' }}
               onPress={() => {
@@ -71,7 +105,7 @@ export function HomeScreen({ navigation }: Props) {
         )}
       </Card>
 
-      <Text style={styles.sectionTitle}>How OL-GA works</Text>
+      <Text style={styles.sectionTitle}>How Ol-ga works</Text>
       <View style={{ gap: 10 }}>
         <Card style={styles.row}>
           <Avatar initials="1" size="sm" />
@@ -96,7 +130,7 @@ export function HomeScreen({ navigation }: Props) {
             title={nextEvent.name}
             subtitle={[nextEvent.startsAt, nextEvent.venue].filter(Boolean).join(' · ')}
             topLeft={
-              typeof nextEvent.liveCount === 'number' ? <Pill label={`● ${nextEvent.liveCount} going`} tone="green" /> : undefined
+              typeof nextEvent.liveCount === 'number' ? <Pill label={`● ${nextEvent.liveCount} going`} tone="soft" /> : undefined
             }
           >
             <Button
@@ -112,22 +146,3 @@ export function HomeScreen({ navigation }: Props) {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-  h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
-  h3: { fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 6 },
-  sub: { fontSize: 13, color: colors.muted, marginTop: 2 },
-  sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: 14,
-    padding: 12,
-    backgroundColor: colors.white,
-    fontSize: 14,
-    minHeight: 44,
-  },
-});

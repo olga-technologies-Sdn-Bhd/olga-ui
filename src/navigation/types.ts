@@ -2,7 +2,6 @@ import { CoreEvent } from '../api/core';
 
 export type AuthStackParamList = {
   SignUp: undefined;
-  Onboarding: undefined;
 };
 
 export type GoLiveStackParamList = {
