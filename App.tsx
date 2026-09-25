@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { LiveProvider } from './src/context/LiveContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { ThemeProvider } from './src/theme/ThemeContext';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -11,13 +12,15 @@ function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AuthProvider>
-        <LiveProvider>
-          <NavigationContainer>
-            <RootNavigator />
-          </NavigationContainer>
-        </LiveProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <LiveProvider>
+            <NavigationContainer>
+              <RootNavigator />
+            </NavigationContainer>
+          </LiveProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

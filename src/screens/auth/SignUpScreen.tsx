@@ -1,55 +1,58 @@
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { AutoImageCarousel } from '../../components/AutoImageCarousel';
-import { Button } from '../../components/Button';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
-import { OtpInput } from '../../components/OtpInput';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
+import { isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
-import { AuthStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
 
 const SIGNUP_BG_IMAGES = [
-  require('../../assets/onboarding/signup-bg-1.png'),
-  require('../../assets/onboarding/signup-bg-2.png'),
-  require('../../assets/onboarding/signup-bg-3.png'),
-  require('../../assets/onboarding/signup-bg-4.png'),
-  require('../../assets/onboarding/signup-bg-5.png'),
+  require('../../assets/onboarding/signup-bg-1.jpg'),
+  require('../../assets/onboarding/signup-bg-2.jpg'),
+  require('../../assets/onboarding/signup-bg-3.jpg'),
+  require('../../assets/onboarding/signup-bg-4.jpg'),
+  require('../../assets/onboarding/signup-bg-5.jpg'),
 ];
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
+type Step = 'email' | 'verifying' | 'name' | 'mobile';
 
-type Step = 'name' | 'phone' | 'otp';
-
-export function SignUpScreen({ navigation }: Props) {
-  const { signUp } = useAuth();
-  const [step, setStep] = useState<Step>('name');
+// One continuous chat: email -> verify -> name -> mobile, all on this same
+// screen. No screen transition after login — the user comes back to exactly
+// where they started, and the conversation just continues.
+export function SignUpScreen() {
+  const { login, completeOnboarding } = useAuth();
+  const [step, setStep] = useState<Step>('email');
+  const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [mobile, setMobile] = useState('');
+
+  async function handleEmailSubmit(value: string) {
+    setEmail(value);
+    setStep('verifying');
+    try {
+      await login(value);
+      setStep('name');
+    } catch (error) {
+      setEmail('');
+      setStep('email');
+      if (!isUserCancelledLogin(error)) {
+        Alert.alert('Sign-in failed', 'Something went wrong verifying your email. Please try again.');
+      }
+    }
+  }
 
   function handleNameSubmit(value: string) {
     setName(value);
-    setStep('phone');
+    setStep('mobile');
   }
 
-  function handlePhoneSubmit(value: string) {
-    setPhone(value);
-    setStep('otp');
-  }
-
-  async function handleContinue() {
-    setLoading(true);
-    try {
-      await signUp(name, phone);
-    } finally {
-      setLoading(false);
-    }
+  function handleMobileSubmit(value: string) {
+    setMobile(value);
+    completeOnboarding(name.trim(), value.trim());
   }
 
   return (
@@ -67,7 +70,7 @@ export function SignUpScreen({ navigation }: Props) {
       }
     >
       <View style={styles.topline}>
-        <Text style={styles.logo}>OL-GA</Text>
+        <Text style={styles.logo}>Ol-ga</Text>
         <Text style={styles.eyebrow}>Join the room</Text>
       </View>
 
@@ -78,38 +81,39 @@ export function SignUpScreen({ navigation }: Props) {
       </Text>
 
       <View style={styles.chatStack}>
-        <ChatBubble from="them" text="Hi — I'm OL-GA. Two quick questions and you're in." />
-        <ChatBubble from="them" text="What should I call you?" />
+        <ChatBubble
+          from="them"
+          text="Hi — I'm Ol-ga. What's your email? We'll send a one-time code there — already have an account? Same email signs you back in."
+        />
+        {email !== '' && <ChatBubble from="me" text={email} />}
+
+        {step === 'verifying' && <ChatBubble from="them" text="One sec — verifying that…" />}
+
+        {(step === 'name' || step === 'mobile') && (
+          <>
+            <ChatBubble from="them" text="Login or signup successful! Two quick things and you're in the room." />
+            <ChatBubble from="them" text="What should I call you?" />
+          </>
+        )}
         {name !== '' && <ChatBubble from="me" text={name} />}
 
-        {step === 'phone' && (
-          <ChatBubble from="them" text={`Nice to meet you, ${name}. What's your mobile number?`} />
+        {step === 'mobile' && (
+          <ChatBubble
+            from="them"
+            text={`Good to meet you, ${name}. What's the best number to reach you on? We'll only use it for meetup coordination — never spam.`}
+          />
         )}
-        {phone !== '' && <ChatBubble from="me" text={phone} />}
+        {mobile !== '' && <ChatBubble from="me" text={mobile} />}
       </View>
 
+      {step === 'email' && (
+        <ChatComposer placeholder="you@example.com" keyboardType="email-address" onSubmit={handleEmailSubmit} />
+      )}
+      {step === 'verifying' && <Text style={styles.sub}>Opening secure sign-in…</Text>}
       {step === 'name' && <ChatComposer placeholder="Type your name…" onSubmit={handleNameSubmit} />}
-      {step === 'phone' && (
-        <ChatComposer placeholder="+60 12 345 6789" keyboardType="phone-pad" onSubmit={handlePhoneSubmit} />
+      {step === 'mobile' && (
+        <ChatComposer placeholder="+60 12 345 6789" keyboardType="phone-pad" onSubmit={handleMobileSubmit} />
       )}
-
-      {step === 'otp' && (
-        <>
-          <Text style={styles.sectionTitle}>Verification</Text>
-          <OtpInput value={otp} onChange={setOtp} />
-          <Text style={styles.sub}>Code sent to {phone}.</Text>
-
-          <View style={{ gap: 10, marginTop: 6 }}>
-            <Button label="Continue" onPress={handleContinue} loading={loading} disabled={otp.length !== 6} />
-          </View>
-        </>
-      )}
-
-      <Pressable onPress={() => navigation.navigate('Login')} style={styles.loginLink}>
-        <Text style={styles.sub}>
-          Already have an account? <Text style={styles.linkText}>Log in</Text>
-        </Text>
-      </Pressable>
     </Screen>
   );
 }
@@ -134,16 +138,5 @@ const styles = StyleSheet.create({
   },
   h1: { fontSize: 28, fontWeight: '800', color: colors.white, marginTop: 8, ...textShadow },
   sub: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.82)', ...textShadow },
-  sectionTitle: {
-    fontSize: 11,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.78)',
-    fontWeight: '700',
-    marginTop: 4,
-    ...textShadow,
-  },
   chatStack: { gap: 10, marginTop: 6 },
-  loginLink: { alignItems: 'center', marginTop: 8 },
-  linkText: { color: colors.brand2, fontWeight: '800' },
 });

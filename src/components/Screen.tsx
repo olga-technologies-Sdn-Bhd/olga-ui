@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StatusBar, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
   children: React.ReactNode;
@@ -21,6 +22,17 @@ export function useTopInset() {
 
 export function Screen({ children, scroll = true, style, background }: Props) {
   const topInset = useTopInset();
+  const { colors } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        flex: { flex: 1 },
+        container: { flex: 1, backgroundColor: colors.bg },
+        transparent: { backgroundColor: 'transparent' },
+        content: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
+      }),
+    [colors]
+  );
   const content = [styles.content, { paddingTop: 20 + topInset }];
   const containerStyle = [styles.container, background ? styles.transparent : null, style];
 
@@ -45,10 +57,3 @@ export function Screen({ children, scroll = true, style, background }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  container: { flex: 1, backgroundColor: colors.bg },
-  transparent: { backgroundColor: 'transparent' },
-  content: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
-});

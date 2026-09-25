@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
   topLeft?: React.ReactNode;
@@ -12,14 +12,14 @@ type Props = {
   style?: ViewStyle;
 };
 
-// Matches the prototype's `.hero-event` — a layered purple/pink gradient
-// card used for featured events (olga_interactive_prototype_mobile_v10.html).
+// Same rich accent gradient as the Home "Your intent" banner, so featured
+// events read as the same design system instead of a separate color.
 export function EventHero({ topLeft, topRight, title, subtitle, minHeight = 210, children, style }: Props) {
+  const { gradient } = useTheme();
   return (
     <View style={[styles.base, { minHeight }, style]}>
       <LinearGradient
-        colors={['#e9b6ff', '#7557ff', '#2d253d']}
-        locations={[0, 0.4, 1]}
+        colors={gradient}
         start={{ x: 0.2, y: 0.15 }}
         end={{ x: 0.85, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -45,6 +45,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  title: { color: colors.white, fontSize: 24, fontWeight: '800', marginTop: 8 },
+  title: { color: '#ffffff', fontSize: 24, fontWeight: '800', marginTop: 8 },
   subtitle: { color: 'rgba(255,255,255,0.85)', marginTop: 4, fontSize: 13 },
 });
