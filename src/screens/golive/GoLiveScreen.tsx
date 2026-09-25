@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { coreApi } from '../../api/core';
-import { nlpApi } from '../../api/nlp';
+import { intentIdFor, nlpApi } from '../../api/nlp';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
@@ -70,13 +70,17 @@ export function GoLiveScreen({ navigation }: Props) {
         (async () => {
           await coreApi.startLiveMode(activeEvent.eventId, {});
           setIsLive(true);
-          return nlpApi.requestMatches({ eventId: activeEvent.eventId, minMatch: filters.minMatch });
+          return nlpApi.requestMatches({
+            intent_id: intentIdFor(activeEvent.eventId, 'WANT'),
+            context_id: activeEvent.eventId,
+            options: { threshold: filters.minMatch / 100 },
+          });
         })(),
         wait(SEARCH_DURATION_MS),
       ]);
       navigation.navigate(result.matches?.length ? 'LiveMatches' : 'EmptyRoom');
     } catch (e) {
-      setError(e instanceof ApiError ? `Couldn't go live (${e.status})` : "Couldn't reach the server");
+      setError(e instanceof ApiError && e.status > 0 ? `Couldn't go live (${e.status})` : "Couldn't reach the server");
     } finally {
       stepTimers.forEach(clearTimeout);
       setSearching(false);

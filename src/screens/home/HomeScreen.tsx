@@ -11,6 +11,7 @@ import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { MainTabParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/ThemeContext';
+import { formatEventDate } from '../../utils/formatEventDate';
 
 type Props = BottomTabScreenProps<MainTabParamList, 'HomeTab'>;
 
@@ -128,9 +129,9 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>Coming up</Text>
           <EventHero
             title={nextEvent.name}
-            subtitle={[nextEvent.startsAt, nextEvent.venue].filter(Boolean).join(' · ')}
+            subtitle={[formatEventDate(nextEvent.starts_at), nextEvent.venue].filter(Boolean).join(' · ')}
             topLeft={
-              typeof nextEvent.liveCount === 'number' ? <Pill label={`● ${nextEvent.liveCount} going`} tone="soft" /> : undefined
+              typeof nextEvent.live_count === 'number' ? <Pill label={`● ${nextEvent.live_count} going`} tone="soft" /> : undefined
             }
           >
             <Button

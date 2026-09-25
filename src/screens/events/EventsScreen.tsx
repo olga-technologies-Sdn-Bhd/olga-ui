@@ -12,6 +12,7 @@ import { useTopInset } from '../../components/Screen';
 import { useLive } from '../../context/LiveContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
+import { formatEventDate } from '../../utils/formatEventDate';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'Events'>;
 
@@ -28,7 +29,7 @@ export function EventsScreen({ navigation }: Props) {
       const data = await coreApi.getEvents();
       setEvents(data);
     } catch (e) {
-      setError(e instanceof ApiError ? `Couldn't load events (${e.status})` : "Couldn't reach the server");
+      setError(e instanceof ApiError && e.status > 0 ? `Couldn't load events (${e.status})` : "Couldn't reach the server");
       setEvents([]);
     }
   }, []);
@@ -44,7 +45,7 @@ export function EventsScreen({ navigation }: Props) {
   }
 
   function handleGoLive(event: CoreEvent) {
-    setActiveEvent({ eventId: event.eventId, name: event.name, liveCount: event.liveCount, matchCount: event.matchCount });
+    setActiveEvent({ eventId: event.event_id, name: event.name, liveCount: event.live_count, matchCount: event.match_count });
     navigation.getParent()?.navigate('GoLiveTab' as never);
   }
 
@@ -84,12 +85,12 @@ export function EventsScreen({ navigation }: Props) {
                 <View style={styles.eventTop}>
                   <View>
                     <Text style={styles.h3}>{featured.name}</Text>
-                    <Text style={styles.sub}>{[featured.venue, featured.startsAt].filter(Boolean).join(' · ')}</Text>
+                    <Text style={styles.sub}>{[featured.venue, formatEventDate(featured.starts_at)].filter(Boolean).join(' · ')}</Text>
                   </View>
-                  {typeof featured.liveCount === 'number' && <Pill label={`${featured.liveCount} live`} tone="green" />}
+                  {typeof featured.live_count === 'number' && <Pill label={`${featured.live_count} live`} tone="green" />}
                 </View>
-                {typeof featured.matchCount === 'number' && (
-                  <Text style={[styles.sub, { marginTop: 8 }]}>{featured.matchCount} attendees match your intent</Text>
+                {typeof featured.match_count === 'number' && (
+                  <Text style={[styles.sub, { marginTop: 8 }]}>{featured.match_count} attendees match your intent</Text>
                 )}
                 <Button label="Go Live in this room" style={{ marginTop: 14 }} onPress={() => handleGoLive(featured)} />
               </View>
@@ -103,18 +104,18 @@ export function EventsScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>Open for sign-up</Text>
           <View style={{ gap: 10 }}>
             {openForSignUp.map((event, i) => (
-              <Card key={event.eventId} style={styles.listRow}>
+              <Card key={event.event_id} style={styles.listRow}>
                 <View style={styles.row}>
                   <Avatar initials={String(i + 3).padStart(2, '0')} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.h3}>{event.name}</Text>
                     <Text style={styles.sub}>
-                      {[event.venue, event.attendeeCount ? `${event.attendeeCount} signed up` : null]
+                      {[event.venue, event.attendee_count ? `${event.attendee_count} signed up` : null]
                         .filter(Boolean)
                         .join(' · ')}
                     </Text>
-                    {typeof event.matchCount === 'number' && (
-                      <Text style={styles.match}>{event.matchCount} match your intent</Text>
+                    {typeof event.match_count === 'number' && (
+                      <Text style={styles.match}>{event.match_count} match your intent</Text>
                     )}
                   </View>
                   <Button label="View" variant="ghost" small onPress={() => navigation.navigate('EventDetail', { event })} />

@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StyleSheet, Text, View } from 'react-native';
-import { mockWhosGoing } from '../../mocks/matches';
+import { mockMembers, mockWhosGoing } from '../../mocks/matches';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
 import { Card } from '../../components/Card';
@@ -19,7 +19,7 @@ export function WhosGoingScreen({ route, navigation }: Props) {
     <Screen>
       <BackHeader
         onBack={() => navigation.goBack()}
-        right={<Pill label={`${attendees.length} of ${event.attendeeCount ?? attendees.length}`} />}
+        right={<Pill label={`${attendees.length} of ${event.attendee_count ?? attendees.length}`} />}
       />
 
       <View>
@@ -30,16 +30,19 @@ export function WhosGoingScreen({ route, navigation }: Props) {
       </View>
 
       <View style={{ gap: 10 }}>
-        {attendees.map((person) => (
-          <Card key={person.memberId} style={styles.row}>
-            <Avatar initials="?" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.h3}>{person.headline}</Text>
-              {person.subheadline && <Text style={styles.sub2}>{person.subheadline}</Text>}
-            </View>
-            <Text style={styles.match}>{Math.round(person.matchScore)}%</Text>
-          </Card>
-        ))}
+        {attendees.map((person) => {
+          const profile = mockMembers[person.member_id];
+          return (
+            <Card key={person.member_id} style={styles.row}>
+              <Avatar initials="?" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.h3}>{profile?.headline}</Text>
+                {profile?.role_category && <Text style={styles.sub2}>{profile.role_category}</Text>}
+              </View>
+              <Text style={styles.match}>{Math.round(person.score * 100)}%</Text>
+            </Card>
+          );
+        })}
       </View>
     </Screen>
   );
