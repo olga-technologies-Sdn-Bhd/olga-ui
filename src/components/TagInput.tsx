@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { Button } from './Button';
-import { colors } from '../theme/colors';
+import { ThemeColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
   placeholder: string;
@@ -10,6 +11,8 @@ type Props = {
 
 // Matches the prototype's `.tag-input-wrap` — a text field + small "Add" button.
 export function TagInput({ placeholder, onAdd }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [value, setValue] = useState('');
 
   function handleAdd() {
@@ -34,7 +37,7 @@ export function TagInput({ placeholder, onAdd }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: { flexDirection: 'row', gap: 8 },
   input: {
     flex: 1,
@@ -43,7 +46,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 13,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     fontSize: 14,
   },
 });

@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { coreApi } from '../../api/core';
@@ -14,7 +14,8 @@ import { TagInput } from '../../components/TagInput';
 import { ProgressBar } from '../../components/ProgressBar';
 import { useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
+import { ThemeColors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'GoLive'>;
 
@@ -37,6 +38,8 @@ function wait(ms: number) {
 }
 
 export function GoLiveScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { activeEvent, isLive, setIsLive, filters, sessionTags, addSessionTag, removeSessionTag } = useLive();
   const [searching, setSearching] = useState(false);
   const [statusText, setStatusText] = useState('Nobody can see you yet. Tap to become visible.');
@@ -192,7 +195,7 @@ export function GoLiveScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
   eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
   h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
@@ -202,7 +205,7 @@ const styles = StyleSheet.create({
     width: 164,
     height: 164,
     borderRadius: 82,
-    backgroundColor: '#f7f4ff',
+    backgroundColor: colors.tint,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -210,7 +213,7 @@ const styles = StyleSheet.create({
     width: 146,
     height: 146,
     borderRadius: 73,
-    backgroundColor: '#faf8ff',
+    backgroundColor: colors.tint2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -219,10 +222,10 @@ const styles = StyleSheet.create({
     height: 128,
     borderRadius: 64,
     borderWidth: 1,
-    borderColor: '#e8e1ff',
+    borderColor: colors.tintLine,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
   },
   ringButton: { width: 92, height: 92, borderRadius: 46, paddingHorizontal: 0 },
   status: { textAlign: 'center', color: colors.muted, fontSize: 13, minHeight: 36 },

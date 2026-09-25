@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { coreApi } from '../../api/core';
@@ -11,12 +11,15 @@ import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
+import { ThemeColors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { getInitials } from '../../utils/initials';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'LiveMatches'>;
 
 export function LiveMatchesScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { activeEvent, filters } = useLive();
   const [matches, setMatches] = useState<{ match: MatchCandidate; profile?: Profile }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +83,7 @@ export function LiveMatchesScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
   eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
   h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },

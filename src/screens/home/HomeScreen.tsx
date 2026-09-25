@@ -43,7 +43,7 @@ export function HomeScreen({ navigation }: Props) {
           borderColor: colors.line,
           borderRadius: 14,
           padding: 12,
-          backgroundColor: colors.white,
+          backgroundColor: colors.surface,
           color: colors.text,
           fontSize: 14,
           minHeight: 44,

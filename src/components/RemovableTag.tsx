@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { ThemeColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
   label: string;
@@ -8,6 +10,8 @@ type Props = {
 
 // Matches the prototype's `.user-tag` pill with a remove (×) button.
 export function RemovableTag({ label, onRemove }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
@@ -18,7 +22,7 @@ export function RemovableTag({ label, onRemove }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -26,7 +30,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: '#f7f4ff',
+    backgroundColor: colors.tint,
     borderWidth: 1,
     borderColor: '#ddd2ff',
   },

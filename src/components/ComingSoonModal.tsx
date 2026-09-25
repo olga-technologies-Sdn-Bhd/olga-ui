@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius } from '../theme/colors';
+import { radius, ThemeColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { Button } from './Button';
 
 type Props = {
@@ -18,6 +19,8 @@ export function ComingSoonModal({
   message = "We're building this next — check back shortly.",
   icon = '💬',
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const scale = useRef(new Animated.Value(0.85)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -49,7 +52,7 @@ export function ComingSoonModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(15,12,20,0.5)',

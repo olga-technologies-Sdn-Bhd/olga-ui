@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StyleSheet, Text, View } from 'react-native';
 import { mockMembers, mockWhosGoing } from '../../mocks/matches';
@@ -7,11 +8,14 @@ import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { EventsStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
+import { ThemeColors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'WhosGoing'>;
 
 export function WhosGoingScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { event } = route.params;
   const attendees = mockWhosGoing;
 
@@ -48,7 +52,7 @@ export function WhosGoingScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   h2: { fontSize: 22, fontWeight: '800', color: colors.text },
   sub: { fontSize: 13, color: colors.muted, marginTop: 7, lineHeight: 19 },
   h3: { fontSize: 15, fontWeight: '700', color: colors.text },

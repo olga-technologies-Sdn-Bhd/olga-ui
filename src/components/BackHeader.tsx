@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { ThemeColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
   onBack: () => void;
@@ -10,6 +12,8 @@ type Props = {
 // Matches the prototype's `.back` circular button + right-side slot pattern
 // used in the topline of most secondary screens.
 export function BackHeader({ onBack, right, rightLabel }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.row}>
       <Pressable onPress={onBack} style={styles.back}>
@@ -21,7 +25,7 @@ export function BackHeader({ onBack, right, rightLabel }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   back: {
     width: 38,
@@ -29,7 +33,7 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     borderWidth: 1,
     borderColor: colors.line,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },

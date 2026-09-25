@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { coreApi } from '../../api/core';
@@ -10,12 +10,15 @@ import { EventHero } from '../../components/EventHero';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { EventsStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
+import { ThemeColors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { formatEventDate } from '../../utils/formatEventDate';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'EventDetail'>;
 
 export function EventDetailScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { event } = route.params;
   const [registering, setRegistering] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -82,7 +85,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   heroSub: { color: 'rgba(255,255,255,0.9)', marginTop: 4, fontSize: 13 },
   sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 4 },
   eyebrowBrand: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.brand, fontWeight: '700' },

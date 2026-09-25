@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { ApiError } from '../../api/client';
@@ -11,12 +11,15 @@ import { Pill } from '../../components/Pill';
 import { useTopInset } from '../../components/Screen';
 import { useLive } from '../../context/LiveContext';
 import { EventsStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
+import { ThemeColors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { formatEventDate } from '../../utils/formatEventDate';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'Events'>;
 
 export function EventsScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const topInset = useTopInset();
   const { setActiveEvent } = useLive();
   const [events, setEvents] = useState<CoreEvent[] | null>(null);
@@ -129,7 +132,7 @@ export function EventsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
   topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
