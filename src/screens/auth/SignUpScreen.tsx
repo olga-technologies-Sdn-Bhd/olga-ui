@@ -6,6 +6,7 @@ import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
+import { ApiError } from '../../api/client';
 import { isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
@@ -18,7 +19,7 @@ const SIGNUP_BG_IMAGES = [
   require('../../assets/onboarding/signup-bg-5.jpg'),
 ];
 
-type Step = 'email' | 'verifying' | 'name' | 'mobile';
+type Step = 'email' | 'verifying' | 'name' | 'mobile' | 'registering';
 
 // One continuous chat: email -> verify -> name -> mobile, all on this same
 // screen. No screen transition after login — the user comes back to exactly
@@ -50,9 +51,28 @@ export function SignUpScreen() {
     setStep('mobile');
   }
 
-  function handleMobileSubmit(value: string) {
+  async function handleMobileSubmit(value: string) {
+    // Olga.Core only accepts E.164 (+<country code><number>).
+    const e164 = value.replace(/[\s\-().]/g, '');
+    if (!/^\+[1-9]\d{7,14}$/.test(e164)) {
+      Alert.alert('Check your number', 'Please include your country code, e.g. +60 12 345 6789.');
+      return;
+    }
     setMobile(value);
-    completeOnboarding(name.trim(), value.trim());
+    setStep('registering');
+    try {
+      await completeOnboarding(name.trim(), e164);
+    } catch (error) {
+      setMobile('');
+      setStep('mobile');
+      const conflict = error instanceof ApiError && error.status === 409;
+      Alert.alert(
+        conflict ? 'Already registered' : 'Could not create your profile',
+        conflict
+          ? 'This email or number is already linked to an Ol-ga account.'
+          : 'Please check your connection and try again.'
+      );
+    }
   }
 
   return (
@@ -89,7 +109,7 @@ export function SignUpScreen() {
 
         {step === 'verifying' && <ChatBubble from="them" text="One sec — verifying that…" />}
 
-        {(step === 'name' || step === 'mobile') && (
+        {(step === 'name' || step === 'mobile' || step === 'registering') && (
           <>
             <ChatBubble from="them" text="Login or signup successful! Two quick things and you're in the room." />
             <ChatBubble from="them" text="What should I call you?" />
@@ -97,7 +117,7 @@ export function SignUpScreen() {
         )}
         {name !== '' && <ChatBubble from="me" text={name} />}
 
-        {step === 'mobile' && (
+        {(step === 'mobile' || step === 'registering') && (
           <ChatBubble
             from="them"
             text={`Good to meet you, ${name}. What's the best number to reach you on? We'll only use it for meetup coordination — never spam.`}
@@ -110,6 +130,7 @@ export function SignUpScreen() {
         <ChatComposer placeholder="you@example.com" keyboardType="email-address" onSubmit={handleEmailSubmit} />
       )}
       {step === 'verifying' && <Text style={styles.sub}>Opening secure sign-in…</Text>}
+      {step === 'registering' && <Text style={styles.sub}>Setting up your profile…</Text>}
       {step === 'name' && <ChatComposer placeholder="Type your name…" onSubmit={handleNameSubmit} />}
       {step === 'mobile' && (
         <ChatComposer placeholder="+60 12 345 6789" keyboardType="phone-pad" onSubmit={handleMobileSubmit} />
