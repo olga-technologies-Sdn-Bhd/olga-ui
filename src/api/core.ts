@@ -39,7 +39,8 @@ export const coreApi = {
   registerMember: async (body: RegisterMemberRequest, options?: RequestOptions) =>
     withEtag(await client.send<RegisterMemberResponse>('POST', '/v1/members', body, options)),
 
-  getMyProfile: async () => withEtag(await client.send<Profile>('GET', '/v1/me/profile')),
+  getMyProfile: async (options?: RequestOptions) =>
+    withEtag(await client.send<Profile>('GET', '/v1/me/profile', undefined, options)),
 
   // Full replace: send every field. ifMatch is the etag from the last
   // register/read/update, quotes included (e.g. "\"1\"").

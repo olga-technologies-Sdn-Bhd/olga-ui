@@ -145,6 +145,8 @@ export function useEntraLogin() {
 
   return {
     accessToken: session?.accessToken ?? null,
+    // Verified email of the current (possibly restored) session.
+    email: session ? emailFromIdToken(session.idToken) : null,
     isRestoring: session === undefined,
     login,
     logOut,

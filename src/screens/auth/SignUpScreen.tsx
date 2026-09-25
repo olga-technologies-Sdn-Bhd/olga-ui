@@ -6,7 +6,7 @@ import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
-import { ApiError } from '../../api/client';
+import { MemberRecoveryUnavailableError } from '../../auth/memberSession';
 import { isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
@@ -25,8 +25,10 @@ type Step = 'email' | 'verifying' | 'name' | 'mobile' | 'registering';
 // screen. No screen transition after login — the user comes back to exactly
 // where they started, and the conversation just continues.
 export function SignUpScreen() {
-  const { login, completeOnboarding } = useAuth();
-  const [step, setStep] = useState<Step>('email');
+  const { login, completeOnboarding, logOut, isAuthenticated } = useAuth();
+  // Already signed in to Entra but no Olga member yet (e.g. restored session
+  // whose member was removed) -> only name + mobile are needed, no new OTP.
+  const [step, setStep] = useState<Step>(isAuthenticated ? 'name' : 'email');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
@@ -35,8 +37,9 @@ export function SignUpScreen() {
     setEmail(value);
     setStep('verifying');
     try {
-      await login(value);
-      setStep('name');
+      const existingMember = await login(value);
+      // Existing members go straight in (the navigator switches to the app).
+      if (!existingMember) setStep('name');
     } catch (error) {
       setEmail('');
       setStep('email');
@@ -64,14 +67,21 @@ export function SignUpScreen() {
       await completeOnboarding(name.trim(), e164);
     } catch (error) {
       setMobile('');
+      if (error instanceof MemberRecoveryUnavailableError) {
+        // Registered on another device / before a reinstall; retrying can't
+        // help until the backend can look the member up, so sign out.
+        Alert.alert(
+          'Already registered',
+          "This email or number already has an Ol-ga account, but signing back in on a new or reinstalled device isn't available yet. Please contact Ol-ga support."
+        );
+        await logOut();
+        setName('');
+        setEmail('');
+        setStep('email');
+        return;
+      }
       setStep('mobile');
-      const conflict = error instanceof ApiError && error.status === 409;
-      Alert.alert(
-        conflict ? 'Already registered' : 'Could not create your profile',
-        conflict
-          ? 'This email or number is already linked to an Ol-ga account.'
-          : 'Please check your connection and try again.'
-      );
+      Alert.alert('Could not create your profile', 'Please check your connection and try again.');
     }
   }
 

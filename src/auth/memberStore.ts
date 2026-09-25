@@ -1,30 +1,19 @@
 import * as Keychain from 'react-native-keychain';
+import { EMPTY_STORE, MemberStore } from './memberSession';
 
-// The Olga member created by POST /v1/members after the first email OTP
-// sign-in. Kept per verified email so logging out and back in with the same
-// email reuses the same member instead of re-registering (which Olga.Core
-// rejects with 409 once the email is taken).
-export type StoredMember = {
-  member_id: string;
-  etag: string;
-  display_name: string;
-  phone?: string;
-};
+export type { MemberStore, StoredMember } from './memberSession';
+export { normalizeEmail } from './memberSession';
 
-type MemberStore = {
-  current: string | null; // email of the signed-in member
-  members: Record<string, StoredMember>;
-};
-
+// Keychain persistence for the member store. The decisions about what goes in
+// it live in memberSession.ts (pure, unit-tested).
 const SERVICE = 'olga.members';
-const EMPTY: MemberStore = { current: null, members: {} };
 
 export async function loadMemberStore(): Promise<MemberStore> {
   try {
     const result = await Keychain.getGenericPassword({ service: SERVICE });
-    return result ? { ...EMPTY, ...(JSON.parse(result.password) as MemberStore) } : EMPTY;
+    return result ? { ...EMPTY_STORE, ...(JSON.parse(result.password) as MemberStore) } : EMPTY_STORE;
   } catch {
-    return EMPTY;
+    return EMPTY_STORE;
   }
 }
 
@@ -33,8 +22,4 @@ export async function saveMemberStore(store: MemberStore) {
     service: SERVICE,
     accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
   });
-}
-
-export function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
 }
