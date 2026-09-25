@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Text } from 'react-native';
 import { ComingSoonModal } from '../components/ComingSoonModal';
 import { ChatPlaceholderScreen } from '../screens/chat/ChatPlaceholderScreen';
-import { HomeScreen } from '../screens/home/HomeScreen';
+import { HomeStack } from './HomeStack';
 import { useTheme } from '../theme/ThemeContext';
 import { EventsStack } from './EventsStack';
 import { GoLiveStack } from './GoLiveStack';
@@ -41,7 +41,7 @@ export function MainTabs() {
           tabBarLabel: LABELS[route.name as keyof MainTabParamList],
         })}
       >
-        <Tab.Screen name="HomeTab" component={HomeScreen} />
+        <Tab.Screen name="HomeTab" component={HomeStack} />
         <Tab.Screen name="GoLiveTab" component={GoLiveStack} />
         <Tab.Screen name="EventsTab" component={EventsStack} />
         <Tab.Screen

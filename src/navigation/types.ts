@@ -4,6 +4,11 @@ export type AuthStackParamList = {
   SignUp: undefined;
 };
 
+export type HomeStackParamList = {
+  Home: undefined;
+  Profile: undefined;
+};
+
 export type GoLiveStackParamList = {
   GoLive: undefined;
   Filters: undefined;
