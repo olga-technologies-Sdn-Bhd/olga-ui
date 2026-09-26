@@ -21,8 +21,10 @@ export const lightColors = {
   // neutral scale, not a separate brand color.
   ink: '#221F2A',
   onInk: '#ffffff',
-  green: '#16b87a',
-  greenSoft: '#e9fbf4',
+  // Positive/confirmed states (You're going, match %, live) use the brand
+  // accent hue, same as every other highlight.
+  positive: '#2563EB',
+  positiveSoft: '#DBEAFE',
   amber: '#e6a019',
   amberSoft: '#fff6df',
   danger: '#ef5a67',
@@ -48,8 +50,8 @@ export const darkColors = {
   accentSoft: '#1B2C47',
   ink: '#EDEBF2',
   onInk: '#17151d',
-  green: '#3ddb98',
-  greenSoft: '#123526',
+  positive: '#5B9DFF',
+  positiveSoft: '#1B2C47',
   amber: '#f2b84a',
   amberSoft: '#3a2c0f',
   danger: '#ff7a86',

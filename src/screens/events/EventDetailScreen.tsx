@@ -55,12 +55,12 @@ export function EventDetailScreen({ route, navigation }: Props) {
     <Screen>
       <BackHeader
         onBack={() => navigation.goBack()}
-        right={typeof event.match_count === 'number' ? <Pill label={`${event.match_count} matches`} tone="green" /> : undefined}
+        right={typeof event.match_count === 'number' ? <Pill label={`${event.match_count} matches`} tone="positive" /> : undefined}
       />
 
       <EventHero
         minHeight={250}
-        topLeft={<Pill label={event.name} tone="green" />}
+        topLeft={<Pill label={event.name} tone="positive" />}
         title="The room where useful conversations start."
       >
         <Text style={styles.heroSub}>{[formatEventDate(event.starts_at), event.venue].filter(Boolean).join(' · ')}</Text>
@@ -80,7 +80,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
         <View style={styles.divider} />
         <View style={styles.statRow}>
           <Text style={styles.sub}>Match your intent</Text>
-          <Text style={[styles.statValue, { color: colors.green }]}>{event.match_count ?? '—'}</Text>
+          <Text style={[styles.statValue, { color: colors.positive }]}>{event.match_count ?? '—'}</Text>
         </View>
       </Card>
 

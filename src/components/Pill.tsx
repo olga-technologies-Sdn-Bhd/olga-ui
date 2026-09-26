@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 
-type Tone = 'default' | 'active' | 'soft' | 'green';
+type Tone = 'default' | 'active' | 'soft' | 'positive';
 
 type Props = {
   label: string;
@@ -30,11 +30,11 @@ export function Pill({ label, tone = 'default', onPress }: Props) {
         // Accent-tinted, e.g. an attendee count — same hue as the rest of
         // the app rather than a separate status color.
         soft: { backgroundColor: colors.accentSoft, borderColor: colors.accentSoft },
-        green: { backgroundColor: colors.greenSoft, borderColor: colors.greenSoft },
+        positive: { backgroundColor: colors.positiveSoft, borderColor: colors.positiveSoft },
         label: { fontSize: 12, fontWeight: '700', color: colors.muted },
         labelActive: { color: colors.white },
         labelSoft: { color: colors.brand },
-        labelGreen: { color: colors.green },
+        labelPositive: { color: colors.positive },
       }),
     [colors]
   );
@@ -45,7 +45,7 @@ export function Pill({ label, tone = 'default', onPress }: Props) {
         styles.base,
         tone === 'active' && styles.active,
         tone === 'soft' && styles.soft,
-        tone === 'green' && styles.green,
+        tone === 'positive' && styles.positive,
       ]}
     >
       <Text
@@ -53,7 +53,7 @@ export function Pill({ label, tone = 'default', onPress }: Props) {
           styles.label,
           tone === 'active' && styles.labelActive,
           tone === 'soft' && styles.labelSoft,
-          tone === 'green' && styles.labelGreen,
+          tone === 'positive' && styles.labelPositive,
         ]}
       >
         {label}
