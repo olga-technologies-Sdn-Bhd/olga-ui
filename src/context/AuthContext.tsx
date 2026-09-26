@@ -3,6 +3,7 @@ import { ApiError, newIdempotencyKey, setMemberIdProvider } from '../api/client'
 import { coreApi } from '../api/core';
 import {
   activateMember,
+  lookupExistingMember,
   MemberApi,
   MemberStore,
   normalizeEmail,
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const memberRef = useRef<StoredMember | null>(null);
   const registrationKey = useRef<string | null>(null);
   const restoreChecked = useRef(false);
+  const [restoreLookup, setRestoreLookup] = useState(false);
 
   const applyMember = useCallback((next: StoredMember | null) => {
     memberRef.current = next;
@@ -74,7 +76,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [applyMember]);
 
-  const isRestoring = entra.isRestoring || store === null;
+  const storesLoaded = !entra.isRestoring && store !== null;
+  // Also covers the member lookup below, so the name question never flashes.
+  const isRestoring = !storesLoaded || restoreLookup;
   // The verified email of this session: from the Entra ID token, else the
   // store's current pointer (set at the last login).
   const email = accessToken ? (entra.email ? normalizeEmail(entra.email) : store?.current ?? null) : null;
@@ -82,10 +86,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // App start with a restored session + cached member: go in immediately,
   // then confirm the member with the backend in the background.
   useEffect(() => {
-    if (isRestoring || restoreChecked.current || !store) return;
+    if (!storesLoaded || restoreChecked.current || !store) return;
     restoreChecked.current = true;
     const cached = accessToken && email ? store.members[email] : undefined;
-    applyMember(cached ?? null); // session but no member -> onboarding (name + mobile)
+    applyMember(cached ?? null);
+    if (accessToken && email && !cached) {
+      // Session but no member on device (e.g. sign-up interrupted): ask Core
+      // before falling back to onboarding (name + mobile, no new OTP).
+      setRestoreLookup(true);
+      lookupExistingMember(email, memberApi)
+        .then(async (lookup) => {
+          if (lookup.status !== 'found') return;
+          const latest = await loadMemberStore();
+          await persist(withMember({ ...latest, current: email }, email, lookup.member));
+          applyMember(lookup.member);
+        })
+        .finally(() => setRestoreLookup(false));
+      return;
+    }
     if (!cached || !email) return;
     refreshMember(cached, memberApi).then(async (result) => {
       if (memberRef.current?.member_id !== cached.member_id) return; // logged out meanwhile
@@ -98,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         applyMember(result.member);
       }
     });
-  }, [isRestoring, store, accessToken, email, applyMember, persist]);
+  }, [storesLoaded, store, accessToken, email, applyMember, persist]);
 
   const login = useCallback(
     async (emailHint?: string) => {
