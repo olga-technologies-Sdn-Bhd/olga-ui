@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
@@ -7,11 +7,14 @@ import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
+import { ThemeColors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'EmptyRoom'>;
 
 export function EmptyRoomScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { activeEvent } = useLive();
   const [notifyRequested, setNotifyRequested] = useState(false);
 
@@ -42,7 +45,7 @@ export function EmptyRoomScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   h2Header: { fontSize: 22, fontWeight: '800', color: colors.text },
   center: { alignItems: 'center', marginTop: 40, gap: 10 },

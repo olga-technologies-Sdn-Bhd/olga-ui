@@ -1,36 +1,50 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
-import { MatchCandidate, nlpApi } from '../../api/nlp';
+import { coreApi } from '../../api/core';
+import { intentIdFor, MatchCandidate, nlpApi } from '../../api/nlp';
+import type { Profile } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
 import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
+import { ThemeColors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { getInitials } from '../../utils/initials';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'LiveMatches'>;
 
 export function LiveMatchesScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { activeEvent, filters } = useLive();
-  const [matches, setMatches] = useState<MatchCandidate[] | null>(null);
+  const [matches, setMatches] = useState<{ match: MatchCandidate; profile?: Profile }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!activeEvent) return;
     setError(null);
     try {
-      const result = await nlpApi.requestMatches({ eventId: activeEvent.eventId, minMatch: filters.minMatch });
+      const result = await nlpApi.requestMatches({
+        intent_id: intentIdFor(activeEvent.eventId, 'WANT'),
+        context_id: activeEvent.eventId,
+        options: { threshold: filters.minMatch / 100 },
+      });
       if (!result.matches?.length) {
         navigation.replace('EmptyRoom');
         return;
       }
-      setMatches(result.matches);
+      // Match results only carry member IDs; the card text comes from each
+      // member's profile. A failed lookup falls back to the generic card.
+      const profiles = await Promise.all(
+        result.matches.map((m) => coreApi.getMember(m.member_id).catch(() => undefined))
+      );
+      setMatches(result.matches.map((match, i) => ({ match, profile: profiles[i] })));
     } catch (e) {
-      setError(e instanceof ApiError ? `Couldn't load matches (${e.status})` : "Couldn't reach the server");
+      setError(e instanceof ApiError && e.status > 0 ? `Couldn't load matches (${e.status})` : "Couldn't reach the server");
       setMatches([]);
     }
   }, [activeEvent, filters.minMatch, navigation]);
@@ -52,24 +66,24 @@ export function LiveMatchesScreen({ navigation }: Props) {
       {matches === null && !error && <Text style={styles.sub}>Finding people worth meeting…</Text>}
       {error && <Text style={[styles.sub, { color: colors.danger }]}>{error}</Text>}
 
-      {matches?.map((match) => (
-        <Card key={match.memberId}>
+      {matches?.map(({ match, profile }) => (
+        <Card key={match.member_id}>
           <View style={styles.row}>
-            <Avatar initials={getInitials(match.headline ?? '?')} />
+            <Avatar initials={getInitials(profile?.headline ?? '?')} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.h3}>{match.headline ?? 'Attendee'}</Text>
-              {match.subheadline && <Text style={styles.sub}>{match.subheadline}</Text>}
+              <Text style={styles.h3}>{profile?.headline ?? 'Attendee'}</Text>
+              {profile?.role_category && <Text style={styles.sub}>{profile.role_category}</Text>}
             </View>
-            <Text style={styles.matchScore}>{Math.round(match.matchScore)}%</Text>
+            <Text style={styles.matchScore}>{Math.round(match.score * 100)}%</Text>
           </View>
-          {match.rationale && <Text style={[styles.sub, { marginTop: 10 }]}>{match.rationale}</Text>}
+          {!!match.reason_text && <Text style={[styles.sub, { marginTop: 10 }]}>{match.reason_text}</Text>}
         </Card>
       ))}
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
   eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
   h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },

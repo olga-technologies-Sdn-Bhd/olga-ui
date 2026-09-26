@@ -27,6 +27,12 @@ export const lightColors = {
   amberSoft: '#fff6df',
   danger: '#ef5a67',
   white: '#ffffff',
+  // Soft accent surfaces (Go Live halo, removable tags) and control tracks.
+  tint: '#f7f4ff',
+  tint2: '#faf8ff',
+  tintLine: '#e8e1ff',
+  track: '#d8d4dc',
+  progressTrack: '#eeeaf0',
 };
 
 export const darkColors = {
@@ -48,6 +54,11 @@ export const darkColors = {
   amberSoft: '#3a2c0f',
   danger: '#ff7a86',
   white: '#ffffff',
+  tint: '#1c1f2e',
+  tint2: '#171a26',
+  tintLine: '#2a3150',
+  track: '#3a3645',
+  progressTrack: '#2b2735',
 };
 
 export type ThemeColors = typeof lightColors;

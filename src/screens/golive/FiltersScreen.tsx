@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { BackHeader } from '../../components/BackHeader';
@@ -10,7 +10,8 @@ import { Screen } from '../../components/Screen';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { Seniority, useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
+import { ThemeColors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'Filters'>;
 
@@ -23,6 +24,8 @@ const SENIORITIES: { key: Seniority; label: string }[] = [
 ];
 
 export function FiltersScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { filters, setFilters } = useLive();
   const [minMatch, setMinMatch] = useState(filters.minMatch);
   const [lookingFor, setLookingFor] = useState<string[]>(filters.lookingFor);
@@ -123,7 +126,7 @@ export function FiltersScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   h2: { fontSize: 22, fontWeight: '800', color: colors.text },
   h3: { fontSize: 15, fontWeight: '700', color: colors.text },
   sub: { fontSize: 13, color: colors.muted, marginTop: 2 },

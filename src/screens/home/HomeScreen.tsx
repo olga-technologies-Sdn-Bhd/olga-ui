@@ -1,6 +1,8 @@
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { coreApi, CoreEvent } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
@@ -9,10 +11,14 @@ import { EventHero } from '../../components/EventHero';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
-import { MainTabParamList } from '../../navigation/types';
+import { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/ThemeContext';
+import { formatEventDate } from '../../utils/formatEventDate';
 
-type Props = BottomTabScreenProps<MainTabParamList, 'HomeTab'>;
+type Props = CompositeScreenProps<
+  NativeStackScreenProps<HomeStackParamList, 'Home'>,
+  BottomTabScreenProps<MainTabParamList>
+>;
 
 // Matches the prototype's pre-filled sample intent on the Home screen.
 const SAMPLE_INTENT = 'Find telco / GLC distribution partners for an AI workforce platform';
@@ -42,7 +48,7 @@ export function HomeScreen({ navigation }: Props) {
           borderColor: colors.line,
           borderRadius: 14,
           padding: 12,
-          backgroundColor: colors.white,
+          backgroundColor: colors.surface,
           color: colors.text,
           fontSize: 14,
           minHeight: 44,
@@ -71,7 +77,9 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={styles.eyebrow}>Home</Text>
           <Text style={styles.h2}>Welcome{name ? `, ${name}` : ''}</Text>
         </View>
-        <Avatar initials={(name ?? '?').slice(0, 1).toUpperCase()} size="sm" />
+        <Pressable onPress={() => navigation.navigate('Profile')} hitSlop={8} accessibilityLabel="Open profile">
+          <Avatar initials={(name ?? '?').slice(0, 1).toUpperCase()} size="sm" />
+        </Pressable>
       </View>
 
       <Card soft>
@@ -128,9 +136,9 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>Coming up</Text>
           <EventHero
             title={nextEvent.name}
-            subtitle={[nextEvent.startsAt, nextEvent.venue].filter(Boolean).join(' · ')}
+            subtitle={[formatEventDate(nextEvent.starts_at), nextEvent.venue].filter(Boolean).join(' · ')}
             topLeft={
-              typeof nextEvent.liveCount === 'number' ? <Pill label={`● ${nextEvent.liveCount} going`} tone="soft" /> : undefined
+              typeof nextEvent.live_count === 'number' ? <Pill label={`● ${nextEvent.live_count} going`} tone="soft" /> : undefined
             }
           >
             <Button

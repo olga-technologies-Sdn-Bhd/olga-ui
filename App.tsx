@@ -1,25 +1,43 @@
-import { NavigationContainer } from '@react-navigation/native';
-import { StatusBar, useColorScheme } from 'react-native';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import { useMemo } from 'react';
+import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { LiveProvider } from './src/context/LiveContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { ThemeProvider } from './src/theme/ThemeContext';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+// Status bar and navigator background follow the in-app theme, not the OS one,
+// so screen transitions don't flash the wrong background.
+function ThemedApp() {
+  const { scheme, colors } = useTheme();
+  const navTheme = useMemo(() => {
+    const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: { ...base.colors, background: colors.bg, card: colors.surface, border: colors.line, text: colors.text },
+    };
+  }, [scheme, colors]);
 
   return (
+    <>
+      <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <AuthProvider>
+        <LiveProvider>
+          <NavigationContainer theme={navTheme}>
+            <RootNavigator />
+          </NavigationContainer>
+        </LiveProvider>
+      </AuthProvider>
+    </>
+  );
+}
+
+function App() {
+  return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <ThemeProvider>
-        <AuthProvider>
-          <LiveProvider>
-            <NavigationContainer>
-              <RootNavigator />
-            </NavigationContainer>
-          </LiveProvider>
-        </AuthProvider>
+        <ThemedApp />
       </ThemeProvider>
     </SafeAreaProvider>
   );

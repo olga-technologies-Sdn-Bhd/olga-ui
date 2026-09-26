@@ -6,6 +6,7 @@ import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
+import { MemberRecoveryUnavailableError } from '../../auth/memberSession';
 import { isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
@@ -18,14 +19,16 @@ const SIGNUP_BG_IMAGES = [
   require('../../assets/onboarding/signup-bg-5.jpg'),
 ];
 
-type Step = 'email' | 'verifying' | 'name' | 'mobile';
+type Step = 'email' | 'verifying' | 'name' | 'mobile' | 'registering';
 
 // One continuous chat: email -> verify -> name -> mobile, all on this same
 // screen. No screen transition after login — the user comes back to exactly
 // where they started, and the conversation just continues.
 export function SignUpScreen() {
-  const { login, completeOnboarding } = useAuth();
-  const [step, setStep] = useState<Step>('email');
+  const { login, completeOnboarding, logOut, isAuthenticated } = useAuth();
+  // Already signed in to Entra but no Olga member yet (e.g. restored session
+  // whose member was removed) -> only name + mobile are needed, no new OTP.
+  const [step, setStep] = useState<Step>(isAuthenticated ? 'name' : 'email');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
@@ -34,8 +37,9 @@ export function SignUpScreen() {
     setEmail(value);
     setStep('verifying');
     try {
-      await login(value);
-      setStep('name');
+      const existingMember = await login(value);
+      // Existing members go straight in (the navigator switches to the app).
+      if (!existingMember) setStep('name');
     } catch (error) {
       setEmail('');
       setStep('email');
@@ -50,9 +54,35 @@ export function SignUpScreen() {
     setStep('mobile');
   }
 
-  function handleMobileSubmit(value: string) {
+  async function handleMobileSubmit(value: string) {
+    // Olga.Core only accepts E.164 (+<country code><number>).
+    const e164 = value.replace(/[\s\-().]/g, '');
+    if (!/^\+[1-9]\d{7,14}$/.test(e164)) {
+      Alert.alert('Check your number', 'Please include your country code, e.g. +60 12 345 6789.');
+      return;
+    }
     setMobile(value);
-    completeOnboarding(name.trim(), value.trim());
+    setStep('registering');
+    try {
+      await completeOnboarding(name.trim(), e164);
+    } catch (error) {
+      setMobile('');
+      if (error instanceof MemberRecoveryUnavailableError) {
+        // Registered on another device / before a reinstall; retrying can't
+        // help until the backend can look the member up, so sign out.
+        Alert.alert(
+          'Already registered',
+          "This email or number already has an Ol-ga account, but signing back in on a new or reinstalled device isn't available yet. Please contact Ol-ga support."
+        );
+        await logOut();
+        setName('');
+        setEmail('');
+        setStep('email');
+        return;
+      }
+      setStep('mobile');
+      Alert.alert('Could not create your profile', 'Please check your connection and try again.');
+    }
   }
 
   return (
@@ -89,7 +119,7 @@ export function SignUpScreen() {
 
         {step === 'verifying' && <ChatBubble from="them" text="One sec — verifying that…" />}
 
-        {(step === 'name' || step === 'mobile') && (
+        {(step === 'name' || step === 'mobile' || step === 'registering') && (
           <>
             <ChatBubble from="them" text="Login or signup successful! Two quick things and you're in the room." />
             <ChatBubble from="them" text="What should I call you?" />
@@ -97,7 +127,7 @@ export function SignUpScreen() {
         )}
         {name !== '' && <ChatBubble from="me" text={name} />}
 
-        {step === 'mobile' && (
+        {(step === 'mobile' || step === 'registering') && (
           <ChatBubble
             from="them"
             text={`Good to meet you, ${name}. What's the best number to reach you on? We'll only use it for meetup coordination — never spam.`}
@@ -110,6 +140,7 @@ export function SignUpScreen() {
         <ChatComposer placeholder="you@example.com" keyboardType="email-address" onSubmit={handleEmailSubmit} />
       )}
       {step === 'verifying' && <Text style={styles.sub}>Opening secure sign-in…</Text>}
+      {step === 'registering' && <Text style={styles.sub}>Setting up your profile…</Text>}
       {step === 'name' && <ChatComposer placeholder="Type your name…" onSubmit={handleNameSubmit} />}
       {step === 'mobile' && (
         <ChatComposer placeholder="+60 12 345 6789" keyboardType="phone-pad" onSubmit={handleMobileSubmit} />

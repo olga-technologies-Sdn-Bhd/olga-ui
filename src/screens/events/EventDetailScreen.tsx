@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { coreApi } from '../../api/core';
@@ -10,11 +10,15 @@ import { EventHero } from '../../components/EventHero';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { EventsStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
+import { ThemeColors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
+import { formatEventDate } from '../../utils/formatEventDate';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'EventDetail'>;
 
 export function EventDetailScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { event } = route.params;
   const [registering, setRegistering] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -24,10 +28,10 @@ export function EventDetailScreen({ route, navigation }: Props) {
     setRegistering(true);
     setError(null);
     try {
-      await coreApi.registerForEvent(event.eventId);
+      await coreApi.registerForEvent(event.event_id);
       setRegistered(true);
     } catch (e) {
-      setError(e instanceof ApiError ? `Couldn't register (${e.status})` : "Couldn't reach the server");
+      setError(e instanceof ApiError && e.status > 0 ? `Couldn't register (${e.status})` : "Couldn't reach the server");
     } finally {
       setRegistering(false);
     }
@@ -37,7 +41,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
     <Screen>
       <BackHeader
         onBack={() => navigation.goBack()}
-        right={typeof event.matchCount === 'number' ? <Pill label={`${event.matchCount} matches`} tone="green" /> : undefined}
+        right={typeof event.match_count === 'number' ? <Pill label={`${event.match_count} matches`} tone="green" /> : undefined}
       />
 
       <EventHero
@@ -45,7 +49,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
         topLeft={<Pill label={event.name} tone="green" />}
         title="The room where useful conversations start."
       >
-        <Text style={styles.heroSub}>{[event.startsAt, event.venue].filter(Boolean).join(' · ')}</Text>
+        <Text style={styles.heroSub}>{[formatEventDate(event.starts_at), event.venue].filter(Boolean).join(' · ')}</Text>
       </EventHero>
 
       <Text style={styles.sectionTitle}>Your fit</Text>
@@ -57,12 +61,12 @@ export function EventDetailScreen({ route, navigation }: Props) {
       <Card style={{ gap: 10 }}>
         <View style={styles.statRow}>
           <Text style={styles.sub}>Signed up</Text>
-          <Text style={styles.statValue}>{event.attendeeCount ?? '—'}</Text>
+          <Text style={styles.statValue}>{event.attendee_count ?? '—'}</Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.statRow}>
           <Text style={styles.sub}>Match your intent</Text>
-          <Text style={[styles.statValue, { color: colors.green }]}>{event.matchCount ?? '—'}</Text>
+          <Text style={[styles.statValue, { color: colors.green }]}>{event.match_count ?? '—'}</Text>
         </View>
       </Card>
 
@@ -81,7 +85,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   heroSub: { color: 'rgba(255,255,255,0.9)', marginTop: 4, fontSize: 13 },
   sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 4 },
   eyebrowBrand: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.brand, fontWeight: '700' },

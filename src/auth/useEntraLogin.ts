@@ -56,6 +56,23 @@ export function isUserCancelledLogin(error: unknown): boolean {
   return message.includes('cancel') || message.includes('dismiss');
 }
 
+// Hermes (RN 0.74+) provides atob at runtime; RN's TS lib just doesn't declare it.
+declare function atob(data: string): string;
+
+// Reads the email claim from the ID token payload. No signature check: the
+// token came straight from Microsoft over the PKCE flow and is only used to
+// label the local session, never sent to Olga APIs.
+function emailFromIdToken(idToken: string): string | null {
+  try {
+    const payload = idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, '=')));
+    const email = claims.email ?? claims.emails?.[0] ?? claims.preferred_username;
+    return typeof email === 'string' && email.includes('@') ? email : null;
+  } catch {
+    return null;
+  }
+}
+
 export function useEntraLogin() {
   // undefined = still restoring from Keychain on app start.
   const [session, setSession] = useState<StoredSession | null | undefined>(undefined);
@@ -101,7 +118,9 @@ export function useEntraLogin() {
     })();
   }, []);
 
-  const login = useCallback(async (loginHint?: string) => {
+  // Resolves with the email Microsoft verified (from the ID token), falling
+  // back to the hint the user typed if the token carries no email claim.
+  const login = useCallback(async (loginHint?: string): Promise<string | null> => {
     const result: AuthorizeResult = await authorize({
       ...authConfig,
       additionalParameters: loginHint ? { login_hint: loginHint } : undefined,
@@ -116,6 +135,7 @@ export function useEntraLogin() {
     };
     await saveSession(next);
     setSession(next);
+    return emailFromIdToken(result.idToken) ?? loginHint ?? null;
   }, []);
 
   const logOut = useCallback(async () => {
@@ -125,6 +145,8 @@ export function useEntraLogin() {
 
   return {
     accessToken: session?.accessToken ?? null,
+    // Verified email of the current (possibly restored) session.
+    email: session ? emailFromIdToken(session.idToken) : null,
     isRestoring: session === undefined,
     login,
     logOut,

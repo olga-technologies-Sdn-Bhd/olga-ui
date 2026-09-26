@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { ThemeColors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
   on: boolean;
@@ -8,6 +10,8 @@ type Props = {
 
 // Matches the prototype's `.switch` / `.switch.on` toggle.
 export function ToggleSwitch({ on, onToggle }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <Pressable onPress={onToggle} style={[styles.track, on && styles.trackOn]}>
       <View style={[styles.knob, on && styles.knobOn]} />
@@ -15,12 +19,12 @@ export function ToggleSwitch({ on, onToggle }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   track: {
     width: 44,
     height: 26,
     borderRadius: 99,
-    backgroundColor: '#d8d4dc',
+    backgroundColor: colors.track,
     padding: 3,
     justifyContent: 'center',
   },

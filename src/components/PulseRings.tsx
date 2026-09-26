@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
-import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
   active: boolean;
@@ -21,8 +21,10 @@ export function PulseRings({
   size = 132,
   maxScale = 2,
   duration = 1800,
-  color = colors.brand,
+  color,
 }: Props) {
+  const { colors } = useTheme();
+  const ringColor = color ?? colors.brand;
   const progresses = useRef(Array.from({ length: count }, () => new Animated.Value(0))).current;
 
   useEffect(() => {
@@ -71,7 +73,7 @@ export function PulseRings({
               borderRadius: size / 2,
               marginLeft: -size / 2,
               marginTop: -size / 2,
-              borderColor: color,
+              borderColor: ringColor,
               opacity: value.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 0.5, 0] }),
               transform: [{ scale: value.interpolate({ inputRange: [0, 1], outputRange: [1, maxScale] }) }],
             },
