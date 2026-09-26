@@ -12,6 +12,11 @@ export type ApiErrorBody = {
   field_errors?: Record<string, string[]>;
 };
 
+// Core/NLP serialize `ETag` as `e_tag` in bodies (also sent as the ETag
+// header). Wire types below carry `e_tag`; withEtag() in client.ts turns them
+// into the app-facing shape with a single normalized `etag`.
+export type WithEtag<T extends { e_tag?: string }> = Omit<T, 'e_tag'> & { etag: string };
+
 export type Visibility = 'PUBLIC' | 'MEMBERS' | 'CONNECTED' | 'HIDDEN';
 export type ProfileStatus = 'DRAFT' | 'PENDING_REVIEW' | 'ACTIVE' | 'HIDDEN';
 
@@ -29,17 +34,31 @@ export type RegisterMemberRequest = {
   visibility?: Visibility;
 };
 
-export type RegisterMemberResponse = {
+export type RegisterMemberBody = {
   member_id: string;
   email_hint?: string;
   phone_hint?: string;
   profile_status: ProfileStatus;
-  etag: string;
+  e_tag?: string;
 };
+export type RegisterMemberResponse = WithEtag<RegisterMemberBody>;
+
+// POST /v1/members/lookup (no X-Member-Id). Email identities only.
+export type MemberLookupRequest = {
+  email: string;
+};
+
+export type MemberLookupBody = {
+  member_id: string;
+  display_name: string;
+  profile_status: ProfileStatus;
+  e_tag?: string;
+};
+export type MemberLookupResponse = WithEtag<MemberLookupBody>;
 
 // GET /v1/me/profile, PATCH /v1/me/profile, GET /v1/members/{memberId}.
 // Email and phone are never returned.
-export type Profile = {
+export type ProfileBody = {
   member_id: string;
   display_name: string;
   headline?: string;
@@ -48,9 +67,10 @@ export type Profile = {
   profile_status: ProfileStatus;
   visibility: Visibility;
   completeness_score: number;
-  etag: string;
+  e_tag?: string;
   updated_at: string;
 };
+export type Profile = WithEtag<ProfileBody>;
 
 // PATCH /v1/me/profile is a full replace: omitted optional fields are cleared.
 export type UpdateProfileRequest = {
@@ -145,7 +165,7 @@ export type UpsertIntentRequest = {
 };
 
 // POST /v1/intents: 200 when processed, 202 while still processing.
-export type UpsertIntentResponse = {
+export type UpsertIntentBody = {
   intent_id: string;
   status: IntentStatus;
   model_version: string;
@@ -154,11 +174,12 @@ export type UpsertIntentResponse = {
   language?: string;
   contains_pii: boolean;
   updated_at?: string;
-  etag?: string;
+  e_tag?: string;
 };
+export type UpsertIntentResponse = WithEtag<UpsertIntentBody>;
 
 // GET /v1/intents/{intentId}
-export type Intent = {
+export type IntentBody = {
   intent_id: string;
   context_id: string;
   intent_type: IntentType;
@@ -176,8 +197,9 @@ export type Intent = {
   geography?: string;
   created_at: string;
   updated_at: string;
-  etag: string;
+  e_tag?: string;
 };
+export type Intent = WithEtag<IntentBody>;
 
 // ---- NLP: match requests ----
 

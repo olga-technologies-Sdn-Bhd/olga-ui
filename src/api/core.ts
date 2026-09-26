@@ -1,7 +1,7 @@
 import { CORE_API_URL, USE_MOCK_DATA } from '../config/env';
 import { mockEvents } from '../mocks/events';
 import { mockMembers } from '../mocks/matches';
-import { makeApiClient, RequestOptions } from './client';
+import { makeApiClient, RequestOptions, withEtag } from './client';
 import type {
   ConsentRequest,
   ConsentResponse,
@@ -9,10 +9,12 @@ import type {
   EventSummary,
   LiveModeRequest,
   LiveModeSession,
+  MemberLookupBody,
+  MemberLookupRequest,
   PresenceRequest,
-  Profile,
+  ProfileBody,
+  RegisterMemberBody,
   RegisterMemberRequest,
-  RegisterMemberResponse,
   UpdateProfileRequest,
 } from './types';
 
@@ -25,11 +27,6 @@ export type CoreEvent = EventSummary & {
   match_count?: number;
 };
 
-// Prefer the body's etag; fall back to the ETag response header.
-function withEtag<T extends { etag?: string }>(r: { data: T; headers: Headers }): T {
-  return { ...r.data, etag: r.data.etag ?? r.headers.get('ETag') ?? undefined } as T;
-}
-
 // While USE_MOCK_DATA is true (src/config/env.ts), the calls that already
 // have a mock branch return canned data from src/mocks/ instead of hitting the
 // network — remove each `if (USE_MOCK_DATA)` branch (and the mocks import)
@@ -37,16 +34,23 @@ function withEtag<T extends { etag?: string }>(r: { data: T; headers: Headers })
 export const coreApi = {
   // Once, right after Entra OTP succeeds. X-Member-Id isn't set yet.
   registerMember: async (body: RegisterMemberRequest, options?: RequestOptions) =>
-    withEtag(await client.send<RegisterMemberResponse>('POST', '/v1/members', body, options)),
+    withEtag(await client.send<RegisterMemberBody>('POST', '/v1/members', body, options)),
+
+  // Existing member for a verified email (reinstall / new device / 409
+  // recovery). No X-Member-Id. 404 MEMBER_NOT_REGISTERED = new user.
+  lookupMember: async (email: string, options?: RequestOptions) =>
+    withEtag(
+      await client.send<MemberLookupBody>('POST', '/v1/members/lookup', { email } satisfies MemberLookupRequest, options)
+    ),
 
   getMyProfile: async (options?: RequestOptions) =>
-    withEtag(await client.send<Profile>('GET', '/v1/me/profile', undefined, options)),
+    withEtag(await client.send<ProfileBody>('GET', '/v1/me/profile', undefined, options)),
 
   // Full replace: send every field. ifMatch is the etag from the last
   // register/read/update, quotes included (e.g. "\"1\"").
   updateMyProfile: async (body: UpdateProfileRequest, ifMatch: string, options?: RequestOptions) =>
     withEtag(
-      await client.send<Profile>('PATCH', '/v1/me/profile', body, {
+      await client.send<ProfileBody>('PATCH', '/v1/me/profile', body, {
         ...options,
         headers: { ...options?.headers, 'If-Match': ifMatch },
       })
@@ -57,7 +61,7 @@ export const coreApi = {
 
   getMember: async (memberId: string) => {
     if (USE_MOCK_DATA) return mockMembers[memberId];
-    return client.get<Profile>(`/v1/members/${encodeURIComponent(memberId)}`);
+    return withEtag(await client.send<ProfileBody>('GET', `/v1/members/${encodeURIComponent(memberId)}`));
   },
 
   getEvents: async (): Promise<CoreEvent[]> => {

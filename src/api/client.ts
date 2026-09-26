@@ -1,4 +1,4 @@
-import type { ApiErrorBody } from './types';
+import type { ApiErrorBody, WithEtag } from './types';
 
 const DEFAULT_TIMEOUT_MS = 15000;
 
@@ -136,6 +136,13 @@ async function send<T>(
     status: response.status,
     headers: response.headers,
   };
+}
+
+// Normalizes a response to one `etag`: the body's `e_tag` (what Core/NLP
+// send), else the ETag response header.
+export function withEtag<T extends { e_tag?: string }>(r: { data: T; headers: Headers }): WithEtag<T> {
+  const { e_tag, ...rest } = r.data;
+  return { ...rest, etag: e_tag ?? r.headers.get('ETag') ?? '' };
 }
 
 export function makeApiClient(baseUrl: string) {

@@ -1,15 +1,15 @@
 import { NLP_API_URL, USE_MOCK_DATA } from '../config/env';
 import { mockMatches } from '../mocks/matches';
-import { getMemberId, makeApiClient, RequestOptions } from './client';
+import { getMemberId, makeApiClient, RequestOptions, withEtag } from './client';
 import type {
-  Intent,
+  IntentBody,
   IntentType,
   MatchRequest,
   MatchRequestResponse,
   MatchRequestStatusResponse,
   MatchResult,
+  UpsertIntentBody,
   UpsertIntentRequest,
-  UpsertIntentResponse,
 } from './types';
 
 const client = makeApiClient(NLP_API_URL);
@@ -31,12 +31,15 @@ export const nlpApi = {
   // ifMatch: etag from a previous save, for edits.
   createIntent: async (body: UpsertIntentRequest, ifMatch?: string, options?: RequestOptions) => {
     if (USE_MOCK_DATA) return;
-    return client.post<UpsertIntentResponse>('/v1/intents', body, {
-      ...options,
-      headers: { ...options?.headers, ...(ifMatch ? { 'If-Match': ifMatch } : {}) },
-    });
+    return withEtag(
+      await client.send<UpsertIntentBody>('POST', '/v1/intents', body, {
+        ...options,
+        headers: { ...options?.headers, ...(ifMatch ? { 'If-Match': ifMatch } : {}) },
+      })
+    );
   },
-  getIntent: (intentId: string) => client.get<Intent>(`/v1/intents/${encodeURIComponent(intentId)}`),
+  getIntent: async (intentId: string) =>
+    withEtag(await client.send<IntentBody>('GET', `/v1/intents/${encodeURIComponent(intentId)}`)),
 
   // Leave request_id out: the server uses the Idempotency-Key. status other
   // than COMPLETED → poll getMatchRequest(request_id) every 1–2 s.
