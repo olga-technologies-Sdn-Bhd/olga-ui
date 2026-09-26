@@ -1,8 +1,9 @@
-import { ApiError, NETWORK_ERROR } from '../src/api/client';
-import type { Profile } from '../src/api/types';
+import { ApiError, NETWORK_ERROR, withEtag } from '../src/api/client';
+import type { MemberLookupResponse, Profile } from '../src/api/types';
 import {
   activateMember,
   EMPTY_STORE,
+  lookupExistingMember,
   MemberApi,
   MemberRecoveryUnavailableError,
   MemberStore,
@@ -27,27 +28,53 @@ function profile(overrides: Partial<Profile> = {}): Profile {
   };
 }
 
-function api(overrides: Partial<MemberApi> = {}): MemberApi & { getMyProfile: jest.Mock; updateMyProfile: jest.Mock } {
+const notRegistered = new ApiError(404, 'MEMBER_NOT_REGISTERED', 'Member not registered', 'c-1');
+
+function lookedUp(overrides: Partial<MemberLookupResponse> = {}): MemberLookupResponse {
+  return { member_id: 'mem_9', display_name: 'Asha Rao', profile_status: 'ACTIVE', etag: '"5"', ...overrides };
+}
+
+type MockApi = MemberApi & { getMyProfile: jest.Mock; updateMyProfile: jest.Mock; lookupMember: jest.Mock };
+
+// Lookup defaults to "not registered" so cached-member tests are unaffected.
+function api(overrides: Partial<MemberApi> = {}): MockApi {
   return {
     getMyProfile: jest.fn(async () => profile()),
     updateMyProfile: jest.fn(async () => profile({ etag: '"3"' })),
+    lookupMember: jest.fn(async () => {
+      throw notRegistered;
+    }),
     ...overrides,
   } as never;
 }
-
-const notRegistered = new ApiError(404, 'MEMBER_NOT_REGISTERED', 'Member not registered', 'c-1');
 const offline = new ApiError(0, NETWORK_ERROR, 'Network request failed');
 const serverError = new ApiError(503, 'HTTP_503', 'Service Unavailable');
 
 const storeWith = (m: StoredMember): MemberStore => ({ current: null, members: { 'asha@example.com': m } });
 
 describe('resolveLogin', () => {
-  it('new email -> no member, sign-up needed, current set', async () => {
+  it('new email (lookup 404 MEMBER_NOT_REGISTERED) -> sign-up needed, current set', async () => {
     const a = api();
     const result = await resolveLogin(EMPTY_STORE, 'New@Example.com', a);
+    expect(a.lookupMember).toHaveBeenCalledWith('new@example.com');
     expect(result.member).toBeNull();
+    expect(result.lookup).toEqual({ status: 'not_registered' });
     expect(result.store.current).toBe('new@example.com');
     expect(a.getMyProfile).not.toHaveBeenCalled();
+  });
+
+  it('nothing on device but lookup finds the member -> stored, straight in', async () => {
+    const a = api({ lookupMember: jest.fn(async () => lookedUp()) });
+    const result = await resolveLogin(EMPTY_STORE, 'Asha@Example.com', a);
+    expect(result.member).toEqual({ member_id: 'mem_9', etag: '"5"', display_name: 'Asha Rao', profile_status: 'ACTIVE' });
+    expect(result.store.members['asha@example.com'].member_id).toBe('mem_9');
+    expect(result.store.current).toBe('asha@example.com');
+  });
+
+  it('cached member -> no lookup', async () => {
+    const a = api();
+    await resolveLogin(storeWith(member), 'asha@example.com', a);
+    expect(a.lookupMember).not.toHaveBeenCalled();
   });
 
   it('existing member -> confirmed with the backend and refreshed', async () => {
@@ -121,13 +148,104 @@ describe('activateMember', () => {
   });
 });
 
-describe('recoverExistingMember', () => {
-  it('is not supported by the backend yet and carries the correlation id', async () => {
-    const conflict = new ApiError(409, 'MEMBER_IDENTITY_ALREADY_REGISTERED', 'Already registered', 'corr-9');
-    await expect(recoverExistingMember('asha@example.com', conflict)).rejects.toMatchObject({
+describe('lookupExistingMember', () => {
+  it('found ACTIVE -> member, no PATCH', async () => {
+    const a = api({ lookupMember: jest.fn(async () => lookedUp()) });
+    const result = await lookupExistingMember('asha@example.com', a);
+    expect(result).toMatchObject({ status: 'found', member: { member_id: 'mem_9', etag: '"5"' } });
+    expect(a.updateMyProfile).not.toHaveBeenCalled();
+  });
+
+  it('found DRAFT -> activated with the server display_name and lookup etag', async () => {
+    const a = api({ lookupMember: jest.fn(async () => lookedUp({ profile_status: 'DRAFT' })) });
+    const result = await lookupExistingMember('asha@example.com', a);
+    expect(a.updateMyProfile).toHaveBeenCalledWith('mem_9', { display_name: 'Asha Rao', visibility: 'MEMBERS' }, '"5"');
+    expect(result).toMatchObject({ status: 'found', member: { etag: '"3"', needs_activation: false } });
+  });
+
+  it('found DRAFT but activation fails -> member kept, flagged for retry', async () => {
+    const a = api({
+      lookupMember: jest.fn(async () => lookedUp({ profile_status: 'DRAFT' })),
+      updateMyProfile: jest.fn(async () => {
+        throw offline;
+      }),
+    });
+    const result = await lookupExistingMember('asha@example.com', a);
+    expect(result).toMatchObject({ status: 'found', member: { member_id: 'mem_9', needs_activation: true } });
+  });
+
+  it('404 MEMBER_NOT_REGISTERED -> not_registered', async () => {
+    expect(await lookupExistingMember('x@example.com', api())).toEqual({ status: 'not_registered' });
+  });
+
+  it.each([
+    ['404 without a code (route missing)', new ApiError(404, 'HTTP_404', 'Not Found')],
+    ['offline', offline],
+    ['5xx', serverError],
+  ])('%s -> unavailable, never a new user', async (_label, error) => {
+    const a = api({
+      lookupMember: jest.fn(async () => {
+        throw error;
+      }),
+    });
+    expect(await lookupExistingMember('x@example.com', a)).toMatchObject({ status: 'unavailable' });
+  });
+
+  it('unavailable during login -> falls back to sign-up without blocking', async () => {
+    const a = api({
+      lookupMember: jest.fn(async () => {
+        throw offline;
+      }),
+    });
+    const result = await resolveLogin(EMPTY_STORE, 'asha@example.com', a);
+    expect(result.member).toBeNull();
+    expect(result.lookup?.status).toBe('unavailable');
+  });
+});
+
+describe('recoverExistingMember (409 on registration)', () => {
+  const conflict = new ApiError(409, 'MEMBER_IDENTITY_ALREADY_REGISTERED', 'Already registered', 'corr-9');
+
+  it('lookup finds the member -> returned as the server has it', async () => {
+    const a = api({ lookupMember: jest.fn(async () => lookedUp()) });
+    const recovered = await recoverExistingMember('asha@example.com', conflict, a);
+    expect(recovered).toEqual({ member_id: 'mem_9', etag: '"5"', display_name: 'Asha Rao', profile_status: 'ACTIVE' });
+    expect(a.updateMyProfile).not.toHaveBeenCalled();
+  });
+
+  it('lookup 404 (e.g. the conflict was the phone) -> unavailable error with the conflict correlation id', async () => {
+    await expect(recoverExistingMember('asha@example.com', conflict, api())).rejects.toMatchObject({
       name: 'MemberRecoveryUnavailableError',
       correlationId: 'corr-9',
     });
-    await expect(recoverExistingMember('asha@example.com', conflict)).rejects.toBeInstanceOf(MemberRecoveryUnavailableError);
+  });
+
+  it('lookup unavailable -> MemberRecoveryUnavailableError', async () => {
+    const a = api({
+      lookupMember: jest.fn(async () => {
+        throw offline;
+      }),
+    });
+    await expect(recoverExistingMember('asha@example.com', conflict, a)).rejects.toBeInstanceOf(
+      MemberRecoveryUnavailableError
+    );
+  });
+});
+
+describe('withEtag', () => {
+  type Body = { member_id: string; e_tag?: string };
+  const headers = (etag?: string) => new Headers(etag ? { ETag: etag } : {});
+
+  it('reads e_tag from the body and drops the wire field', () => {
+    const result = withEtag({ data: { member_id: 'm', e_tag: '"7"' }, headers: headers('"8"') });
+    expect(result).toEqual({ member_id: 'm', etag: '"7"' });
+  });
+
+  it('falls back to the ETag header when the body has no e_tag', () => {
+    expect(withEtag<Body>({ data: { member_id: 'm' }, headers: headers('"8"') })).toEqual({ member_id: 'm', etag: '"8"' });
+  });
+
+  it('empty etag when neither is present', () => {
+    expect(withEtag<Body>({ data: { member_id: 'm' }, headers: headers() }).etag).toBe('');
   });
 });

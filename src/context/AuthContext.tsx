@@ -40,6 +40,7 @@ const memberApi: MemberApi = {
   getMyProfile: (memberId) => coreApi.getMyProfile({ headers: { 'X-Member-Id': memberId } }),
   updateMyProfile: (memberId, body, ifMatch) =>
     coreApi.updateMyProfile(body, ifMatch, { headers: { 'X-Member-Id': memberId } }),
+  lookupMember: (email) => coreApi.lookupMember(email),
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -109,6 +110,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       const resolved = await resolveLogin(await loadMemberStore(), verified, memberApi);
+      if (resolved.lookup?.status === 'unavailable') {
+        // Falls back to sign-up; a 409 there retries the lookup. Never log the email.
+        console.warn(`Member lookup unavailable, correlation_id=${resolved.lookup.correlationId ?? 'none'}`);
+      }
       await persist(resolved.store);
       applyMember(resolved.member);
       return resolved.member !== null;
@@ -127,24 +132,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           { display_name: enteredName, email, phone: enteredMobile, visibility: 'MEMBERS' },
           { idempotencyKey: registrationKey.current }
         );
-        next = {
-          member_id: registered.member_id,
-          etag: registered.etag,
-          display_name: enteredName,
-          phone: enteredMobile,
-          profile_status: registered.profile_status,
-        };
+        next = await activateMember(
+          {
+            member_id: registered.member_id,
+            etag: registered.etag,
+            display_name: enteredName,
+            phone: enteredMobile,
+            profile_status: registered.profile_status,
+          },
+          memberApi
+        );
       } catch (error) {
         if (error instanceof ApiError && error.status === 409) {
           console.warn(`Member registration conflict (${error.code}), correlation_id=${error.correlationId}`);
           registrationKey.current = null;
-          next = await recoverExistingMember(email, error);
+          // Existing member as the server has it (lookup already activated a
+          // DRAFT); the name/mobile just typed are not applied.
+          next = await recoverExistingMember(email, error, memberApi);
         } else {
           throw error;
         }
       }
 
-      next = await activateMember(next, memberApi);
       const latest = await loadMemberStore();
       await persist(withMember({ ...latest, current: email }, email, next));
       registrationKey.current = null;

@@ -1,5 +1,5 @@
 import { ApiError } from '../api/client';
-import type { Profile, ProfileStatus, UpdateProfileRequest } from '../api/types';
+import type { MemberLookupResponse, Profile, ProfileStatus, UpdateProfileRequest } from '../api/types';
 
 // The Olga member created by POST /v1/members after the first email OTP
 // sign-in, kept per verified email so the same email signs straight back in.
@@ -26,6 +26,7 @@ export const EMPTY_STORE: MemberStore = { current: null, members: {} };
 export type MemberApi = {
   getMyProfile: (memberId: string) => Promise<Profile>;
   updateMyProfile: (memberId: string, body: UpdateProfileRequest, ifMatch: string) => Promise<Profile>;
+  lookupMember: (email: string) => Promise<MemberLookupResponse>;
 };
 
 export function normalizeEmail(email: string) {
@@ -93,17 +94,51 @@ export async function refreshMember(member: StoredMember, api: MemberApi): Promi
   return { status: 'active', member: next };
 }
 
-// After Entra login: the member for this email, or null when it's a new user
-// (or the cached one turned out stale) and sign-up must run.
+export type LookupResult =
+  | { status: 'found'; member: StoredMember }
+  | { status: 'not_registered' } // 404 MEMBER_NOT_REGISTERED: a new user
+  | { status: 'unavailable'; correlationId?: string }; // offline, 5xx, or a server without the route
+
+// POST /v1/members/lookup for a verified email. A found DRAFT member is
+// activated silently (same needs_activation retry rule as registration).
+// Never throws. A 404 without the MEMBER_NOT_REGISTERED code means the
+// route itself is missing, so it counts as unavailable, not as a new user.
+export async function lookupExistingMember(email: string, api: MemberApi): Promise<LookupResult> {
+  let found: MemberLookupResponse;
+  try {
+    found = await api.lookupMember(normalizeEmail(email));
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404 && error.code === 'MEMBER_NOT_REGISTERED') {
+      return { status: 'not_registered' };
+    }
+    return { status: 'unavailable', correlationId: error instanceof ApiError ? error.correlationId : undefined };
+  }
+  let member: StoredMember = {
+    member_id: found.member_id,
+    etag: found.etag,
+    display_name: found.display_name,
+    profile_status: found.profile_status,
+  };
+  if (found.profile_status === 'DRAFT') member = await activateMember(member, api);
+  return { status: 'found', member };
+}
+
+// After Entra login: the member for this email, or null when sign-up must run
+// (new user, lookup unavailable, or the cached member turned out stale).
 export async function resolveLogin(
   store: MemberStore,
   email: string,
   api: MemberApi
-): Promise<{ store: MemberStore; member: StoredMember | null }> {
+): Promise<{ store: MemberStore; member: StoredMember | null; lookup?: LookupResult }> {
   const key = normalizeEmail(email);
   const base = { ...store, current: key };
   const cached = store.members[key];
-  if (!cached) return { store: base, member: null };
+  if (!cached) {
+    // Nothing on this device (reinstall, cleared data, new phone): ask Core.
+    const lookup = await lookupExistingMember(key, api);
+    if (lookup.status !== 'found') return { store: base, member: null, lookup };
+    return { store: withMember(base, key, lookup.member), member: lookup.member, lookup };
+  }
 
   const result = await refreshMember(cached, api);
   if (result.status === 'stale') return { store: withoutMember(base, key), member: null };
@@ -119,11 +154,15 @@ export class MemberRecoveryUnavailableError extends Error {
   }
 }
 
-// Called when POST /v1/members returns 409 (already registered, but not on
-// this device — reinstall, cleared data, new phone). TODO(backend): Olga.Core
-// has no way to find the member for a verified email yet. Once it has a
-// lookup (or register returns the existing member instead of 409), implement
-// it here and return the member; nothing else needs to change.
-export async function recoverExistingMember(_email: string, conflict: ApiError): Promise<StoredMember> {
-  throw new MemberRecoveryUnavailableError(conflict.correlationId);
+// Called when POST /v1/members returns 409 MEMBER_IDENTITY_ALREADY_REGISTERED
+// (registered, but not on this device). Recovers the member via the lookup;
+// the name/mobile just typed are deliberately not applied to it. Throws
+// MemberRecoveryUnavailableError when the lookup can't find it (e.g. the
+// conflict was on the phone number) or is unavailable.
+export async function recoverExistingMember(email: string, conflict: ApiError, api: MemberApi): Promise<StoredMember> {
+  const lookup = await lookupExistingMember(email, api);
+  if (lookup.status === 'found') return lookup.member;
+  throw new MemberRecoveryUnavailableError(
+    (lookup.status === 'unavailable' ? lookup.correlationId : undefined) ?? conflict.correlationId
+  );
 }
