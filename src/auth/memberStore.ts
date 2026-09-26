@@ -11,7 +11,14 @@ const SERVICE = 'olga.members';
 export async function loadMemberStore(): Promise<MemberStore> {
   try {
     const result = await Keychain.getGenericPassword({ service: SERVICE });
-    return result ? { ...EMPTY_STORE, ...(JSON.parse(result.password) as MemberStore) } : EMPTY_STORE;
+    if (!result) return EMPTY_STORE;
+    const store = { ...EMPTY_STORE, ...(JSON.parse(result.password) as MemberStore) };
+    // Older records cached registrations on device (registered_event_ids);
+    // the server's is_registered replaced that, so drop the field.
+    for (const member of Object.values(store.members)) {
+      delete (member as { registered_event_ids?: unknown }).registered_event_ids;
+    }
+    return store;
   } catch {
     return EMPTY_STORE;
   }

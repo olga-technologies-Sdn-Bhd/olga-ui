@@ -1,4 +1,4 @@
-import { CORE_API_URL, USE_MOCK_DATA } from '../config/env';
+import { CORE_API_URL, USE_MOCK_DATA, USE_MOCK_EVENTS } from '../config/env';
 import { mockEvents } from '../mocks/events';
 import { mockMembers } from '../mocks/matches';
 import { makeApiClient, RequestOptions, withEtag } from './client';
@@ -65,11 +65,12 @@ export const coreApi = {
   },
 
   getEvents: async (): Promise<CoreEvent[]> => {
-    if (USE_MOCK_DATA) return mockEvents;
+    if (USE_MOCK_EVENTS) return mockEvents;
     return client.get<EventSummary[]>('/v1/events');
   },
+  // Idempotent server-side: registering twice returns the same registration.
   registerForEvent: async (eventId: string, options?: RequestOptions) => {
-    if (USE_MOCK_DATA) return;
+    if (USE_MOCK_EVENTS) return;
     return client.post<EventRegistration>(`/v1/events/${eventId}/register`, undefined, options);
   },
   startLiveMode: async (eventId: string, body: LiveModeRequest, options?: RequestOptions) => {

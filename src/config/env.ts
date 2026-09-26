@@ -43,3 +43,7 @@ export const LIVE_MODE_CONSENT_POLICY_VERSION = '1';
 // or verified. Flip to false (or delete the mock branches + src/mocks/) once
 // the real APIs are confirmed working end to end.
 export const USE_MOCK_DATA = true;
+
+// Events (list + registration) use the real Olga.Core API. Live Mode and
+// matching still follow USE_MOCK_DATA until they're integrated.
+export const USE_MOCK_EVENTS = false;

@@ -85,7 +85,8 @@ export async function refreshMember(member: StoredMember, api: MemberApi): Promi
   let next: StoredMember = {
     ...member,
     etag: profile.etag,
-    display_name: profile.display_name,
+    // Keep the cached name if the server has none (never blank it out).
+    display_name: profile.display_name || member.display_name,
     profile_status: profile.profile_status,
   };
   if (next.needs_activation || profile.profile_status === 'DRAFT') {
