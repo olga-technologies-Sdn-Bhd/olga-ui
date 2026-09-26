@@ -2,13 +2,14 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
-import { coreApi } from '../../api/core';
 import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { EventHero } from '../../components/EventHero';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
+import { isRegistered, useEvents } from '../../context/EventsContext';
+import { useLive } from '../../context/LiveContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
@@ -19,22 +20,35 @@ type Props = NativeStackScreenProps<EventsStackParamList, 'EventDetail'>;
 export function EventDetailScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { event } = route.params;
+  const { events, register } = useEvents();
+  const { setActiveEvent } = useLive();
+  // Latest server state for this event (updates right after registering);
+  // the navigation param is only the snapshot it was opened with.
+  const event = events?.find((e) => e.event_id === route.params.event.event_id) ?? route.params.event;
   const [registering, setRegistering] = useState(false);
-  const [registered, setRegistered] = useState(false);
+  const registered = isRegistered(event);
   const [error, setError] = useState<string | null>(null);
 
   async function handleRegister() {
     setRegistering(true);
     setError(null);
     try {
-      await coreApi.registerForEvent(event.event_id);
-      setRegistered(true);
+      await register(event.event_id);
     } catch (e) {
-      setError(e instanceof ApiError && e.status > 0 ? `Couldn't register (${e.status})` : "Couldn't reach the server");
+      if (e instanceof ApiError && e.code === 'EVENT_NOT_FOUND') {
+        setError('This event is no longer available.');
+      } else {
+        setError(e instanceof ApiError && e.status > 0 ? `Couldn't register (${e.status})` : "Couldn't reach the server");
+      }
+      if (e instanceof ApiError) console.warn(`Event registration failed (${e.code}), correlation_id=${e.correlationId}`);
     } finally {
       setRegistering(false);
     }
+  }
+
+  function handleGoLive() {
+    setActiveEvent({ eventId: event.event_id, name: event.name, liveCount: event.live_count, matchCount: event.match_count });
+    navigation.getParent()?.navigate('GoLiveTab' as never);
   }
 
   return (
@@ -73,12 +87,16 @@ export function EventDetailScreen({ route, navigation }: Props) {
       {error && <Text style={{ color: colors.danger, fontSize: 13 }}>{error}</Text>}
 
       <View style={{ gap: 10, marginTop: 4 }}>
-        <Button
-          label={registered ? "You're signed up" : 'Sign up for this event'}
-          onPress={handleRegister}
-          loading={registering}
-          disabled={registered}
-        />
+        {registered && event.live_mode_enabled ? (
+          <Button label="Go Live in this room" onPress={handleGoLive} />
+        ) : (
+          <Button
+            label={registered ? "You're signed up" : 'Sign up for this event'}
+            onPress={handleRegister}
+            loading={registering}
+            disabled={registered}
+          />
+        )}
         <Button label="See who's going" variant="secondary" onPress={() => navigation.navigate('WhosGoing', { event })} />
       </View>
     </Screen>

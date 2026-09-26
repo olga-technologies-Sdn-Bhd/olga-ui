@@ -1,15 +1,13 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import { ApiError } from '../../api/client';
-import { coreApi, CoreEvent } from '../../api/core';
+import { useCallback, useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
 import { useTopInset } from '../../components/Screen';
-import { useLive } from '../../context/LiveContext';
+import { isRegistered, useEvents } from '../../context/EventsContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
@@ -21,38 +19,23 @@ export function EventsScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const topInset = useTopInset();
-  const { setActiveEvent } = useLive();
-  const [events, setEvents] = useState<CoreEvent[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { events, error, refresh } = useEvents();
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      const data = await coreApi.getEvents();
-      setEvents(data);
-    } catch (e) {
-      setError(e instanceof ApiError && e.status > 0 ? `Couldn't load events (${e.status})` : "Couldn't reach the server");
-      setEvents([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Refetch whenever the screen comes into focus (e.g. back from a register).
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   async function onRefresh() {
     setRefreshing(true);
-    await load();
+    await refresh();
     setRefreshing(false);
   }
 
-  function handleGoLive(event: CoreEvent) {
-    setActiveEvent({ eventId: event.event_id, name: event.name, liveCount: event.live_count, matchCount: event.match_count });
-    navigation.getParent()?.navigate('GoLiveTab' as never);
-  }
-
-  const [featured, ...openForSignUp] = events ?? [];
+  const list = events ?? [];
 
   return (
     <ScrollView
@@ -72,53 +55,41 @@ export function EventsScreen({ navigation }: Props) {
       {error && <Text style={[styles.sub, { color: colors.danger }]}>{error}</Text>}
       {events && events.length === 0 && !error && <Text style={styles.sub}>No upcoming events yet.</Text>}
 
-      {featured && (
+      {/* Every published event, registered or not, in one list (soonest first,
+          as the API returns them). Registration shows on the row itself; Go Live
+          is on the event detail screen. */}
+      {list.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>You're going</Text>
-          <Pressable onPress={() => navigation.navigate('EventDetail', { event: featured })}>
-            <Card style={styles.featuredCard}>
-              <LinearGradient
-                colors={['#ffd2dc', '#ab98ff', '#6b4d91']}
-                locations={[0, 0.45, 1]}
-                start={{ x: 0.15, y: 0.2 }}
-                end={{ x: 0.9, y: 1 }}
-                style={styles.eventArt}
-              />
-              <View style={styles.featuredBody}>
-                <View style={styles.eventTop}>
-                  <View>
-                    <Text style={styles.h3}>{featured.name}</Text>
-                    <Text style={styles.sub}>{[featured.venue, formatEventDate(featured.starts_at)].filter(Boolean).join(' · ')}</Text>
-                  </View>
-                  {typeof featured.live_count === 'number' && <Pill label={`${featured.live_count} live`} tone="green" />}
-                </View>
-                {typeof featured.match_count === 'number' && (
-                  <Text style={[styles.sub, { marginTop: 8 }]}>{featured.match_count} attendees match your intent</Text>
-                )}
-                <Button label="Go Live in this room" style={{ marginTop: 14 }} onPress={() => handleGoLive(featured)} />
-              </View>
-            </Card>
-          </Pressable>
-        </>
-      )}
-
-      {openForSignUp.length > 0 && (
-        <>
-          <Text style={styles.sectionTitle}>Open for sign-up</Text>
+          <Text style={styles.sectionTitle}>Upcoming events</Text>
           <View style={{ gap: 10 }}>
-            {openForSignUp.map((event, i) => (
+            {list.map((event, i) => (
               <Card key={event.event_id} style={styles.listRow}>
                 <View style={styles.row}>
-                  <Avatar initials={String(i + 3).padStart(2, '0')} />
+                  <Avatar initials={String(i + 1).padStart(2, '0')} />
+                  {/* Rows have a fixed height (listRow) and single-line text, so every row is the same size. */}
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.h3}>{event.name}</Text>
-                    <Text style={styles.sub}>
-                      {[event.venue, event.attendee_count ? `${event.attendee_count} signed up` : null]
+                    <Text style={styles.h3} numberOfLines={1}>
+                      {event.name}
+                    </Text>
+                    <Text style={styles.sub} numberOfLines={1}>
+                      {[
+                        formatEventDate(event.starts_at),
+                        event.venue,
+                        typeof event.attendee_count === 'number' ? `${event.attendee_count} signed up` : null,
+                      ]
                         .filter(Boolean)
                         .join(' · ')}
                     </Text>
-                    {typeof event.match_count === 'number' && (
-                      <Text style={styles.match}>{event.match_count} match your intent</Text>
+                    {isRegistered(event) ? (
+                      <Text style={styles.match} numberOfLines={1}>
+                        ✓ You're going
+                      </Text>
+                    ) : (
+                      typeof event.match_count === 'number' && (
+                        <Text style={styles.match} numberOfLines={1}>
+                          {event.match_count} match your intent
+                        </Text>
+                      )
                     )}
                   </View>
                   <Button label="View" variant="ghost" small onPress={() => navigation.navigate('EventDetail', { event })} />
@@ -142,12 +113,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   sub: { fontSize: 13, color: colors.muted, marginTop: 4 },
   match: { fontSize: 13, color: colors.green, fontWeight: '700', marginTop: 4 },
   sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 6 },
-  featuredCard: { padding: 0, overflow: 'hidden' },
-  eventArt: {
-    height: 118,
-  },
-  featuredBody: { padding: 16 },
-  eventTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  listRow: { gap: 4 },
+  listRow: { gap: 4, height: 104, justifyContent: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 });
