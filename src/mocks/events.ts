@@ -16,6 +16,7 @@ export const mockEvents: CoreEvent[] = [
     attendee_count: 612,
     live_count: 212,
     match_count: 41,
+    is_registered: true,
   },
   {
     event_id: 'mdec-digital-forum',

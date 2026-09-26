@@ -117,6 +117,9 @@ export type EventSummary = {
   venue?: string;
   attendee_count?: number;
   live_count?: number;
+  // Only sent when X-Member-Id is present: true for a REGISTERED or
+  // CHECKED_IN registration (the same rule that allows Go Live).
+  is_registered?: boolean;
 };
 
 export type EventRegistration = {
