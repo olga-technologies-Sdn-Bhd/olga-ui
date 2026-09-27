@@ -47,7 +47,13 @@ export function EventDetailScreen({ route, navigation }: Props) {
   }
 
   function handleGoLive() {
-    setActiveEvent({ eventId: event.event_id, name: event.name, liveCount: event.live_count, matchCount: event.match_count });
+    setActiveEvent({
+      eventId: event.event_id,
+      name: event.name,
+      endsAt: event.ends_at,
+      liveCount: event.live_count,
+      matchCount: event.match_count,
+    });
     navigation.getParent()?.navigate('GoLiveTab' as never);
   }
 

@@ -2,9 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
-import { coreApi } from '../../api/core';
-import { intentIdFor, MatchCandidate, nlpApi } from '../../api/nlp';
-import type { Profile } from '../../api/types';
+import { MatchingError } from '../../api/matching';
 import { Avatar } from '../../components/Avatar';
 import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
@@ -20,38 +18,28 @@ type Props = NativeStackScreenProps<GoLiveStackParamList, 'LiveMatches'>;
 export function LiveMatchesScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { activeEvent, filters } = useLive();
-  const [matches, setMatches] = useState<{ match: MatchCandidate; profile?: Profile }[] | null>(null);
+  const { activeEvent, matches, runMatching } = useLive();
   const [error, setError] = useState<string | null>(null);
 
+  // Go Live already ran matching; only run it here when there's nothing yet.
   const load = useCallback(async () => {
     if (!activeEvent) return;
     setError(null);
     try {
-      const result = await nlpApi.requestMatches({
-        intent_id: intentIdFor(activeEvent.eventId, 'WANT'),
-        context_id: activeEvent.eventId,
-        options: { threshold: filters.minMatch / 100 },
-      });
-      if (!result.matches?.length) {
-        navigation.replace('EmptyRoom');
-        return;
-      }
-      // Match results only carry member IDs; the card text comes from each
-      // member's profile. A failed lookup falls back to the generic card.
-      const profiles = await Promise.all(
-        result.matches.map((m) => coreApi.getMember(m.member_id).catch(() => undefined))
-      );
-      setMatches(result.matches.map((match, i) => ({ match, profile: profiles[i] })));
+      const found = await runMatching();
+      if (!found.length) navigation.replace('EmptyRoom');
     } catch (e) {
-      setError(e instanceof ApiError && e.status > 0 ? `Couldn't load matches (${e.status})` : "Couldn't reach the server");
-      setMatches([]);
+      if (e instanceof MatchingError) setError(e.reason === 'TIMED_OUT' ? 'Still matching. Try again in a moment.' : "Couldn't find matches right now.");
+      else setError(e instanceof ApiError && e.status > 0 ? `Couldn't load matches (${e.status})` : "Couldn't reach the server");
     }
-  }, [activeEvent, filters.minMatch, navigation]);
+  }, [activeEvent, runMatching, navigation]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (matches === null) load();
+    else if (matches.length === 0) navigation.replace('EmptyRoom');
+    // Run once on open; later changes come from Go Live / refresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Screen>
