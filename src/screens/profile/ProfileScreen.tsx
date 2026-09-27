@@ -7,6 +7,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Screen } from '../../components/Screen';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
+import { APP_ENV } from '../../config/env';
 import { useAuth } from '../../context/AuthContext';
 import { HomeStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
@@ -57,6 +58,9 @@ export function ProfileScreen({ navigation }: Props) {
         <Row label="Mobile" value={mobile} styles={styles} />
         <View style={styles.divider} />
         <Row label="Member ID" value={memberId} styles={styles} small />
+        <View style={styles.divider} />
+        {/* Which backend this build talks to (APP_ENV in src/config/env.ts). */}
+        <Row label="Environment" value={APP_ENV} styles={styles} small />
       </Card>
 
       <Text style={styles.sectionTitle}>Appearance</Text>
