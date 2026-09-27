@@ -1,4 +1,4 @@
-import { CORE_API_URL, USE_MOCK_DATA, USE_MOCK_EVENTS } from '../config/env';
+import { CORE_API_URL, USE_MOCK_EVENTS, USE_MOCK_LIVE, USE_MOCK_MATCHING } from '../config/env';
 import { mockEvents } from '../mocks/events';
 import { mockMembers } from '../mocks/matches';
 import { makeApiClient, RequestOptions, withEtag } from './client';
@@ -27,10 +27,7 @@ export type CoreEvent = EventSummary & {
   match_count?: number;
 };
 
-// While USE_MOCK_DATA is true (src/config/env.ts), the calls that already
-// have a mock branch return canned data from src/mocks/ instead of hitting the
-// network — remove each `if (USE_MOCK_DATA)` branch (and the mocks import)
-// once the real endpoints are wired up and verified.
+// Calls with a mock branch follow their area's switch in src/config/env.ts.
 export const coreApi = {
   // Once, right after Entra OTP succeeds. X-Member-Id isn't set yet.
   registerMember: async (body: RegisterMemberRequest, options?: RequestOptions) =>
@@ -60,7 +57,7 @@ export const coreApi = {
     client.post<ConsentResponse>('/v1/me/consents', body, options),
 
   getMember: async (memberId: string) => {
-    if (USE_MOCK_DATA) return mockMembers[memberId];
+    if (USE_MOCK_MATCHING) return mockMembers[memberId];
     return withEtag(await client.send<ProfileBody>('GET', `/v1/members/${encodeURIComponent(memberId)}`));
   },
 
@@ -73,17 +70,26 @@ export const coreApi = {
     if (USE_MOCK_EVENTS) return;
     return client.post<EventRegistration>(`/v1/events/${eventId}/register`, undefined, options);
   },
-  startLiveMode: async (eventId: string, body: LiveModeRequest, options?: RequestOptions) => {
-    if (USE_MOCK_DATA) return;
+  // Starts Live Mode, or extends the same session when already live.
+  startLiveMode: async (eventId: string, body: LiveModeRequest, options?: RequestOptions): Promise<LiveModeSession> => {
+    if (USE_MOCK_LIVE) {
+      const minutes = body.duration_minutes ?? 60;
+      return {
+        session_id: 'mock-session',
+        event_id: eventId,
+        status: 'ACTIVE',
+        active_until: new Date(Date.now() + minutes * 60000).toISOString(),
+      };
+    }
     return client.post<LiveModeSession>(`/v1/events/${eventId}/live-mode`, body, options);
   },
   // 404 LIVE_MODE_NOT_ACTIVE means already stopped/expired — treat as success.
   stopLiveMode: async (eventId: string, options?: RequestOptions) => {
-    if (USE_MOCK_DATA) return;
+    if (USE_MOCK_LIVE) return;
     return client.del<void>(`/v1/events/${eventId}/live-mode`, options);
   },
   recordPresence: async (eventId: string, body: PresenceRequest, options?: RequestOptions) => {
-    if (USE_MOCK_DATA) return;
+    if (USE_MOCK_LIVE) return;
     return client.post<void>(`/v1/events/${eventId}/presence`, body, options);
   },
 };
