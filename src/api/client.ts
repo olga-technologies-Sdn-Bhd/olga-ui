@@ -1,6 +1,8 @@
 import type { ApiErrorBody, WithEtag } from './types';
 
-const DEFAULT_TIMEOUT_MS = 15000;
+// The dev Azure containers scale to zero and can take ~50 s to answer the
+// first call after idling, so allow up to a minute before giving up.
+const DEFAULT_TIMEOUT_MS = 60000;
 
 // Client-side error codes, used when the server never returned a problem body.
 export const NETWORK_ERROR = 'NETWORK_ERROR';

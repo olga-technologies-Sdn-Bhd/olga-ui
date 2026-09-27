@@ -1,9 +1,8 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
-import { coreApi } from '../../api/core';
-import { intentIdFor, nlpApi } from '../../api/nlp';
+import { MatchingError, MatchingFailure } from '../../api/matching';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
@@ -12,7 +11,7 @@ import { RemovableTag } from '../../components/RemovableTag';
 import { Screen } from '../../components/Screen';
 import { TagInput } from '../../components/TagInput';
 import { ProgressBar } from '../../components/ProgressBar';
-import { useLive } from '../../context/LiveContext';
+import { GoLiveBlocker, useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
@@ -33,6 +32,26 @@ const SEARCH_DURATION_MS = 5000;
 
 const QUICK_TAGS = ['Partnerships', 'Investors', 'Hiring', 'Customers'];
 
+const IDLE_TEXT = 'Nobody can see you yet. Tap to become visible.';
+
+const BLOCKER_MESSAGES: Record<Exclude<GoLiveBlocker, 'CONSENT_REQUIRED'>, string> = {
+  REGISTRATION_REQUIRED: 'Sign up for this event first, then you can go live.',
+  EVENT_NOT_ACTIVE: 'This event has ended.',
+  LIVE_MODE_NOT_ENABLED: "Live Mode isn't available for this event.",
+  EVENT_NOT_FOUND: 'This event is no longer available.',
+};
+
+const MATCHING_MESSAGES: Record<MatchingFailure, string> = {
+  INTENT_HAS_PII: 'Your intent includes personal details. Edit it on Home, then try again.',
+  INTENT_FAILED: "We couldn't read your intent. Try rephrasing it on Home.",
+  MATCHING_FAILED: "You're live, but matching failed. Try again in a moment.",
+  TIMED_OUT: "You're live. Matching is taking longer than usual; check Live matches shortly.",
+};
+
+function formatTime(date: Date) {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
 function wait(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
@@ -40,9 +59,22 @@ function wait(ms: number) {
 export function GoLiveScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { activeEvent, isLive, setIsLive, filters, sessionTags, addSessionTag, removeSessionTag } = useLive();
+  const {
+    activeEvent,
+    isLive,
+    activeUntil,
+    goLive,
+    grantLiveModeConsent,
+    stopLive,
+    runMatching,
+    filters,
+    sessionTags,
+    addSessionTag,
+    removeSessionTag,
+  } = useLive();
   const [searching, setSearching] = useState(false);
-  const [statusText, setStatusText] = useState('Nobody can see you yet. Tap to become visible.');
+  const [stopping, setStopping] = useState(false);
+  const [statusText, setStatusText] = useState(IDLE_TEXT);
   const [error, setError] = useState<string | null>(null);
   const pulse = useRef(new Animated.Value(1)).current;
 
@@ -67,38 +99,70 @@ export function GoLiveScreen({ navigation }: Props) {
     setError(null);
     setStatusText(SEARCH_STEPS[0].text);
     const stepTimers = SEARCH_STEPS.slice(1).map(({ delay, text }) => setTimeout(() => setStatusText(text), delay));
-
-    try {
-      const [result] = await Promise.all([
-        (async () => {
-          await coreApi.startLiveMode(activeEvent.eventId, {});
-          setIsLive(true);
-          return nlpApi.requestMatches({
-            intent_id: intentIdFor(activeEvent.eventId, 'WANT'),
-            context_id: activeEvent.eventId,
-            options: { threshold: filters.minMatch / 100 },
-          });
-        })(),
-        wait(SEARCH_DURATION_MS),
-      ]);
-      navigation.navigate(result.matches?.length ? 'LiveMatches' : 'EmptyRoom');
-    } catch (e) {
-      setError(e instanceof ApiError && e.status > 0 ? `Couldn't go live (${e.status})` : "Couldn't reach the server");
-    } finally {
+    const reset = () => {
       stepTimers.forEach(clearTimeout);
       setSearching(false);
+    };
+
+    try {
+      const blocker = await goLive();
+      if (blocker) {
+        reset();
+        setStatusText(IDLE_TEXT);
+        if (blocker === 'CONSENT_REQUIRED') askForConsent();
+        else setError(BLOCKER_MESSAGES[blocker]);
+        return;
+      }
+      // Live now; matching failures keep the member live and explain why.
+      try {
+        const [found] = await Promise.all([runMatching(), wait(SEARCH_DURATION_MS)]);
+        reset();
+        navigation.navigate(found.length ? 'LiveMatches' : 'EmptyRoom');
+      } catch (e) {
+        reset();
+        if (e instanceof MatchingError) setError(MATCHING_MESSAGES[e.reason]);
+        else setError(e instanceof ApiError && e.status > 0 ? `You're live, but matching failed (${e.status})` : "You're live, but we couldn't reach matching");
+      }
+    } catch (e) {
+      reset();
+      setStatusText(IDLE_TEXT);
+      setError(e instanceof ApiError && e.status > 0 ? `Couldn't go live (${e.status})` : "Couldn't reach the server");
     }
   }
 
+  // Live Mode needs a LIVE_MODE consent on record (403 LIVE_MODE_CONSENT_REQUIRED).
+  function askForConsent() {
+    Alert.alert(
+      'Allow Live Mode?',
+      "While you're live, people at this event who match your intent can see you're here. You can stop anytime.",
+      [
+        { text: 'Not now', style: 'cancel' },
+        {
+          text: 'Allow',
+          onPress: async () => {
+            try {
+              await grantLiveModeConsent();
+              handleGoLive();
+            } catch (e) {
+              setError(e instanceof ApiError && e.status > 0 ? `Couldn't save your consent (${e.status})` : "Couldn't reach the server");
+            }
+          },
+        },
+      ]
+    );
+  }
+
   async function handleStopLive() {
-    if (!activeEvent) return;
+    setStopping(true);
+    setError(null);
     try {
-      await coreApi.stopLiveMode(activeEvent.eventId);
-    } catch {
-      // best-effort — still reflect stopped state locally
+      await stopLive();
+      setStatusText(IDLE_TEXT);
+    } catch (e) {
+      setError(e instanceof ApiError && e.status > 0 ? `Couldn't stop Live Mode (${e.status})` : "Couldn't reach the server");
+    } finally {
+      setStopping(false);
     }
-    setIsLive(false);
-    setStatusText('Nobody can see you yet. Tap to become visible.');
   }
 
   if (!activeEvent) {
@@ -132,7 +196,7 @@ export function GoLiveScreen({ navigation }: Props) {
               <Button
                 label={searching ? 'SEARCHING' : isLive ? 'STOP' : 'GO LIVE'}
                 onPress={isLive ? handleStopLive : handleGoLive}
-                disabled={searching}
+                disabled={searching || stopping}
                 style={styles.ringButton}
               />
             </Animated.View>
@@ -140,7 +204,9 @@ export function GoLiveScreen({ navigation }: Props) {
         </View>
       </View>
 
-      <Text style={styles.status}>{isLive ? statusText || "You're visible to others live in this room." : statusText}</Text>
+      <Text style={styles.status}>
+        {isLive && !searching && activeUntil ? `You're visible in this room until ${formatTime(activeUntil)}.` : statusText}
+      </Text>
 
       {error && <Text style={{ color: colors.danger, fontSize: 13, textAlign: 'center' }}>{error}</Text>}
 

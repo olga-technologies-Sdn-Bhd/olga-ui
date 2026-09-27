@@ -11,6 +11,7 @@ import { EventHero } from '../../components/EventHero';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
+import { useLive } from '../../context/LiveContext';
 import { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/ThemeContext';
 import { formatEventDate } from '../../utils/formatEventDate';
@@ -20,14 +21,13 @@ type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList>
 >;
 
-// Matches the prototype's pre-filled sample intent on the Home screen.
-const SAMPLE_INTENT = 'Find telco / GLC distribution partners for an AI workforce platform';
 
 export function HomeScreen({ navigation }: Props) {
   const { name } = useAuth();
   const { colors } = useTheme();
-  const [intent, setIntent] = useState(SAMPLE_INTENT);
-  const [draft, setDraft] = useState(SAMPLE_INTENT);
+  // Shared with Go Live: saved as the WANT intent when matching runs.
+  const { intentText: intent, setIntentText: setIntent } = useLive();
+  const [draft, setDraft] = useState(intent);
   const [editing, setEditing] = useState(false);
   const [nextEvent, setNextEvent] = useState<CoreEvent | null>(null);
 
