@@ -57,6 +57,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   sub: { fontSize: 13, color: colors.muted, marginTop: 7, lineHeight: 19 },
   h3: { fontSize: 15, fontWeight: '700', color: colors.text },
   sub2: { fontSize: 13, color: colors.muted, marginTop: 2 },
-  match: { fontWeight: '800', color: colors.green, fontSize: 14 },
+  match: { fontWeight: '800', color: colors.positive, fontSize: 14 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 });

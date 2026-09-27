@@ -121,7 +121,7 @@ export function GoLiveScreen({ navigation }: Props) {
           <Text style={styles.eyebrow}>{activeEvent.name}</Text>
           <Text style={styles.h2}>{isLive ? "You're live" : 'Ready when you are'}</Text>
         </View>
-        {typeof activeEvent.liveCount === 'number' && <Pill label={`● ${activeEvent.liveCount} live`} tone="green" />}
+        {typeof activeEvent.liveCount === 'number' && <Pill label={`● ${activeEvent.liveCount} live`} tone="positive" />}
       </View>
 
       <View style={styles.ringWrap}>

@@ -60,7 +60,7 @@ export function LiveMatchesScreen({ navigation }: Props) {
           <Text style={styles.eyebrow}>{activeEvent?.name ?? 'Event'}</Text>
           <Text style={styles.h2}>Matching you now</Text>
         </View>
-        <Pill label="● LIVE" tone="green" />
+        <Pill label="● LIVE" tone="positive" />
       </View>
 
       {matches === null && !error && <Text style={styles.sub}>Finding people worth meeting…</Text>}
@@ -90,5 +90,5 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   h3: { fontSize: 15, fontWeight: '700', color: colors.text },
   sub: { fontSize: 13, color: colors.muted, marginTop: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  matchScore: { fontWeight: '800', color: colors.green, fontSize: 14 },
+  matchScore: { fontWeight: '800', color: colors.positive, fontSize: 14 },
 });

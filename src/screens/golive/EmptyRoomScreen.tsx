@@ -22,7 +22,7 @@ export function EmptyRoomScreen({ navigation }: Props) {
     <Screen>
       <View style={styles.topline}>
         <Text style={styles.h2Header}>{activeEvent?.name ?? 'This room'}</Text>
-        {typeof activeEvent?.liveCount === 'number' && <Pill label={`● ${activeEvent.liveCount} live`} tone="green" />}
+        {typeof activeEvent?.liveCount === 'number' && <Pill label={`● ${activeEvent.liveCount} live`} tone="positive" />}
       </View>
 
       <View style={styles.center}>

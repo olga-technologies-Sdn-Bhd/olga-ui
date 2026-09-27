@@ -111,7 +111,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
   h3: { fontSize: 16, fontWeight: '700', color: colors.text },
   sub: { fontSize: 13, color: colors.muted, marginTop: 4 },
-  match: { fontSize: 13, color: colors.green, fontWeight: '700', marginTop: 4 },
+  match: { fontSize: 13, color: colors.positive, fontWeight: '700', marginTop: 4 },
   sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 6 },
   listRow: { gap: 4, height: 104, justifyContent: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
