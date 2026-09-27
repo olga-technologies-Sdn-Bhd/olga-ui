@@ -1,35 +1,45 @@
-// Backend base URLs. Both Olga.Core and olga-nlp-api currently run with no
-// authentication (deliberate MVP scope decision) — no token/header required.
-//
-// Defaults to the live Azure dev environment so the app works over any
-// network without local setup. To hit a locally running backend instead, set
-// API_TARGET to 'local' and point LOCAL_HOST at your machine:
-//   - Android emulator: '10.0.2.2' (the emulator's alias for the host).
-//   - Physical Android device over USB: run
-//       adb reverse tcp:5000 tcp:5000 && adb reverse tcp:5080 tcp:5080
-//     and use 'localhost'.
-//   - iOS simulator: 'localhost'.
-// Local ports: Olga.Core `dotnet run --project src/Olga.Core.Api` → 5000,
-// olga-nlp-api launch profile → 5080. Android blocks cleartext HTTP in release
-// builds; debug builds allow it.
-type ApiTarget = 'dev' | 'local';
-const API_TARGET: ApiTarget = 'dev';
-const LOCAL_HOST = '10.0.2.2';
+// App environment. Change APP_ENV to switch every backend the app talks to:
+//   'local' - Olga.Core / olga-nlp-api running on your machine (local DB).
+//   'dev'   - the shared Azure dev deployment (default).
+//   'prod'  - production. Not deployed yet: selecting it fails fast until the
+//             URLs below (and the prod Entra settings) are filled in.
+// Commit it as 'dev'. Sign-in (Entra) settings per environment live in
+// src/auth/entraConfig.ts.
+export type AppEnv = 'local' | 'dev' | 'prod';
+export const APP_ENV: AppEnv = 'dev';
 
-const API_URLS: Record<ApiTarget, { core: string; nlp: string }> = {
-  dev: {
-    core: 'https://ca-olga-core-api-dev.agreeableocean-8bb4ca77.malaysiawest.azurecontainerapps.io',
-    nlp: 'https://ca-olga-nlp-api-dev.agreeableocean-8bb4ca77.malaysiawest.azurecontainerapps.io',
-  },
+// 'local' only. Physical Android phone over USB: 'localhost' plus
+//   adb reverse tcp:5000 tcp:5000 && adb reverse tcp:5080 tcp:5080
+// Android emulator: '10.0.2.2' (the emulator's alias for your machine).
+// Ports: Olga.Core `dotnet run --project src/Olga.Core.Api` -> 5000,
+// olga-nlp-api launch profile -> 5080. Debug builds allow plain http.
+const LOCAL_HOST = 'localhost';
+
+const API_URLS: Record<AppEnv, { core: string; nlp: string }> = {
   local: {
     core: `http://${LOCAL_HOST}:5000`,
     nlp: `http://${LOCAL_HOST}:5080`,
   },
+  dev: {
+    core: 'https://ca-olga-core-api-dev.agreeableocean-8bb4ca77.malaysiawest.azurecontainerapps.io',
+    nlp: 'https://ca-olga-nlp-api-dev.agreeableocean-8bb4ca77.malaysiawest.azurecontainerapps.io',
+  },
+  // TODO(infra): fill in once prod is deployed (Olga.Infrastructure, prd).
+  prod: {
+    core: '',
+    nlp: '',
+  },
 };
 
-export const CORE_API_URL = API_URLS[API_TARGET].core;
+if (!API_URLS[APP_ENV].core || !API_URLS[APP_ENV].nlp) {
+  throw new Error(`No API URLs configured for APP_ENV '${APP_ENV}' (src/config/env.ts)`);
+}
 
-export const NLP_API_URL = API_URLS[API_TARGET].nlp;
+// Both Olga.Core and olga-nlp-api run without authentication for the MVP
+// (deliberate scope decision); calls carry X-Member-Id, not a token.
+export const CORE_API_URL = API_URLS[APP_ENV].core;
+
+export const NLP_API_URL = API_URLS[APP_ENV].nlp;
 
 // TODO(backend): confirm the active LIVE_MODE consent policy_version on dev
 // before release. Local seed is "1"; the dev DB test seed was "test-v1", and
