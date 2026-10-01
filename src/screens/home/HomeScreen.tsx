@@ -14,6 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLive } from '../../context/LiveContext';
 import { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/ThemeContext';
+import { fonts } from '../../theme/typography';
 import { formatEventDate } from '../../utils/formatEventDate';
 
 type Props = CompositeScreenProps<
@@ -35,13 +36,11 @@ export function HomeScreen({ navigation }: Props) {
     () =>
       StyleSheet.create({
         topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-        eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-        eyebrowOnGradient: { color: 'rgba(255,255,255,0.8)' },
-        h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
-        h3: { fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 6 },
-        h3OnGradient: { color: colors.white },
+        eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
+        h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
+        h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 6 },
         sub: { fontSize: 13, color: colors.muted, marginTop: 2 },
-        sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
+        sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
         row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
         input: {
           borderWidth: 1,
@@ -83,7 +82,7 @@ export function HomeScreen({ navigation }: Props) {
       </View>
 
       <Card soft>
-        <Text style={[styles.eyebrow, styles.eyebrowOnGradient]}>Your intent</Text>
+        <Text style={styles.eyebrow}>Your intent</Text>
         {editing ? (
           <View style={{ marginTop: 12, gap: 8 }}>
             <TextInput
@@ -97,11 +96,10 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         ) : (
           <>
-            <Text style={[styles.h3, styles.h3OnGradient]}>{intent}</Text>
+            <Text style={styles.h3}>{intent}</Text>
             <Button
               label="Edit intent"
               variant="ghost"
-              onDark
               small
               style={{ marginTop: 12, alignSelf: 'flex-start' }}
               onPress={() => {

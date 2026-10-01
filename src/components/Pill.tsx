@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
+import { fonts } from '../theme/typography';
 
 type Tone = 'default' | 'active' | 'soft' | 'positive';
 
@@ -31,8 +32,8 @@ export function Pill({ label, tone = 'default', onPress }: Props) {
         // the app rather than a separate status color.
         soft: { backgroundColor: colors.accentSoft, borderColor: colors.accentSoft },
         positive: { backgroundColor: colors.positiveSoft, borderColor: colors.positiveSoft },
-        label: { fontSize: 12, fontWeight: '700', color: colors.muted },
-        labelActive: { color: colors.white },
+        label: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.muted },
+        labelActive: { color: colors.text },
         labelSoft: { color: colors.brand },
         labelPositive: { color: colors.positive },
       }),

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
-import { radius } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
+import { fonts } from '../theme/typography';
 
 type Variant = 'primary' | 'secondary' | 'ghost';
 
@@ -23,8 +23,9 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
   const styles = useMemo(
     () =>
       StyleSheet.create({
+        // Pill, per spec: buttons are pills, 44–48px tall.
         base: {
-          borderRadius: radius.md,
+          borderRadius: 999,
           paddingVertical: 15,
           paddingHorizontal: 18,
           alignItems: 'center',
@@ -35,10 +36,10 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
         secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },
         ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.brand2 },
         ghostOnDark: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
-        small: { paddingVertical: 10, paddingHorizontal: 14, minHeight: 40, borderRadius: radius.sm },
+        small: { paddingVertical: 10, paddingHorizontal: 14, minHeight: 44, borderRadius: 999 },
         disabled: { opacity: 0.5 },
         pressed: { opacity: 0.85 },
-        label: { fontWeight: '700', fontSize: 15 },
+        label: { fontFamily: fonts.bodyBold, fontWeight: '700', fontSize: 15 },
         labelPrimary: { color: colors.white },
         labelSecondary: { color: colors.text },
         labelGhost: { color: colors.brand },

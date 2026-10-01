@@ -1,12 +1,19 @@
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { useMemo } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, Text, TextInput } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { EventsProvider } from './src/context/EventsContext';
 import { LiveProvider } from './src/context/LiveContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+import { fonts } from './src/theme/typography';
+
+// App-wide body font (Instrument Sans) so plain copy needs no explicit
+// fontFamily — screens only set one explicitly for headings, scores and
+// small uppercase labels (Outfit / IBM Plex Mono).
+(Text as any).defaultProps = { ...(Text as any).defaultProps, style: [{ fontFamily: fonts.bodyRegular }, (Text as any).defaultProps?.style] };
+(TextInput as any).defaultProps = { ...(TextInput as any).defaultProps, style: [{ fontFamily: fonts.bodyRegular }, (TextInput as any).defaultProps?.style] };
 
 // Status bar and navigator background follow the in-app theme, not the OS one,
 // so screen transitions don't flash the wrong background.

@@ -12,6 +12,7 @@ import { Seniority, useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
+import { fonts } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'Filters'>;
 
@@ -127,13 +128,13 @@ export function FiltersScreen({ navigation }: Props) {
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  h2: { fontSize: 22, fontWeight: '800', color: colors.text },
-  h3: { fontSize: 15, fontWeight: '700', color: colors.text },
+  h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text },
+  h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
   sub: { fontSize: 13, color: colors.muted, marginTop: 2 },
-  sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
+  sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   matchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  matchValue: { fontSize: 16, fontWeight: '800', color: colors.text },
+  matchValue: { fontFamily: fonts.headingExtraBold, fontSize: 16, fontWeight: '800', color: colors.text },
   privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   divider: { height: 1, backgroundColor: colors.line },
 });

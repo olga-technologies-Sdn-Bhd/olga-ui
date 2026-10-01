@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
+import { fonts } from '../theme/typography';
 
 type Size = 'sm' | 'md' | 'lg';
 
@@ -24,6 +25,7 @@ export function Avatar({ initials, size = 'md' }: Props) {
           justifyContent: 'center',
         },
         text: {
+          fontFamily: fonts.bodyBold,
           fontWeight: '800',
           color: colors.brand,
         },

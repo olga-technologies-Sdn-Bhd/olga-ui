@@ -17,6 +17,9 @@ end
 target 'OlgaMobile' do
   config = use_native_modules!
 
+  # AppDelegate.swift imports react_native_app_auth, which needs a module map.
+  pod 'react-native-app-auth', :path => '../node_modules/react-native-app-auth', :modular_headers => true
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.

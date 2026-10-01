@@ -15,6 +15,7 @@ import { GoLiveBlocker, useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
+import { fonts } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'GoLive'>;
 
@@ -189,7 +190,8 @@ export function GoLiveScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.ringWrap}>
-        <PulseRings active={searching} size={132} maxScale={1.75} />
+        {/* Live ring is always green — the live signal, independent of whatever disc colour is picked. */}
+        <PulseRings active={searching} size={132} maxScale={1.75} color={colors.liveFill} />
         <View style={styles.halo2}>
           <View style={styles.halo1}>
             <Animated.View style={[styles.ring, { transform: [{ scale: pulse }] }]}>
@@ -263,9 +265,9 @@ export function GoLiveScreen({ navigation }: Props) {
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-  h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
-  h3: { fontSize: 15, fontWeight: '700', color: colors.text },
+  eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
+  h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
+  h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
   ringWrap: { alignItems: 'center', justifyContent: 'center', marginVertical: 26 },
   halo2: {
     width: 164,
@@ -295,7 +297,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   ringButton: { width: 92, height: 92, borderRadius: 46, paddingHorizontal: 0 },
   status: { textAlign: 'center', color: colors.muted, fontSize: 13, minHeight: 36 },
-  sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
+  sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
   filtersRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sub: { fontSize: 13, color: colors.muted, marginTop: 4 },
   matchValue: { fontSize: 14, fontWeight: '800', color: colors.text },
