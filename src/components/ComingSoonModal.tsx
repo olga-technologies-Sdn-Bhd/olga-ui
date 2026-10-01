@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { radius, ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
+import { fonts } from '../theme/typography';
 import { Button } from './Button';
 
 type Props = {
@@ -78,7 +79,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 14,
   },
   icon: { fontSize: 28 },
-  title: { fontSize: 19, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  title: { fontFamily: fonts.headingExtraBold, fontSize: 19, fontWeight: '800', color: colors.text, textAlign: 'center' },
   message: { fontSize: 14, lineHeight: 20, color: colors.muted, textAlign: 'center', marginTop: 8 },
   button: { alignSelf: 'stretch', marginTop: 20 },
 });

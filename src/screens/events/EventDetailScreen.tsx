@@ -13,6 +13,7 @@ import { useLive } from '../../context/LiveContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
+import { fonts } from '../../theme/typography';
 import { formatEventDate } from '../../utils/formatEventDate';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'EventDetail'>;
@@ -110,12 +111,12 @@ export function EventDetailScreen({ route, navigation }: Props) {
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  heroSub: { color: 'rgba(255,255,255,0.9)', marginTop: 4, fontSize: 13 },
-  sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 4 },
-  eyebrowBrand: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.brand, fontWeight: '700' },
+  heroSub: { color: colors.muted, marginTop: 4, fontSize: 13 },
+  sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 4 },
+  eyebrowBrand: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.brand, fontWeight: '700' },
   intentText: { marginTop: 8, lineHeight: 20, color: colors.text },
   statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  statValue: { fontSize: 18, fontWeight: '800', color: colors.text },
+  statValue: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text },
   divider: { height: 1, backgroundColor: colors.line },
   sub: { fontSize: 13, color: colors.muted },
 });

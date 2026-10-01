@@ -1,20 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as Keychain from 'react-native-keychain';
-import { brandGradient, darkColors, lightColors, ThemeColors } from './colors';
+import { darkColors, lightColors, ThemeColors } from './colors';
 
 export type Scheme = 'light' | 'dark';
 
 type ThemeContextValue = {
   colors: ThemeColors;
   scheme: Scheme;
-  gradient: string[];
   setScheme: (scheme: Scheme) => void;
 };
 
-// Dark is the app default; the user's choice (Profile → Appearance) is kept on
-// device. Stored via react-native-keychain only because it's the one storage
-// module already installed — the value itself isn't sensitive.
-const DEFAULT_SCHEME: Scheme = 'dark';
+// Light is the app default — the brand spec is a light/warm palette only.
+// The user's choice (Profile → Appearance) is kept on device. Stored via
+// react-native-keychain only because it's the one storage module already
+// installed — the value itself isn't sensitive.
+const DEFAULT_SCHEME: Scheme = 'light';
 const STORAGE_SERVICE = 'olga.theme';
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -41,7 +41,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     () => ({
       colors: scheme === 'dark' ? darkColors : lightColors,
       scheme,
-      gradient: scheme === 'dark' ? brandGradient.dark : brandGradient.light,
       setScheme,
     }),
     [scheme, setScheme]

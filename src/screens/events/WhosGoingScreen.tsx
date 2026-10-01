@@ -10,6 +10,7 @@ import { Screen } from '../../components/Screen';
 import { EventsStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
+import { fonts } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'WhosGoing'>;
 
@@ -53,10 +54,10 @@ export function WhosGoingScreen({ route, navigation }: Props) {
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  h2: { fontSize: 22, fontWeight: '800', color: colors.text },
+  h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text },
   sub: { fontSize: 13, color: colors.muted, marginTop: 7, lineHeight: 19 },
-  h3: { fontSize: 15, fontWeight: '700', color: colors.text },
+  h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
   sub2: { fontSize: 13, color: colors.muted, marginTop: 2 },
-  match: { fontWeight: '800', color: colors.positive, fontSize: 14 },
+  match: { fontFamily: fonts.headingExtraBold, fontWeight: '800', color: colors.positive, fontSize: 14 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 });

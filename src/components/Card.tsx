@@ -1,17 +1,18 @@
 import { useMemo } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import { radius } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
   children: React.ReactNode;
+  // Sand surface (intent card, date blocks) instead of the default card —
+  // a flat warm fill, never a gradient.
   soft?: boolean;
   style?: ViewStyle;
 };
 
 export function Card({ children, soft, style }: Props) {
-  const { colors, gradient } = useTheme();
+  const { colors } = useTheme();
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -22,23 +23,10 @@ export function Card({ children, soft, style }: Props) {
           borderRadius: radius.lg,
           padding: 16,
         },
-        soft: { borderWidth: 0, overflow: 'hidden' },
+        soft: { backgroundColor: colors.accentSoft, borderWidth: 0 },
       }),
     [colors]
   );
 
-  if (soft) {
-    return (
-      <LinearGradient
-        colors={gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.base, styles.soft, style]}
-      >
-        {children}
-      </LinearGradient>
-    );
-  }
-
-  return <View style={[styles.base, style]}>{children}</View>;
+  return <View style={[styles.base, soft && styles.soft, style]}>{children}</View>;
 }

@@ -11,6 +11,7 @@ import { useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
+import { fonts } from '../../theme/typography';
 import { getInitials } from '../../utils/initials';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'LiveMatches'>;
@@ -73,10 +74,10 @@ export function LiveMatchesScreen({ navigation }: Props) {
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-  h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
-  h3: { fontSize: 15, fontWeight: '700', color: colors.text },
+  eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
+  h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
+  h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
   sub: { fontSize: 13, color: colors.muted, marginTop: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  matchScore: { fontWeight: '800', color: colors.positive, fontSize: 14 },
+  matchScore: { fontFamily: fonts.headingExtraBold, fontWeight: '800', color: colors.positive, fontSize: 14 },
 });

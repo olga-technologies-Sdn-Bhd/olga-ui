@@ -1,77 +1,82 @@
-// Design system: one neutral scale + one accent hue (indigo), used at
-// different depths for "richness" (gradients, ink) instead of adding more
-// hues. Both light and dark variants share the same shape so any screen can
-// switch via useTheme() without branching logic.
+// Design system: warm neutral ground (bone/sand/ink), no blue, no gradients.
+// Green is reserved for live/match signals only; amber for outcome states
+// only. Everything else (buttons, selected chips, progress, tab icons) uses
+// the single ink neutral. Both light and dark variants share the same shape
+// so any screen can switch via useTheme() without branching logic.
 export const lightColors = {
-  bg: '#f7f5f2',
-  surface: '#ffffff',
-  surface2: '#fbfaf8',
-  text: '#17151d',
-  muted: '#726d78',
-  line: '#e9e5ef',
-  // Single accent hue — a clean, unambiguous blue (no purple/lavender
-  // undertone at any tint). brand2 is a darker shade of the same hue for
-  // gradient depth, never an independent color.
-  brand: '#2563EB',
-  brand2: '#1E3A8A',
-  brandSoft: '#000000',
-  // Soft accent tint, e.g. the "me" chat bubble — same hue family, light value.
-  accentSoft: '#DBEAFE',
-  // Functional near-black for buttons like chat "send" — part of the
-  // neutral scale, not a separate brand color.
-  ink: '#221F2A',
-  onInk: '#ffffff',
-  // Positive/confirmed states (You're going, match %, live) use the brand
-  // accent hue, same as every other highlight.
-  positive: '#2563EB',
-  positiveSoft: '#DBEAFE',
-  amber: '#e6a019',
-  amberSoft: '#fff6df',
+  bg: '#F4F1EC', // Bone — app ground
+  surface: '#FFFDF9', // Card surface
+  surface2: '#EDE5D8', // Sand — secondary surface (date blocks, pill base)
+  text: '#171310', // Ink
+  muted: '#6B6259', // Muted — secondary text, 5.3:1 on bone
+  line: '#E6DFD4', // Card border
+  // Ink doubles as the one neutral "accent": primary buttons, selected
+  // chips, progress fill, tab active tint. Never blue, never a hue.
+  brand: '#171310',
+  // Outline button border (spec: outline buttons use #CFC6B8).
+  brand2: '#CFC6B8',
+  // Sand strong — selected chips, icon-wrap fills.
+  brandSoft: '#E4DACB',
+  // Sand — avatar/icon backgrounds, soft pill tint, chat "me" bubble.
+  accentSoft: '#EDE5D8',
+  // Functional near-black for buttons like chat "send" — same as text/ink.
+  ink: '#171310',
+  onInk: '#FFFDF9',
+  // Green TEXT — match scores and counts. Never used as a fill/icon color.
+  positive: '#147A3A',
+  // Green tint — background behind green text (e.g. a match-count pill).
+  positiveSoft: '#E7F3EA',
+  // Green FILL — live dot, live ring (PulseRings), live button. Never text.
+  liveFill: '#16A34A',
+  // Amber — outcome states only (e.g. "Confirm you met").
+  amber: '#F2A93B',
+  amberSoft: '#FBEBD0',
+  amberText: '#7A4E0F',
+  // The one large dark element (default Go Live button).
+  charcoal: '#3A3531',
   danger: '#ef5a67',
   white: '#ffffff',
-  // Soft accent surfaces (Go Live halo, removable tags) and control tracks.
-  tint: '#f7f4ff',
-  tint2: '#faf8ff',
-  tintLine: '#e8e1ff',
-  track: '#d8d4dc',
-  progressTrack: '#eeeaf0',
+  // Warm concentric halo behind the Go Live ring, lightest to deepest.
+  tint: '#F1EBE0',
+  tint2: '#E7DCC9',
+  tintLine: '#CFC6B8',
+  track: '#D9D3C8',
+  progressTrack: '#EFEAE0',
 };
 
 export const darkColors = {
-  bg: '#100e16',
-  surface: '#1a1822',
-  surface2: '#201d29',
-  text: '#f2f0f6',
-  muted: '#a39dae',
-  line: '#2b2735',
-  brand: '#5B9DFF',
-  brand2: '#3B82F6',
-  brandSoft: '#000000',
-  accentSoft: '#1B2C47',
-  ink: '#EDEBF2',
-  onInk: '#17151d',
-  positive: '#5B9DFF',
-  positiveSoft: '#1B2C47',
-  amber: '#f2b84a',
-  amberSoft: '#3a2c0f',
+  // Dark mode isn't covered by the brand spec (which is light/warm only) —
+  // this is a reasonable warm-neutral inversion of the same roles, not a
+  // client-approved palette. Revisit if/when the client defines one.
+  bg: '#17120C',
+  surface: '#211A12',
+  surface2: '#2A2217',
+  text: '#F4F1EC',
+  muted: '#A89C8C',
+  line: '#3A3025',
+  brand: '#F4F1EC',
+  brand2: '#55493A',
+  brandSoft: '#3A3024',
+  accentSoft: '#2A2217',
+  ink: '#171310',
+  onInk: '#171310',
+  positive: '#34D399',
+  positiveSoft: '#15301F',
+  liveFill: '#16A34A',
+  amber: '#F2C98A',
+  amberSoft: '#3A2A10',
+  amberText: '#F2C98A',
+  charcoal: '#3A3531',
   danger: '#ff7a86',
   white: '#ffffff',
-  tint: '#1c1f2e',
-  tint2: '#171a26',
-  tintLine: '#2a3150',
-  track: '#3a3645',
+  tint: '#241D14',
+  tint2: '#2E2518',
+  tintLine: '#4A3F30',
+  track: '#473C2D',
   progressTrack: '#2b2735',
 };
 
 export type ThemeColors = typeof lightColors;
-
-// Rich gradient built from the single accent hue at different depths —
-// used for both the Home "Your intent" banner and the "Coming up" event
-// card, so both read as the same design system rather than two treatments.
-export const brandGradient = {
-  light: ['#0B1F4D', '#2563EB', '#5B9DFF'],
-  dark: ['#061024', '#1D4ED8', '#5B9DFF'],
-};
 
 // Static export kept for screens not yet migrated to useTheme() — always
 // the light palette. New/updated screens should use useTheme() instead.

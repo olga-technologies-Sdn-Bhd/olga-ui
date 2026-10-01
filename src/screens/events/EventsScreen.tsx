@@ -11,6 +11,7 @@ import { isRegistered, useEvents } from '../../context/EventsContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
+import { fonts } from '../../theme/typography';
 import { formatEventDate } from '../../utils/formatEventDate';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'Events'>;
@@ -107,12 +108,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
   topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  eyebrow: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-  h2: { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
-  h3: { fontSize: 16, fontWeight: '700', color: colors.text },
+  eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
+  h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
+  h3: { fontFamily: fonts.headingBold, fontSize: 16, fontWeight: '700', color: colors.text },
   sub: { fontSize: 13, color: colors.muted, marginTop: 4 },
-  match: { fontSize: 13, color: colors.positive, fontWeight: '700', marginTop: 4 },
-  sectionTitle: { fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 6 },
+  match: { fontFamily: fonts.headingBold, fontSize: 13, color: colors.positive, fontWeight: '700', marginTop: 4 },
+  sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 6 },
   listRow: { gap: 4, height: 104, justifyContent: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 });
