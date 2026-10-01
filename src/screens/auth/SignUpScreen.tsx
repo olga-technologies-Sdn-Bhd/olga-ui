@@ -1,7 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import { AutoImageCarousel } from '../../components/AutoImageCarousel';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
 import { Pill } from '../../components/Pill';
@@ -9,15 +7,9 @@ import { Screen } from '../../components/Screen';
 import { MemberRecoveryUnavailableError } from '../../auth/memberSession';
 import { isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
-import { colors } from '../../theme/colors';
-
-const SIGNUP_BG_IMAGES = [
-  require('../../assets/onboarding/signup-bg-1.jpg'),
-  require('../../assets/onboarding/signup-bg-2.jpg'),
-  require('../../assets/onboarding/signup-bg-3.jpg'),
-  require('../../assets/onboarding/signup-bg-4.jpg'),
-  require('../../assets/onboarding/signup-bg-5.jpg'),
-];
+import { ThemeColors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
+import { fonts } from '../../theme/typography';
 
 type Step = 'email' | 'verifying' | 'name' | 'mobile' | 'registering';
 
@@ -25,6 +17,8 @@ type Step = 'email' | 'verifying' | 'name' | 'mobile' | 'registering';
 // screen. No screen transition after login — the user comes back to exactly
 // where they started, and the conversation just continues.
 export function SignUpScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { login, completeOnboarding, logOut, isAuthenticated } = useAuth();
   // Already signed in to Entra but no Olga member yet (e.g. restored session
   // whose member was removed) -> only name + mobile are needed, no new OTP.
@@ -86,19 +80,7 @@ export function SignUpScreen() {
   }
 
   return (
-    <Screen
-      background={
-        <>
-          <AutoImageCarousel images={SIGNUP_BG_IMAGES} />
-          <View style={[StyleSheet.absoluteFill, styles.scrim]} />
-          <LinearGradient
-            colors={['rgba(10,8,16,0.15)', 'rgba(10,8,16,0.55)', 'rgba(10,8,16,0.92)']}
-            locations={[0, 0.45, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-        </>
-      }
-    >
+    <Screen>
       <View style={styles.topline}>
         <Text style={styles.logo}>Ol-ga</Text>
         <Text style={styles.eyebrow}>Join the room</Text>
@@ -149,25 +131,19 @@ export function SignUpScreen() {
   );
 }
 
-const textShadow = {
-  textShadowColor: 'rgba(0,0,0,0.5)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 4,
-};
-
-const styles = StyleSheet.create({
-  scrim: { backgroundColor: 'rgba(8,6,12,0.35)' },
-  topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  logo: { fontWeight: '800', letterSpacing: 3, fontSize: 14, color: colors.white, ...textShadow },
-  eyebrow: {
-    fontSize: 11,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.78)',
-    fontWeight: '700',
-    ...textShadow,
-  },
-  h1: { fontSize: 28, fontWeight: '800', color: colors.white, marginTop: 8, ...textShadow },
-  sub: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.82)', ...textShadow },
-  chatStack: { gap: 10, marginTop: 6 },
-});
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    logo: { fontFamily: fonts.headingExtraBold, fontWeight: '800', letterSpacing: 3, fontSize: 14, color: colors.text },
+    eyebrow: {
+      fontFamily: fonts.monoBold,
+      fontSize: 11,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+      color: colors.muted,
+      fontWeight: '700',
+    },
+    h1: { fontFamily: fonts.headingExtraBold, fontSize: 28, fontWeight: '800', color: colors.text, marginTop: 8 },
+    sub: { fontSize: 14, lineHeight: 20, color: colors.muted },
+    chatStack: { gap: 10, marginTop: 6 },
+  });
