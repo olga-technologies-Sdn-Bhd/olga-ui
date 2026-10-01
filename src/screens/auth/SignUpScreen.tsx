@@ -4,8 +4,9 @@ import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
+import { SocialSignInButton } from '../../components/SocialSignInButton';
 import { MemberRecoveryUnavailableError } from '../../auth/memberSession';
-import { isUserCancelledLogin } from '../../auth/useEntraLogin';
+import { EntraProvider, isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
@@ -27,20 +28,33 @@ export function SignUpScreen() {
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
 
-  async function handleEmailSubmit(value: string) {
-    setEmail(value);
+  async function signIn(options: { loginHint?: string; provider?: EntraProvider }, shown: string) {
+    setEmail(shown);
     setStep('verifying');
     try {
-      const existingMember = await login(value);
+      const existingMember = await login(options);
       // Existing members go straight in (the navigator switches to the app).
       if (!existingMember) setStep('name');
     } catch (error) {
+      // Safe to log: AppAuth error codes/messages carry no code or token values.
+      const err = error as { code?: string; message?: string };
+      console.warn(`Sign-in did not complete (${err.code ?? 'no code'}): ${err.message ?? ''}`);
       setEmail('');
       setStep('email');
       if (!isUserCancelledLogin(error)) {
-        Alert.alert('Sign-in failed', 'Something went wrong verifying your email. Please try again.');
+        Alert.alert('Sign-in failed', "Something went wrong signing you in. Please try again.");
       }
     }
+  }
+
+  function handleEmailSubmit(value: string) {
+    signIn({ loginHint: value }, value);
+  }
+
+  // Google / Apple go through the same Entra user flow (domain_hint), not a
+  // direct provider SDK.
+  function handleProvider(provider: EntraProvider) {
+    signIn({ provider }, provider === 'google' ? 'Continue with Google' : 'Continue with Apple');
   }
 
   function handleNameSubmit(value: string) {
@@ -119,7 +133,16 @@ export function SignUpScreen() {
       </View>
 
       {step === 'email' && (
-        <ChatComposer placeholder="you@example.com" keyboardType="email-address" onSubmit={handleEmailSubmit} />
+        <>
+          <ChatComposer placeholder="you@example.com" keyboardType="email-address" onSubmit={handleEmailSubmit} />
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+          <SocialSignInButton provider="google" onPress={() => handleProvider('google')} />
+          <SocialSignInButton provider="apple" onPress={() => handleProvider('apple')} />
+        </>
       )}
       {step === 'verifying' && <Text style={styles.sub}>Opening secure sign-in…</Text>}
       {step === 'registering' && <Text style={styles.sub}>Setting up your profile…</Text>}
@@ -146,4 +169,7 @@ const makeStyles = (colors: ThemeColors) =>
     h1: { fontFamily: fonts.headingExtraBold, fontSize: 28, fontWeight: '800', color: colors.text, marginTop: 8 },
     sub: { fontSize: 14, lineHeight: 20, color: colors.muted },
     chatStack: { gap: 10, marginTop: 6 },
+    dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+    dividerLine: { flex: 1, height: 1, backgroundColor: colors.line },
+    dividerText: { fontSize: 13, color: colors.muted },
   });

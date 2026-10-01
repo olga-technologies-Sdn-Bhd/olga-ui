@@ -15,7 +15,7 @@ import {
   withoutMember,
 } from '../auth/memberSession';
 import { loadMemberStore, saveMemberStore } from '../auth/memberStore';
-import { useEntraLogin } from '../auth/useEntraLogin';
+import { EntraLoginOptions, useEntraLogin } from '../auth/useEntraLogin';
 
 type AuthState = {
   isAuthenticated: boolean;
@@ -27,7 +27,7 @@ type AuthState = {
   mobile: string | null;
   // Resolves true when this email already has a member (go straight in),
   // false when name + mobile must be collected.
-  login: (emailHint?: string) => Promise<boolean>;
+  login: (options?: EntraLoginOptions) => Promise<boolean>;
   // Registers the member with Olga.Core. Throws ApiError on failure (calling
   // again reuses the same Idempotency-Key) or MemberRecoveryUnavailableError
   // when the email/phone is already registered elsewhere.
@@ -119,8 +119,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [storesLoaded, store, accessToken, email, applyMember, persist]);
 
   const login = useCallback(
-    async (emailHint?: string) => {
-      const verified = await entraLogin(emailHint);
+    async (options?: EntraLoginOptions) => {
+      const verified = await entraLogin(options);
       registrationKey.current = null;
       restoreChecked.current = true;
       if (!verified) {

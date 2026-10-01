@@ -73,6 +73,16 @@ function emailFromIdToken(idToken: string): string | null {
   }
 }
 
+export type EntraProvider = 'google' | 'apple';
+export type EntraLoginOptions = { loginHint?: string; provider?: EntraProvider };
+
+// Entra identifies federated providers by domain: domain_hint=google is
+// rejected (AADSTS90023 "'google' pair is not an external identity provider").
+const PROVIDER_DOMAIN_HINT: Record<EntraProvider, string> = {
+  google: 'google.com',
+  apple: 'apple.com',
+};
+
 export function useEntraLogin() {
   // undefined = still restoring from Keychain on app start.
   const [session, setSession] = useState<StoredSession | null | undefined>(undefined);
@@ -120,10 +130,20 @@ export function useEntraLogin() {
 
   // Resolves with the email Microsoft verified (from the ID token), falling
   // back to the hint the user typed if the token carries no email claim.
-  const login = useCallback(async (loginHint?: string): Promise<string | null> => {
+  //
+  // Every sign-in goes through the same Microsoft-hosted user flow
+  // (Docs/MOBILE_ENTRA_EXTERNAL_ID: "Mobile UI provider contract"):
+  //   - email: login_hint pre-fills Email OTP;
+  //   - provider: domain_hint=google|apple routes straight to that provider.
+  // No Google/Apple SDK, client ID or key ever lives in the app.
+  const login = useCallback(async ({ loginHint, provider }: EntraLoginOptions = {}): Promise<string | null> => {
     const result: AuthorizeResult = await authorize({
       ...authConfig,
-      additionalParameters: loginHint ? { login_hint: loginHint } : undefined,
+      additionalParameters: provider
+        ? { domain_hint: PROVIDER_DOMAIN_HINT[provider] }
+        : loginHint
+          ? { login_hint: loginHint }
+          : undefined,
     });
     const next: StoredSession = {
       accessToken: result.accessToken,
