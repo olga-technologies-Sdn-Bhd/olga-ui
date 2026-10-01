@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
@@ -26,6 +26,17 @@ export function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
+  // Verifying waits on the dev API, which can take up to a minute to wake
+  // from a cold start; say so instead of looking stuck.
+  const [slowVerify, setSlowVerify] = useState(false);
+  useEffect(() => {
+    if (step !== 'verifying') {
+      setSlowVerify(false);
+      return;
+    }
+    const timer = setTimeout(() => setSlowVerify(true), 5000);
+    return () => clearTimeout(timer);
+  }, [step]);
 
   async function handleEmailSubmit(value: string) {
     setEmail(value);
@@ -100,6 +111,9 @@ export function SignUpScreen() {
         {email !== '' && <ChatBubble from="me" text={email} />}
 
         {step === 'verifying' && <ChatBubble from="them" text="One sec — verifying that…" />}
+        {step === 'verifying' && slowVerify && (
+          <ChatBubble from="them" text="Still connecting — our server is waking up. This can take up to a minute…" />
+        )}
 
         {(step === 'name' || step === 'mobile' || step === 'registering') && (
           <>
