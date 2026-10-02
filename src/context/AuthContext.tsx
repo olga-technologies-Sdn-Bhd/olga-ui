@@ -15,7 +15,7 @@ import {
   withoutMember,
 } from '../auth/memberSession';
 import { loadMemberStore, saveMemberStore } from '../auth/memberStore';
-import { EntraLoginOptions, useEntraLogin } from '../auth/useEntraLogin';
+import { EmailStartResult, EntraLoginOptions, useEntraLogin } from '../auth/useEntraLogin';
 
 type AuthState = {
   isAuthenticated: boolean;
@@ -28,6 +28,13 @@ type AuthState = {
   // Resolves true when this email already has a member (go straight in),
   // false when name + mobile must be collected.
   login: (options?: EntraLoginOptions) => Promise<boolean>;
+  // Continue with Email (in-app OTP via Entra native auth). 'browser' means
+  // the tenant doesn't allow native auth yet: call login({ loginHint }).
+  startEmail: (email: string) => Promise<EmailStartResult>;
+  // Verifies the code; resolves like login() (true = existing member).
+  submitEmailCode: (code: string) => Promise<boolean>;
+  resendEmailCode: () => Promise<number>;
+  cancelEmail: () => void;
   // Registers the member with Olga.Core. Throws ApiError on failure (calling
   // again reuses the same Idempotency-Key) or MemberRecoveryUnavailableError
   // when the email/phone is already registered elsewhere.
@@ -46,7 +53,8 @@ const memberApi: MemberApi = {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const entra = useEntraLogin();
-  const { accessToken, login: entraLogin, logOut: entraLogOut } = entra;
+  const { accessToken, login: entraLogin, logOut: entraLogOut, startEmail, resendEmailCode, cancelEmail } = entra;
+  const entraSubmitEmailCode = entra.submitEmailCode;
   const [store, setStore] = useState<MemberStore | null>(null);
   const [member, setMember] = useState<StoredMember | null>(null);
   const memberRef = useRef<StoredMember | null>(null);
@@ -118,9 +126,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [storesLoaded, store, accessToken, email, applyMember, persist]);
 
-  const login = useCallback(
-    async (options?: EntraLoginOptions) => {
-      const verified = await entraLogin(options);
+  // After Entra (any method) verified the user: find or create their member.
+  const finishSignIn = useCallback(
+    async (verified: string | null) => {
+      const started = Date.now();
       registrationKey.current = null;
       restoreChecked.current = true;
       if (!verified) {
@@ -134,9 +143,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       await persist(resolved.store);
       applyMember(resolved.member);
+      console.info(`[auth] member resolved in ${Date.now() - started} ms (existing=${resolved.member !== null})`);
       return resolved.member !== null;
     },
-    [entraLogin, applyMember, persist]
+    [applyMember, persist]
+  );
+
+  const login = useCallback(
+    async (options?: EntraLoginOptions) => finishSignIn(await entraLogin(options)),
+    [entraLogin, finishSignIn]
+  );
+
+  const submitEmailCode = useCallback(
+    async (code: string) => finishSignIn(await entraSubmitEmailCode(code)),
+    [entraSubmitEmailCode, finishSignIn]
   );
 
   const completeOnboarding = useCallback(
@@ -199,10 +219,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name: member?.display_name ?? null,
       mobile: member?.phone ?? null,
       login,
+      startEmail,
+      submitEmailCode,
+      resendEmailCode,
+      cancelEmail,
       completeOnboarding,
       logOut,
     }),
-    [accessToken, isRestoring, member, email, login, completeOnboarding, logOut]
+    [accessToken, isRestoring, member, email, login, startEmail, submitEmailCode, resendEmailCode, cancelEmail, completeOnboarding, logOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
