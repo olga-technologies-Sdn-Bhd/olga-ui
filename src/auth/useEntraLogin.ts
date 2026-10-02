@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { authorize, refresh, AuthConfiguration, AuthorizeResult, RefreshResult } from 'react-native-app-auth';
+import { authorize, logout, refresh, AuthConfiguration, AuthorizeResult, RefreshResult } from 'react-native-app-auth';
 import * as Keychain from 'react-native-keychain';
 import { entraConfig, entraIssuer, entraScopes } from './entraConfig';
 import {
   isNativeAuthUnavailable,
+  isRegistrationRequired,
   isUserNotFound,
   NativeAuthError,
   nativeAuthClient,
@@ -69,6 +70,19 @@ declare function atob(data: string): string;
 // Reads the email claim from the ID token payload. No signature check: the
 // token came straight from Microsoft over the PKCE flow and is only used to
 // label the local session, never sent to Olga APIs.
+// §10 check: the access token must come from the dev External ID tenant and
+// target the OLGA API. Logs only issuer host and audience, never the token.
+function logTokenTarget(accessToken: string) {
+  try {
+    const payload = accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, '=')));
+    const issuerHost = typeof claims.iss === 'string' ? claims.iss.split('/')[2] : 'none';
+    console.info(`[auth] access token issuer=${issuerHost} audience=${claims.aud} expected_api=${entraConfig.apiScope.split('/')[2]}`);
+  } catch {
+    console.info('[auth] access token is not a readable JWT');
+  }
+}
+
 function emailFromIdToken(idToken: string): string | null {
   try {
     const payload = idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -147,6 +161,9 @@ export function useEntraLogin() {
           tokenType: refreshed.tokenType,
           scopes: stored.scopes,
         };
+        // §10: confirm a rotated refresh token replaces the stored one.
+        console.info(`[auth] session refreshed, refresh token rotated=${Boolean(refreshed.refreshToken) && refreshed.refreshToken !== stored.refreshToken}`);
+        logTokenTarget(next.accessToken);
         await saveSession(next);
         setSession(next);
       } catch {
@@ -182,6 +199,7 @@ export function useEntraLogin() {
       tokenType: result.tokenType,
       scopes: result.scopes,
     };
+    logTokenTarget(next.accessToken);
     await saveSession(next);
     setSession(next);
     return emailFromIdToken(result.idToken) ?? loginHint ?? null;
@@ -200,7 +218,7 @@ export function useEntraLogin() {
     try {
       continuation = (await nativeAuthClient.signInInitiate(email)).continuation_token;
     } catch (error) {
-      if (isNativeAuthUnavailable(error)) {
+      if (isNativeAuthUnavailable(error) || isRegistrationRequired(error)) {
         console.info('[auth] native auth unavailable on this tenant; using the hosted page');
         return { mode: 'browser' };
       }
@@ -232,6 +250,7 @@ export function useEntraLogin() {
           );
     console.info(`[auth] code verified and tokens issued in ${Date.now() - started} ms`);
     const next = sessionFromNative(tokens);
+    logTokenTarget(next.accessToken);
     const stored = Date.now();
     await saveSession(next);
     console.info(`[auth] session saved in ${Date.now() - stored} ms`);
@@ -256,10 +275,24 @@ export function useEntraLogin() {
     pendingEmail.current = null;
   }, []);
 
+  // Sign-out (Docs/MOBILE_ENTRA_EXTERNAL_ID §8): local tokens are always
+  // cleared first; then the Entra browser session is ended through the
+  // discovered end_session_endpoint so the next sign-in starts fresh.
+  // Ending the browser session is best effort: local sign-out stands even
+  // if it fails or the user closes the page.
   const logOut = useCallback(async () => {
     pendingEmail.current = null;
+    const idToken = (await loadSession())?.idToken;
     await clearSession();
     setSession(null);
+    if (!idToken) return;
+    try {
+      await logout(authConfig, { idToken, postLogoutRedirectUrl: entraConfig.redirectUri });
+      console.info('[auth] Entra browser session ended');
+    } catch (error) {
+      const err = error as { code?: string; message?: string };
+      console.warn(`[auth] Entra browser sign-out did not complete (${err.code ?? 'no code'})`);
+    }
   }, []);
 
   return {

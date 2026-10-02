@@ -38,6 +38,13 @@ export function isNativeAuthUnavailable(error: unknown): boolean {
   );
 }
 
+// Entra asks the user to register a strong auth method before continuing.
+// The in-app flow doesn't implement that step, so the app hands over to the
+// Microsoft-hosted page, which does.
+export function isRegistrationRequired(error: unknown): boolean {
+  return error instanceof NativeAuthError && (error.code === 'registration_required' || error.subError === 'registration_required');
+}
+
 export function isUserNotFound(error: unknown): boolean {
   return error instanceof NativeAuthError && (error.code === 'user_not_found' || error.errorCodes.includes(50034));
 }
@@ -113,11 +120,13 @@ const clientId = entraConfig.clientId;
 
 export const nativeAuthClient = {
   // Sign-in: initiate -> challenge (sends the code) -> token(oob)
+  // capabilities=registration_required per Docs/MOBILE_ENTRA_EXTERNAL_ID §5/§12.
   signInInitiate: (username: string) =>
     post<ContinuationResponse>('/oauth2/v2.0/initiate', {
       client_id: clientId,
       username,
       challenge_type: 'oob redirect',
+      capabilities: 'registration_required',
     }),
   signInChallenge: (continuationToken: string) =>
     post<ChallengeResponse>('/oauth2/v2.0/challenge', {
