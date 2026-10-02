@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, newIdempotencyKey, setMemberIdProvider } from '../api/client';
+import { ApiError, newIdempotencyKey, setAccessTokenProvider, setMemberIdProvider } from '../api/client';
 import { coreApi } from '../api/core';
 import {
   activateMember,
@@ -58,6 +58,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<MemberStore | null>(null);
   const [member, setMember] = useState<StoredMember | null>(null);
   const memberRef = useRef<StoredMember | null>(null);
+  // Latest Entra access token for the Bearer header (read at request time).
+  const accessTokenRef = useRef<string | null>(null);
+  accessTokenRef.current = accessToken;
   const registrationKey = useRef<string | null>(null);
   const restoreChecked = useRef(false);
   const [restoreLookup, setRestoreLookup] = useState(false);
@@ -75,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Every Olga API call reads X-Member-Id from here.
   useEffect(() => {
     setMemberIdProvider(() => memberRef.current?.member_id ?? null);
+    setAccessTokenProvider(() => accessTokenRef.current);
   }, []);
 
   useEffect(() => {
