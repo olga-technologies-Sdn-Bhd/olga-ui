@@ -18,10 +18,36 @@ const client = makeApiClient(NLP_API_URL);
 export type MatchCandidate = MatchResult;
 
 // Deterministic intent ID per member/event/type, so re-posting updates the
-// same intent instead of creating a new one.
+// same intent instead of creating a new one. Hashed because olga-nlp-api
+// stores intent_id as varchar(64) and member + event IDs alone exceed that.
 export function intentIdFor(eventId: string, type: IntentType, memberId = getMemberId() ?? '') {
-  return `${memberId}-${eventId}-${type.toLowerCase()}`;
+  return `int_${hash128(`${memberId}
+${eventId}
+${type}`)}`; // 36 chars
 }
+
+// cyrb128: fast non-cryptographic 128-bit string hash, as 32 hex chars.
+/* eslint-disable no-bitwise */
+function hash128(str: string) {
+  let h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762;
+  for (let i = 0; i < str.length; i++) {
+    const k = str.charCodeAt(i);
+    h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
+    h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
+    h3 = h4 ^ Math.imul(h3 ^ k, 951274213);
+    h4 = h1 ^ Math.imul(h4 ^ k, 2716044179);
+  }
+  h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
+  h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
+  h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
+  h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
+  h1 ^= h2 ^ h3 ^ h4;
+  h2 ^= h1;
+  h3 ^= h1;
+  h4 ^= h1;
+  return [h1, h2, h3, h4].map((h) => (h >>> 0).toString(16).padStart(8, '0')).join('');
+}
+/* eslint-enable no-bitwise */
 
 // Longer timeout for every NLP call (cold starts), unless the caller sets one.
 const nlp = (options?: RequestOptions): RequestOptions => ({ timeoutMs: NLP_TIMEOUT_MS, ...options });
