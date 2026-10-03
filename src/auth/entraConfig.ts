@@ -14,6 +14,8 @@ type EntraSettings = {
   authority: string;
   redirectUri: string;
   apiScope: string;
+  // <subdomain>.onmicrosoft.com — the native auth REST API path segment.
+  tenantSubdomain: string;
 };
 
 const DEV_TENANT: EntraSettings = {
@@ -22,6 +24,7 @@ const DEV_TENANT: EntraSettings = {
   authority: 'https://olgaconnectdev.ciamlogin.com',
   redirectUri: 'olga-dev://auth',
   apiScope: 'api://733db389-f55d-4a33-8cd6-18a14393e3d9/access_as_user',
+  tenantSubdomain: 'olgaconnectdev',
 };
 
 const ENTRA: Record<AppEnv, EntraSettings> = {
@@ -29,7 +32,7 @@ const ENTRA: Record<AppEnv, EntraSettings> = {
   dev: DEV_TENANT,
   // TODO(infra): prd External ID tenant values (Olga.Infrastructure
   // docs/ENTRA_EXTERNAL_ID.md) once the production tenant exists.
-  prod: { clientId: '', tenantId: '', authority: '', redirectUri: '', apiScope: '' },
+  prod: { clientId: '', tenantId: '', authority: '', redirectUri: '', apiScope: '', tenantSubdomain: '' },
 };
 
 export const entraConfig = ENTRA[APP_ENV];

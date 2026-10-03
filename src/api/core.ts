@@ -18,7 +18,7 @@ import type {
   UpdateProfileRequest,
 } from './types';
 
-const client = makeApiClient(CORE_API_URL);
+const client = makeApiClient(CORE_API_URL, { sendAccessToken: true });
 
 export type CoreEvent = EventSummary & {
   // Client-side convenience field for mock/demo data — how many attendees

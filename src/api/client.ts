@@ -43,6 +43,16 @@ export function getMemberId() {
   return memberIdProvider();
 }
 
+// Entra access token for `Authorization: Bearer` (Docs/MOBILE_ENTRA_EXTERNAL_ID
+// §7). Olga.Core doesn't validate it yet (MVP: X-Member-Id still identifies
+// the member) — sent so the app is ready when the API starts enforcing it.
+// Never logged.
+let accessTokenProvider: () => string | null = () => null;
+
+export function setAccessTokenProvider(provider: () => string | null) {
+  accessTokenProvider = provider;
+}
+
 // RFC 4122 v4 UUID. Math.random is fine here: idempotency keys only need to be
 // unique per user action, not unguessable, and Hermes has no crypto.randomUUID.
 export function newIdempotencyKey(): string {
@@ -147,9 +157,18 @@ export function withEtag<T extends { e_tag?: string }>(r: { data: T; headers: He
   return { ...rest, etag: e_tag ?? r.headers.get('ETag') ?? '' };
 }
 
-export function makeApiClient(baseUrl: string) {
+type ClientConfig = {
+  // Add the signed-in user's Entra access token as a Bearer header.
+  sendAccessToken?: boolean;
+};
+
+export function makeApiClient(baseUrl: string, config: ClientConfig = {}) {
+  const withAuth = (options?: RequestOptions): RequestOptions | undefined => {
+    const token = config.sendAccessToken ? accessTokenProvider() : null;
+    return token ? { ...options, headers: { Authorization: `Bearer ${token}`, ...options?.headers } } : options;
+  };
   const data = <T>(method: Method, path: string, body: unknown, options?: RequestOptions) =>
-    send<T>(baseUrl, method, path, body, options).then((r) => r.data);
+    send<T>(baseUrl, method, path, body, withAuth(options)).then((r) => r.data);
 
   return {
     get: <T>(path: string, options?: RequestOptions) => data<T>('GET', path, undefined, options),
@@ -159,6 +178,6 @@ export function makeApiClient(baseUrl: string) {
     del: <T>(path: string, options?: RequestOptions) => data<T>('DELETE', path, undefined, options),
     // Same as the above but also returns status + response headers (e.g. ETag).
     send: <T>(method: Method, path: string, body?: unknown, options?: RequestOptions) =>
-      send<T>(baseUrl, method, path, body, options),
+      send<T>(baseUrl, method, path, body, withAuth(options)),
   };
 }

@@ -1,17 +1,20 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
+import { OtpEntry } from '../../components/OtpEntry';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
+import { SocialSignInButton } from '../../components/SocialSignInButton';
 import { MemberRecoveryUnavailableError } from '../../auth/memberSession';
-import { isUserCancelledLogin } from '../../auth/useEntraLogin';
+import { isExpiredSession, isInvalidCode, NativeAuthError } from '../../auth/nativeAuthClient';
+import { EntraProvider, isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
 
-type Step = 'email' | 'verifying' | 'name' | 'mobile' | 'registering';
+type Step = 'email' | 'verifying' | 'otp' | 'name' | 'mobile' | 'registering';
 
 // One continuous chat: email -> verify -> name -> mobile, all on this same
 // screen. No screen transition after login — the user comes back to exactly
@@ -19,28 +22,105 @@ type Step = 'email' | 'verifying' | 'name' | 'mobile' | 'registering';
 export function SignUpScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { login, completeOnboarding, logOut, isAuthenticated } = useAuth();
+  const { login, startEmail, submitEmailCode, resendEmailCode, cancelEmail, completeOnboarding, logOut, isAuthenticated } =
+    useAuth();
   // Already signed in to Entra but no Olga member yet (e.g. restored session
   // whose member was removed) -> only name + mobile are needed, no new OTP.
   const [step, setStep] = useState<Step>(isAuthenticated ? 'name' : 'email');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
+  const [codeLength, setCodeLength] = useState(8);
+  // Ignores repeated taps while a sign-in is already running.
+  const inProgress = useRef(false);
 
-  async function handleEmailSubmit(value: string) {
-    setEmail(value);
+  async function signIn(options: { loginHint?: string; provider?: EntraProvider }, shown: string) {
+    if (inProgress.current) return;
+    inProgress.current = true;
+    setEmail(shown);
     setStep('verifying');
     try {
-      const existingMember = await login(value);
+      const existingMember = await login(options);
       // Existing members go straight in (the navigator switches to the app).
       if (!existingMember) setStep('name');
     } catch (error) {
+      // Safe to log: AppAuth error codes/messages carry no code or token values.
+      const err = error as { code?: string; message?: string };
+      console.warn(`Sign-in did not complete (${err.code ?? 'no code'}): ${err.message ?? ''}`);
       setEmail('');
       setStep('email');
       if (!isUserCancelledLogin(error)) {
-        Alert.alert('Sign-in failed', 'Something went wrong verifying your email. Please try again.');
+        Alert.alert('Sign-in failed', "Something went wrong signing you in. Please try again.");
       }
+    } finally {
+      inProgress.current = false;
     }
+  }
+
+  // Continue with Email: in-app code via Entra native auth for new and
+  // existing customers alike; falls back to the Microsoft page only if the
+  // tenant doesn't allow native auth yet.
+  async function handleEmailSubmit(value: string) {
+    if (inProgress.current) return;
+    inProgress.current = true;
+    setEmail(value);
+    setStep('verifying');
+    let result;
+    try {
+      result = await startEmail(value.trim());
+    } catch (error) {
+      setEmail('');
+      setStep('email');
+      Alert.alert(
+        "Couldn't send a code",
+        error instanceof NativeAuthError && error.code === 'network_error'
+          ? 'Check your connection and try again.'
+          : 'Something went wrong. Please try again.'
+      );
+      inProgress.current = false;
+      return;
+    }
+    inProgress.current = false;
+    if (result.mode === 'browser') {
+      signIn({ loginHint: value }, value);
+      return;
+    }
+    setCodeLength(result.codeLength);
+    setStep('otp');
+  }
+
+  async function handleCodeSubmit(code: string) {
+    try {
+      const existingMember = await submitEmailCode(code);
+      if (!existingMember) setStep('name');
+    } catch (error) {
+      if (isInvalidCode(error)) throw new Error("That code didn't work. Check it, or resend a new one.");
+      if (isExpiredSession(error)) throw new Error('That code has expired. Tap Resend code for a new one.');
+      if (error instanceof NativeAuthError && error.code === 'network_error') {
+        throw new Error('No connection. Check your internet and try again.');
+      }
+      throw new Error('Something went wrong. Please try again.');
+    }
+  }
+
+  async function handleResend() {
+    try {
+      setCodeLength(await resendEmailCode());
+    } catch {
+      throw new Error("Couldn't send a new code. Please try again.");
+    }
+  }
+
+  function handleChangeEmail() {
+    cancelEmail();
+    setEmail('');
+    setStep('email');
+  }
+
+  // Google / Apple go through the same Entra user flow (domain_hint), not a
+  // direct provider SDK.
+  function handleProvider(provider: EntraProvider) {
+    signIn({ provider }, provider === 'google' ? 'Continue with Google' : 'Continue with Apple');
   }
 
   function handleNameSubmit(value: string) {
@@ -100,6 +180,7 @@ export function SignUpScreen() {
         {email !== '' && <ChatBubble from="me" text={email} />}
 
         {step === 'verifying' && <ChatBubble from="them" text="One sec — verifying that…" />}
+        {step === 'otp' && <ChatBubble from="them" text="Enter the verification code sent to your email." />}
 
         {(step === 'name' || step === 'mobile' || step === 'registering') && (
           <>
@@ -119,9 +200,26 @@ export function SignUpScreen() {
       </View>
 
       {step === 'email' && (
-        <ChatComposer placeholder="you@example.com" keyboardType="email-address" onSubmit={handleEmailSubmit} />
+        <>
+          <ChatComposer placeholder="you@example.com" keyboardType="email-address" onSubmit={handleEmailSubmit} />
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+          <SocialSignInButton provider="google" onPress={() => handleProvider('google')} />
+          <SocialSignInButton provider="apple" onPress={() => handleProvider('apple')} />
+        </>
       )}
-      {step === 'verifying' && <Text style={styles.sub}>Opening secure sign-in…</Text>}
+      {step === 'verifying' && <Text style={styles.sub}>Signing you in…</Text>}
+      {step === 'otp' && (
+        <OtpEntry
+          codeLength={codeLength}
+          onSubmit={handleCodeSubmit}
+          onResend={handleResend}
+          onChangeEmail={handleChangeEmail}
+        />
+      )}
       {step === 'registering' && <Text style={styles.sub}>Setting up your profile…</Text>}
       {step === 'name' && <ChatComposer placeholder="Type your name…" onSubmit={handleNameSubmit} />}
       {step === 'mobile' && (
@@ -146,4 +244,7 @@ const makeStyles = (colors: ThemeColors) =>
     h1: { fontFamily: fonts.headingExtraBold, fontSize: 28, fontWeight: '800', color: colors.text, marginTop: 8 },
     sub: { fontSize: 14, lineHeight: 20, color: colors.muted },
     chatStack: { gap: 10, marginTop: 6 },
+    dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+    dividerLine: { flex: 1, height: 1, backgroundColor: colors.line },
+    dividerText: { fontSize: 13, color: colors.muted },
   });
