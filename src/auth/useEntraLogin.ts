@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { authorize, logout, refresh, AuthConfiguration, AuthorizeResult, RefreshResult } from 'react-native-app-auth';
+import { authorize, refresh, AuthConfiguration, AuthorizeResult, RefreshResult } from 'react-native-app-auth';
 import * as Keychain from 'react-native-keychain';
 import { entraConfig, entraIssuer, entraScopes } from './entraConfig';
 import {
@@ -275,24 +275,12 @@ export function useEntraLogin() {
     pendingEmail.current = null;
   }, []);
 
-  // Sign-out (Docs/MOBILE_ENTRA_EXTERNAL_ID §8): local tokens are always
-  // cleared first; then the Entra browser session is ended through the
-  // discovered end_session_endpoint so the next sign-in starts fresh.
-  // Ending the browser session is best effort: local sign-out stands even
-  // if it fails or the user closes the page.
+  // Sign-out is local only: clear every stored token without opening the
+  // Entra logout page, so the user never leaves the app.
   const logOut = useCallback(async () => {
     pendingEmail.current = null;
-    const idToken = (await loadSession())?.idToken;
     await clearSession();
     setSession(null);
-    if (!idToken) return;
-    try {
-      await logout(authConfig, { idToken, postLogoutRedirectUrl: entraConfig.redirectUri });
-      console.info('[auth] Entra browser session ended');
-    } catch (error) {
-      const err = error as { code?: string; message?: string };
-      console.warn(`[auth] Entra browser sign-out did not complete (${err.code ?? 'no code'})`);
-    }
   }, []);
 
   return {
