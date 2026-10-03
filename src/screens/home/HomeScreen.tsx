@@ -30,7 +30,7 @@ export function HomeScreen({ navigation }: Props) {
   // Shared with Go Live: saved as the WANT intent when matching runs.
   const { intentText: intent, setIntentText: setIntent } = useLive();
   const [draft, setDraft] = useState(intent);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(!intent.trim());
   // Shared, admin-managed list (soonest first): always the latest data.
   const { events, refresh, refreshIfStale } = useEvents();
   const nextEvent = events?.[0] ?? null;
@@ -91,6 +91,7 @@ export function HomeScreen({ navigation }: Props) {
               value={draft}
               onChangeText={setDraft}
               style={styles.input}
+              placeholder="What are you looking for at your next event?"
               placeholderTextColor={colors.muted}
               multiline
             />

@@ -43,13 +43,6 @@ export const NLP_API_URL = API_URLS[APP_ENV].nlp;
 
 
 
-// Mock switches per area. While one is true, that area's calls in api/core.ts
-// or api/nlp.ts return canned data from src/mocks/ instead of the backend.
-// Who's going always uses mocks: Olga.Core has no attendee list endpoint.
-export const USE_MOCK_EVENTS = false;
-
-export const USE_MOCK_LIVE = false; // consent, start/stop, presence
-export const USE_MOCK_MATCHING = false; // intents, match requests, match profiles
 
 // Timeout for NLP calls (cold starts can take ~50 s); same as the client default.
 export const NLP_TIMEOUT_MS = 60000;

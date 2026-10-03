@@ -2,7 +2,7 @@ import { MATCH_LIMIT, MATCH_POLL_INTERVAL_MS, MATCH_POLL_TIMEOUT_MS } from '../c
 import { ApiError } from './client';
 import { coreApi } from './core';
 import { intentIdFor, MatchCandidate, nlpApi } from './nlp';
-import type { Profile } from './types';
+import type { Profile, UpsertIntentRequest } from './types';
 
 export type MatchCard = { match: MatchCandidate; profile?: Profile };
 
@@ -54,6 +54,19 @@ type FindMatchesInput = {
 //   3. Load each matched member's profile for the cards (GET /v1/members/{id});
 //      a failed lookup just shows the generic card.
 // Throws MatchingError for the cases above, ApiError for anything else.
+// POST /v1/intents. Intent IDs are stable per member/event/type, so a second
+// Go Live updates the existing intent, which needs its current version:
+// 409 IF_MATCH_REQUIRED (or 412 on a stale one) -> read it and retry once.
+async function saveIntent(body: UpsertIntentRequest) {
+  try {
+    return await nlpApi.createIntent(body);
+  } catch (e) {
+    if (!(e instanceof ApiError && (e.code === 'IF_MATCH_REQUIRED' || e.status === 412))) throw e;
+    const current = await nlpApi.getIntent(body.intent_id);
+    return nlpApi.createIntent(body, current.etag);
+  }
+}
+
 export async function findMatches({ eventId, eventEndsAt, wantText, offerText, minMatchPercent }: FindMatchesInput): Promise<MatchCard[]> {
   const deadline = Date.now() + MATCH_POLL_TIMEOUT_MS;
   const intentId = intentIdFor(eventId, 'WANT');
@@ -62,7 +75,7 @@ export async function findMatches({ eventId, eventEndsAt, wantText, offerText, m
   // failure here must not stop this member's own matching.
   if (offerText) {
     try {
-      await nlpApi.createIntent({
+      await saveIntent({
         intent_id: intentIdFor(eventId, 'OFFER'),
         context_id: eventId,
         intent_type: 'OFFER',
@@ -75,7 +88,7 @@ export async function findMatches({ eventId, eventEndsAt, wantText, offerText, m
   }
 
   // 1. Intent
-  const saved = await nlpApi.createIntent({
+  const saved = await saveIntent({
     intent_id: intentId,
     context_id: eventId,
     intent_type: 'WANT',

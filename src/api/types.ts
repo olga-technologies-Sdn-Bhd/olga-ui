@@ -93,6 +93,11 @@ export type ConsentRequest = {
   evidence?: Record<string, unknown>;
 };
 
+// GET /v1/events/{eventId}/attendees: blinded (no name, email or phone).
+// 403 EVENT_REGISTRATION_REQUIRED until the caller registers.
+export type EventAttendee = { member_id: string; headline?: string; role_category?: string };
+export type EventAttendeesResponse = { attendees: EventAttendee[]; total: number };
+
 // GET /v1/consent-policies/{purposeCode}: the active version to send in
 // POST /v1/me/consents. 404 CONSENT_POLICY_NOT_ACTIVE when none is active.
 export type ConsentPolicy = {

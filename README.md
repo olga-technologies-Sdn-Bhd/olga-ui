@@ -27,8 +27,8 @@ Steps:
 Good to know:
 
 - The dev containers sleep when idle. The first call after a while can take up to a minute, so the first load may be slow. Pull to refresh if it times out.
-- Each area has a mock switch in `env.ts` (`USE_MOCK_EVENTS`, `USE_MOCK_LIVE`, `USE_MOCK_MATCHING`). All are `false`, so the app uses the real dev APIs. Who's going always uses mock data (no backend endpoint yet).
-- Never commit `APP_ENV` as anything other than `'dev'`, and never commit a mock switch set to `true`.
+- The app has no mock or sample data: every screen uses the real API for the selected environment.
+- Never commit `APP_ENV` as anything other than `'dev'`.
 
 ## Backend developers: `local`
 

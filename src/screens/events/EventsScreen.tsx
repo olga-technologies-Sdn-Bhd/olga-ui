@@ -49,7 +49,7 @@ export function EventsScreen({ navigation }: Props) {
           <Text style={styles.eyebrow}>Discover</Text>
           <Text style={styles.h2}>Events</Text>
         </View>
-        <Pill label="Kuala Lumpur" />
+        <Pill label="All cities" />
       </View>
 
       {events === null && !error && <Text style={styles.sub}>Loading events…</Text>}
@@ -85,13 +85,7 @@ export function EventsScreen({ navigation }: Props) {
                       <Text style={styles.match} numberOfLines={1}>
                         ✓ You're going
                       </Text>
-                    ) : (
-                      typeof event.match_count === 'number' && (
-                        <Text style={styles.match} numberOfLines={1}>
-                          {event.match_count} match your intent
-                        </Text>
-                      )
-                    )}
+                    ) : null}
                   </View>
                   <Button label="View" variant="ghost" small onPress={() => navigation.navigate('EventDetail', { eventId: event.event_id })} />
                 </View>
