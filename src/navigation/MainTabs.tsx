@@ -1,8 +1,10 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { CalendarDays, House, LucideIcon, MessageCircle, Radio } from 'lucide-react-native';
+import { CalendarDays, House, LucideIcon, MessageCircle } from 'lucide-react-native';
 import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ComingSoonModal } from '../components/ComingSoonModal';
+import { GoLiveMark } from '../components/GoLiveMark';
+import { useLive } from '../context/LiveContext';
 import { ChatPlaceholderScreen } from '../screens/chat/ChatPlaceholderScreen';
 import { HomeStack } from './HomeStack';
 import { useTheme } from '../theme/ThemeContext';
@@ -12,9 +14,9 @@ import { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const ICONS: Record<keyof MainTabParamList, LucideIcon> = {
+// Go Live uses its own mark (board 11), not a Lucide icon.
+const ICONS: Record<Exclude<keyof MainTabParamList, 'GoLiveTab'>, LucideIcon> = {
   HomeTab: House,
-  GoLiveTab: Radio,
   EventsTab: CalendarDays,
   ChatTab: MessageCircle,
 };
@@ -32,6 +34,7 @@ export function MainTabs() {
   const [chatComingSoon, setChatComingSoon] = useState(false);
   const { colors } = useTheme();
   const { bottom } = useSafeAreaInsets();
+  const { isLive } = useLive();
 
   return (
     <>
@@ -49,7 +52,11 @@ export function MainTabs() {
           },
           tabBarLabelStyle: { fontSize: 12, fontWeight: '600', marginTop: 2 },
           tabBarIcon: ({ color, focused }) => {
-            const Icon = ICONS[route.name as keyof MainTabParamList];
+            if (route.name === 'GoLiveTab') {
+              // The dot steps inside while live; the live dot is green.
+              return <GoLiveMark size={ICON_SIZE} color={color} live={isLive} dotColor={isLive ? colors.liveFill : undefined} />;
+            }
+            const Icon = ICONS[route.name as Exclude<keyof MainTabParamList, 'GoLiveTab'>];
             return <Icon size={ICON_SIZE} color={color} strokeWidth={focused ? 2.4 : 1.8} />;
           },
           tabBarLabel: LABELS[route.name as keyof MainTabParamList],

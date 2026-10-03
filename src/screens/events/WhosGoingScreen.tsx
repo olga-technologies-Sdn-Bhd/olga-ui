@@ -5,11 +5,10 @@ import { ApiError } from '../../api/client';
 import { coreApi } from '../../api/core';
 import type { EventAttendeesResponse } from '../../api/types';
 import { Button } from '../../components/Button';
-import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
 import { Card } from '../../components/Card';
-import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
+import { Silhouette } from '../../components/Silhouette';
 import { useEvents } from '../../context/EventsContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
@@ -17,6 +16,8 @@ import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'WhosGoing'>;
+
+const TOP = 5;
 
 export function WhosGoingScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
@@ -49,17 +50,20 @@ export function WhosGoingScreen({ route, navigation }: Props) {
   }, [load]);
 
   const attendees = data?.attendees ?? [];
+  // Board 04: top five, then "Show all".
+  const [showAll, setShowAll] = useState(false);
+  const shown = showAll ? attendees : attendees.slice(0, TOP);
 
   return (
     <Screen>
-      <BackHeader
-        onBack={() => navigation.goBack()}
-        right={data ? <Pill label={`${data.total} of ${event?.attendee_count ?? data.total}`} /> : undefined}
-      />
+      <BackHeader onBack={() => navigation.goBack()} />
 
       <View>
+        {event && <Text style={styles.eyebrow}>{event.name}</Text>}
         <Text style={styles.h2}>Who's going</Text>
-        <Text style={styles.sub}>Names appear when you both accept.</Text>
+        <Text style={styles.sub}>
+          {data ? `${countLine(data.total, event?.attendee_count)} ` : ''}Names appear only when you both accept, in the room.
+        </Text>
       </View>
 
       {!data && !error && <ActivityIndicator color={colors.muted} style={{ marginTop: 24 }} />}
@@ -72,9 +76,9 @@ export function WhosGoingScreen({ route, navigation }: Props) {
       {data && attendees.length === 0 && <Text style={styles.sub}>Nobody else has signed up yet.</Text>}
 
       <View style={{ gap: 10 }}>
-        {attendees.map((person) => (
+        {shown.map((person) => (
           <Card key={person.member_id} style={styles.row}>
-            <Avatar initials="?" />
+            <Silhouette />
             <View style={{ flex: 1 }}>
               <Text style={styles.h3}>{person.headline || 'Attendee'}</Text>
               {person.role_category && <Text style={styles.sub2}>{roleLabel(person.role_category)}</Text>}
@@ -82,8 +86,17 @@ export function WhosGoingScreen({ route, navigation }: Props) {
           </Card>
         ))}
       </View>
+      {!showAll && attendees.length > TOP && (
+        <Button label={`Show all ${attendees.length}`} variant="secondary" onPress={() => setShowAll(true)} />
+      )}
     </Screen>
   );
+}
+
+// Same number as the event page; the list itself leaves out you (and anyone
+// you've blocked), so say so when they differ.
+function countLine(shown: number, signedUp?: number) {
+  return typeof signedUp === 'number' && signedUp !== shown ? `Showing ${shown} of ${signedUp} signed up.` : `${shown} signed up.`;
 }
 
 // "PRODUCT_MANAGEMENT" -> "Product management"
@@ -93,6 +106,7 @@ function roleLabel(code: string) {
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginBottom: 4 },
   h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text },
   sub: { fontSize: 13, color: colors.muted, marginTop: 7, lineHeight: 19 },
   h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },

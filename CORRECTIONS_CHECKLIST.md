@@ -4,7 +4,7 @@
 > **Delete this file before going live** — it's a working doc, not part of the shipped app.
 > Check an item by changing `- [ ]` to `- [x]` as it's actually done in code, not just planned.
 
-Last updated: 2026-10-03 (checked against develop @ 610c3ca, incl. Jigar's PRs #11–#18)
+Last updated: 2026-10-03 (checked against develop @ 610c3ca, incl. Jigar's PRs #11–#18; Jigar's `feature/corrected-screens` noted per item)
 
 ## Foundation
 
@@ -12,22 +12,23 @@ Last updated: 2026-10-03 (checked against develop @ 610c3ca, incl. Jigar's PRs #
 - [x] Typography — Outfit (headings/scores), Instrument Sans (body/buttons), IBM Plex Mono (small uppercase labels) wired in and linked natively
 - [x] True pill buttons, 44–48px tall
 - [ ] "The loop must close" — Commit → Accept → reveal → meet
-- [ ] Presence gated — Go Live unlocks only after badge-desk check-in
+- [ ] Presence gated — Go Live unlocks only after badge-desk check-in *(feature/corrected-screens: interim gate on the event's start time; swap to check-in when Core has it)*
 
 ## Screens
 
-- [ ] 01 Home — sand intent card done; still needs 3rd tip "Confirm you met", one set of numbers on coming-up card, first-name-only welcome
-- [ ] 02 Events — list — needs date blocks, 3 sections (You're going / Open for sign-up / Past). *(Done, Jigar #18: "All cities" chip. ⚠ #18 also dropped the "N match your intent" line from list cards — the spec wants it on every card, so it needs to come back once the backend provides a count.)*
-- [ ] 03 Event detail, signed up — needs tagline removed, no Go Live button before the event, per-event intent editable. *(Done, Jigar #18: duplicate match pill removed. ⚠ #18 also removed the "match your intent" number from the stats row — the spec's stats row should carry both 612 signed up and 41 match your intent. Partial, Jigar: intent card shows the member's real intent — still not editable per event.)*
-- [ ] 04 Who's going — needs neutral silhouette (no "?"), score badge back on each card, confirm the header count is "N of total" for intent-matched attendees. *(Done, Jigar #18: copy now says "Names appear when you both accept"; list and header count come from the real attendees API.)*
-- [ ] 05 Go Live — before the event *(new screen)* — "Not in a room yet," OFF toggle, opens at check-in
-- [ ] 06 Go Live — ready (checked in) — needs press-and-hold (not tap), user colour picker, visible-until time in the ready state. *(Partial: "visible in this room until HH:MM" already shows once live; not in the ready state.)*
-- [ ] 07 Filter — remove "Add tags for this session", live-count on slider, two off-by-default toggles
-- [ ] 08 Go Live — live — ripple is green ✅; still needs SEARCHING→LIVE·3 READY text states, "Go invisible" control
-- [ ] 09 Your three — Commit/Pass — add Commit/Pass to match cards, neutral silhouette instead of initials
+- [x] 01 Home — first name, sand intent card with Edit, three tips that disappear once done, coming-up card with date block *(feature/corrected-screens; match count and intent history need Core/NLP)*
+- [ ] 02 Events — list — needs date blocks, 3 sections (You're going / Open for sign-up / Past). *(Done, Jigar #18: "All cities" chip. ⚠ #18 also dropped the "N match your intent" line from list cards — the spec wants it on every card, so it needs to come back once the backend provides a count.)* *(feature/corrected-screens: date blocks, wrapping titles, You're going / Open for sign-up / Past + empty state, green live count only while live. Still needs Core `match_count` and past events.)*
+- [ ] 03 Event detail, signed up — needs tagline removed, no Go Live button before the event, per-event intent editable. *(Done, Jigar #18: duplicate match pill removed. ⚠ #18 also removed the "match your intent" number from the stats row — the spec's stats row should carry both 612 signed up and 41 match your intent. Partial, Jigar: intent card shows the member's real intent — still not editable per event.)* *(feature/corrected-screens: name/date/venue lead, tagline removed, no Go Live before the event, signed-up state. Still needs per-event intent (NLP) and "Leave this event" (Core unregister).)*
+- [ ] 04 Who's going — needs neutral silhouette (no "?"), score badge back on each card, confirm the header count is "N of total" for intent-matched attendees. *(Done, Jigar #18: copy now says "Names appear when you both accept"; list and header count come from the real attendees API.)* *(feature/corrected-screens: neutral silhouette, top five + Show all, count line. Still needs intent-matched attendees + score from Core/NLP.)*
+- [x] 05 Go Live — before the event — "Not in a room yet", locked disc, next room named, filter summary *(feature/corrected-screens)*
+- [x] 06 Go Live — ready — press-and-hold disc, colour row, end time stated, filter summary under it *(feature/corrected-screens)*
+- [x] 07 Filter — tags removed, intent on top (once per live session), two toggles off by default *(feature/corrected-screens; "N people live clear this" needs NLP)*
+- [x] 08 Go Live — live — SEARCHING → LIVE · N READY, green waves, "Go invisible", bounded retries + one manual retry *(feature/corrected-screens)*
+- [x] 09 Your three — at most three, silhouettes, Commit / Pass *(feature/corrected-screens)*
 - [ ] 10 Chat — Commits/meetings — replace "coming soon" modal with real Commits-for-you + meetings UI
-- [ ] 15 Your Go Live colour *(new screen)*
-- [ ] 16 Commit — where and when *(new screen)*
+- [ ] 11 Go Live mark — ring-with-dot used as the Go Live tab icon *(feature/corrected-screens)*; Quick Settings tile / status bar still to do
+- [x] 15 Your Go Live colour *(feature/corrected-screens; saved on the phone)*
+- [ ] 16 Commit — where and when — screen built; sending waits for Core (place/time, expiry, 5 per room) *(feature/corrected-screens)*
 
 ## Brand assets (not in the client PDF — done alongside this work)
 

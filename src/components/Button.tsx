@@ -3,7 +3,8 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react
 import { useTheme } from '../theme/ThemeContext';
 import { fonts } from '../theme/typography';
 
-type Variant = 'primary' | 'secondary' | 'ghost';
+// charcoal: Commit / Accept (soft charcoal #3A3531, white text in both themes).
+type Variant = 'primary' | 'secondary' | 'ghost' | 'charcoal';
 
 type Props = {
   label: string;
@@ -33,6 +34,7 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
           minHeight: 48,
         },
         primary: { backgroundColor: colors.brand },
+        charcoal: { backgroundColor: colors.charcoal },
         secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },
         ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.brand2 },
         ghostOnDark: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
@@ -41,6 +43,7 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
         pressed: { opacity: 0.85 },
         label: { fontFamily: fonts.bodyBold, fontWeight: '700', fontSize: 15 },
         labelPrimary: { color: colors.onBrand },
+        labelCharcoal: { color: colors.white },
         labelSecondary: { color: colors.text },
         labelGhost: { color: colors.brand },
         labelOnDark: { color: colors.white },
@@ -59,6 +62,7 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
       style={({ pressed }) => [
         styles.base,
         variant === 'primary' && styles.primary,
+        variant === 'charcoal' && styles.charcoal,
         variant === 'secondary' && styles.secondary,
         variant === 'ghost' && ghostStyle,
         small && styles.small,
@@ -68,12 +72,13 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.onBrand : colors.brand} />
+        <ActivityIndicator color={variant === 'primary' ? colors.onBrand : variant === 'charcoal' ? colors.white : colors.brand} />
       ) : (
         <Text
           style={[
             styles.label,
             variant === 'primary' && styles.labelPrimary,
+            variant === 'charcoal' && styles.labelCharcoal,
             variant === 'secondary' && styles.labelSecondary,
             variant === 'ghost' && ghostLabelStyle,
             small && styles.labelSmall,

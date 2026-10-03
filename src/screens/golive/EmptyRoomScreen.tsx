@@ -2,6 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../components/Avatar';
+import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
@@ -21,6 +22,7 @@ export function EmptyRoomScreen({ navigation }: Props) {
 
   return (
     <Screen>
+      <BackHeader onBack={() => navigation.goBack()} />
       <View style={styles.topline}>
         <Text style={styles.h2Header}>{activeEvent?.name ?? 'This room'}</Text>
         {typeof activeEvent?.liveCount === 'number' && <Pill label={`● ${activeEvent.liveCount} live`} tone="positive" />}
@@ -30,7 +32,9 @@ export function EmptyRoomScreen({ navigation }: Props) {
         <Avatar initials="…" size="lg" />
         <Text style={styles.h2}>It's still quiet in here</Text>
         <Text style={styles.sub}>
-          {typeof activeEvent?.liveCount === 'number' ? `${activeEvent.liveCount} people are live and none` : 'Nobody'}{' '}
+          {typeof activeEvent?.liveCount === 'number'
+            ? `${activeEvent.liveCount} ${activeEvent.liveCount === 1 ? 'person is' : 'people are'} live and none`
+            : 'Nobody'}{' '}
           match your filter yet. We'll tell you the moment someone does.
         </Text>
         <View style={styles.actions}>

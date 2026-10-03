@@ -6,6 +6,7 @@ import { warmUpApis } from './src/api/warmup';
 import { AuthProvider } from './src/context/AuthContext';
 import { EventsProvider } from './src/context/EventsContext';
 import { LiveProvider } from './src/context/LiveContext';
+import { PrefsProvider } from './src/context/PrefsContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { fonts } from './src/theme/typography';
@@ -36,13 +37,15 @@ function ThemedApp() {
     <>
       <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
       <AuthProvider>
-        <EventsProvider>
-          <LiveProvider>
-            <NavigationContainer theme={navTheme}>
-              <RootNavigator />
-            </NavigationContainer>
-          </LiveProvider>
-        </EventsProvider>
+        <PrefsProvider>
+          <EventsProvider>
+            <LiveProvider>
+              <NavigationContainer theme={navTheme}>
+                <RootNavigator />
+              </NavigationContainer>
+            </LiveProvider>
+          </EventsProvider>
+        </PrefsProvider>
       </AuthProvider>
     </>
   );
