@@ -48,12 +48,18 @@ export type GoLiveBlocker =
 const BLOCKERS: Record<string, GoLiveBlocker> = {
   LIVE_MODE_CONSENT_REQUIRED: 'CONSENT_REQUIRED',
   EVENT_REGISTRATION_REQUIRED: 'REGISTRATION_REQUIRED',
-  EVENT_NOT_ACTIVE: 'EVENT_NOT_ACTIVE',
-  LIVE_MODE_NOT_ENABLED: 'LIVE_MODE_NOT_ENABLED',
+  EVENT_NOT_LIVE: 'EVENT_NOT_ACTIVE',
+  EVENT_NOT_ACTIVE: 'EVENT_NOT_ACTIVE', // pre-Core #27 name
+  LIVE_MODE_DISABLED: 'LIVE_MODE_NOT_ENABLED',
+  LIVE_MODE_NOT_ENABLED: 'LIVE_MODE_NOT_ENABLED', // pre-Core #27 name
   EVENT_NOT_FOUND: 'EVENT_NOT_FOUND',
+  MEMBER_NOT_ACTIVE: 'TAKEN_OFFLINE',
   PROFILE_NOT_FOUND: 'TAKEN_OFFLINE',
   MEMBER_NOT_REGISTERED: 'TAKEN_OFFLINE',
 };
+
+// Codes meaning the member's profile is no longer ACTIVE.
+const OFFLINE_CODES = ['MEMBER_NOT_ACTIVE', 'PROFILE_NOT_FOUND', 'MEMBER_NOT_REGISTERED'];
 
 const TAKEN_OFFLINE_MESSAGE = "You've been taken offline. Contact support if you think this is a mistake.";
 
@@ -183,7 +189,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         markGone(eventId);
         return;
       }
-      if (error.code === 'PROFILE_NOT_FOUND' || error.code === 'MEMBER_NOT_REGISTERED') {
+      if (OFFLINE_CODES.includes(error.code)) {
         takeOffline();
         return;
       }
@@ -195,7 +201,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
           return;
         }
       } catch (e) {
-        if (e instanceof ApiError && (e.code === 'PROFILE_NOT_FOUND' || e.code === 'MEMBER_NOT_REGISTERED')) {
+        if (e instanceof ApiError && OFFLINE_CODES.includes(e.code)) {
           takeOffline();
           return;
         }
@@ -221,7 +227,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         logApiError('Presence', e);
         if (
           e instanceof ApiError &&
-          ['LIVE_MODE_NOT_ACTIVE', 'EVENT_NOT_FOUND', 'PROFILE_NOT_FOUND', 'MEMBER_NOT_REGISTERED'].includes(e.code) &&
+          ['LIVE_MODE_NOT_ACTIVE', 'EVENT_NOT_FOUND', ...OFFLINE_CODES].includes(e.code) &&
           sessionRef.current?.event_id === eventId
         ) {
           handleSessionEnded(eventId, e);
