@@ -79,7 +79,7 @@ android {
 
     namespace "com.olgamobile"
     defaultConfig {
-        applicationId "com.olgamobile"
+        applicationId "com.olga.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

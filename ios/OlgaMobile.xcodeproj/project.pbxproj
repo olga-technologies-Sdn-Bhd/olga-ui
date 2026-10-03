@@ -10,35 +10,35 @@
 		0C80B921A6F3F58F76C31292 /* libPods-OlgaMobile.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-OlgaMobile.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
-		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		B5695371BF363002A1D4082B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
-		A987A0DB9C4F4663971DDA5B /* Outfit-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 012A0D23604F402A95BFD7E3 /* Outfit-Bold.ttf */; };
-		A86B2EE6AF0F4E8B8D6B1FF8 /* IBMPlexMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C2783E68B50F4D5E874BCEC4 /* IBMPlexMono-Bold.ttf */; };
-		7A9A88D9700D4D6FA5C66BB2 /* IBMPlexMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5747569A56A44739A1D822BC /* IBMPlexMono-Medium.ttf */; };
 		776FF07D1DBC40899C2913EA /* IBMPlexMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D7C7D6553EE349EE95F7C10B /* IBMPlexMono-Regular.ttf */; };
+		7A9A88D9700D4D6FA5C66BB2 /* IBMPlexMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5747569A56A44739A1D822BC /* IBMPlexMono-Medium.ttf */; };
+		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		85BBB2064F144447920C36B1 /* Outfit-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BDA9C9DF1DE546F0BBBAC803 /* Outfit-ExtraBold.ttf */; };
 		A102A6F193BE4F4A91DF99A0 /* InstrumentSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1EAA5A3A23A74FCF81504D61 /* InstrumentSans-Regular.ttf */; };
+		A86B2EE6AF0F4E8B8D6B1FF8 /* IBMPlexMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C2783E68B50F4D5E874BCEC4 /* IBMPlexMono-Bold.ttf */; };
+		A987A0DB9C4F4663971DDA5B /* Outfit-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 012A0D23604F402A95BFD7E3 /* Outfit-Bold.ttf */; };
+		B5695371BF363002A1D4082B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		E4A13C70F5554001A39C088F /* InstrumentSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 05AB967224D94C478E9FFC50 /* InstrumentSans-Bold.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		012A0D23604F402A95BFD7E3 /* Outfit-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Outfit-Bold.ttf"; path = "../src/assets/fonts/Outfit-Bold.ttf"; sourceTree = "<group>"; };
+		05AB967224D94C478E9FFC50 /* InstrumentSans-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "InstrumentSans-Bold.ttf"; path = "../src/assets/fonts/InstrumentSans-Bold.ttf"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* OlgaMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OlgaMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = OlgaMobile/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = OlgaMobile/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = OlgaMobile/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1EAA5A3A23A74FCF81504D61 /* InstrumentSans-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "InstrumentSans-Regular.ttf"; path = "../src/assets/fonts/InstrumentSans-Regular.ttf"; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-OlgaMobile.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OlgaMobile.debug.xcconfig"; path = "Target Support Files/Pods-OlgaMobile/Pods-OlgaMobile.debug.xcconfig"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-OlgaMobile.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OlgaMobile.release.xcconfig"; path = "Target Support Files/Pods-OlgaMobile/Pods-OlgaMobile.release.xcconfig"; sourceTree = "<group>"; };
+		5747569A56A44739A1D822BC /* IBMPlexMono-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "IBMPlexMono-Medium.ttf"; path = "../src/assets/fonts/IBMPlexMono-Medium.ttf"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-OlgaMobile.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OlgaMobile.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = OlgaMobile/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = OlgaMobile/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		BDA9C9DF1DE546F0BBBAC803 /* Outfit-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Outfit-ExtraBold.ttf"; path = "../src/assets/fonts/Outfit-ExtraBold.ttf"; sourceTree = "<group>"; };
+		C2783E68B50F4D5E874BCEC4 /* IBMPlexMono-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "IBMPlexMono-Bold.ttf"; path = "../src/assets/fonts/IBMPlexMono-Bold.ttf"; sourceTree = "<group>"; };
+		D7C7D6553EE349EE95F7C10B /* IBMPlexMono-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "IBMPlexMono-Regular.ttf"; path = "../src/assets/fonts/IBMPlexMono-Regular.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		012A0D23604F402A95BFD7E3 /* Outfit-Bold.ttf */ = {isa = PBXFileReference; name = "Outfit-Bold.ttf"; path = "../src/assets/fonts/Outfit-Bold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		C2783E68B50F4D5E874BCEC4 /* IBMPlexMono-Bold.ttf */ = {isa = PBXFileReference; name = "IBMPlexMono-Bold.ttf"; path = "../src/assets/fonts/IBMPlexMono-Bold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		5747569A56A44739A1D822BC /* IBMPlexMono-Medium.ttf */ = {isa = PBXFileReference; name = "IBMPlexMono-Medium.ttf"; path = "../src/assets/fonts/IBMPlexMono-Medium.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		D7C7D6553EE349EE95F7C10B /* IBMPlexMono-Regular.ttf */ = {isa = PBXFileReference; name = "IBMPlexMono-Regular.ttf"; path = "../src/assets/fonts/IBMPlexMono-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		BDA9C9DF1DE546F0BBBAC803 /* Outfit-ExtraBold.ttf */ = {isa = PBXFileReference; name = "Outfit-ExtraBold.ttf"; path = "../src/assets/fonts/Outfit-ExtraBold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		1EAA5A3A23A74FCF81504D61 /* InstrumentSans-Regular.ttf */ = {isa = PBXFileReference; name = "InstrumentSans-Regular.ttf"; path = "../src/assets/fonts/InstrumentSans-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		05AB967224D94C478E9FFC50 /* InstrumentSans-Bold.ttf */ = {isa = PBXFileReference; name = "InstrumentSans-Bold.ttf"; path = "../src/assets/fonts/InstrumentSans-Bold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,17 +104,8 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				3B4392A12AC88292D35C810B /* Pods-OlgaMobile.debug.xcconfig */,
-				5709B34CF0A7D63546082F79 /* Pods-OlgaMobile.release.xcconfig */,
-			);
-			path = Pods;
-			sourceTree = "<group>";
-		};
 		ADBCD56FC8BE4E3C89DDACC5 /* Resources */ = {
-			isa = "PBXGroup";
+			isa = PBXGroup;
 			children = (
 				012A0D23604F402A95BFD7E3 /* Outfit-Bold.ttf */,
 				C2783E68B50F4D5E874BCEC4 /* IBMPlexMono-Bold.ttf */,
@@ -126,7 +117,15 @@
 			);
 			name = Resources;
 			sourceTree = "<group>";
-			path = "";
+		};
+		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				3B4392A12AC88292D35C810B /* Pods-OlgaMobile.debug.xcconfig */,
+				5709B34CF0A7D63546082F79 /* Pods-OlgaMobile.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
@@ -228,9 +227,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-OlgaMobile/Pods-OlgaMobile-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-OlgaMobile/Pods-OlgaMobile-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -267,9 +270,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-OlgaMobile/Pods-OlgaMobile-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-OlgaMobile/Pods-OlgaMobile-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -297,6 +304,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X56FMGRQ9L;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = OlgaMobile/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -310,7 +318,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.olga.app;
 				PRODUCT_NAME = OlgaMobile;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -327,6 +335,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X56FMGRQ9L;
 				INFOPLIST_FILE = OlgaMobile/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -339,7 +348,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.olga.app;
 				PRODUCT_NAME = OlgaMobile;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
