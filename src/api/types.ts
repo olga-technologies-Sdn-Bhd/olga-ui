@@ -93,6 +93,15 @@ export type ConsentRequest = {
   evidence?: Record<string, unknown>;
 };
 
+// GET /v1/consent-policies/{purposeCode}: the active version to send in
+// POST /v1/me/consents. 404 CONSENT_POLICY_NOT_ACTIVE when none is active.
+export type ConsentPolicy = {
+  purpose_code: string;
+  version: string;
+  locale?: string;
+  effective_from: string;
+};
+
 export type ConsentResponse = {
   member_consent_id: number;
   policy_id: string;

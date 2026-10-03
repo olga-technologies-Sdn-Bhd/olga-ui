@@ -145,7 +145,13 @@ export function GoLiveScreen({ navigation }: Props) {
               await grantLiveModeConsent();
               handleGoLive();
             } catch (e) {
-              setError(e instanceof ApiError && e.status > 0 ? `Couldn't save your consent (${e.status})` : "Couldn't reach the server");
+              setError(
+                e instanceof ApiError && e.code === 'CONSENT_POLICY_NOT_ACTIVE'
+                  ? "Live Mode isn't available right now. Please try again later."
+                  : e instanceof ApiError && e.status > 0
+                    ? `Couldn't save your consent (${e.status})`
+                    : "Couldn't reach the server"
+              );
             }
           },
         },
