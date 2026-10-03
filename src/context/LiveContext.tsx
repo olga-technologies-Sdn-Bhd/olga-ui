@@ -87,6 +87,18 @@ function logApiError(action: string, e: unknown) {
   if (e instanceof ApiError) console.warn(`${action} failed (${e.code}), correlation_id=${e.correlationId ?? 'none'}`);
 }
 
+// The member's OFFER is their profile headline + summary (the prototype has
+// no separate "what I offer" field). Empty profile -> no offer.
+async function profileOffer() {
+  try {
+    const p = await coreApi.getMyProfile();
+    const text = [p.headline, p.professional_summary].filter((x) => x && x.trim()).join('. ');
+    return text || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function LiveProvider({ children }: { children: React.ReactNode }) {
   const { memberId } = useAuth();
   const [activeEvent, setActiveEvent] = useState<ActiveEvent>(null);
@@ -208,6 +220,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         eventId: activeEvent.eventId,
         eventEndsAt: activeEvent.endsAt,
         wantText: intentText,
+        offerText: await profileOffer(),
         minMatchPercent: filters.minMatch,
       });
       setMatches(found);
