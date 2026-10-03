@@ -1,4 +1,5 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { CommitWhen } from '../api/types';
 
 
 export type AuthStackParamList = {
@@ -30,9 +31,18 @@ export type EventsStackParamList = {
   WhosGoing: { eventId: string };
 };
 
+// The Chat tab (board 10): Commits for you, sent Commits and meetings. The
+// chat itself isn't Phase 1.
+export type CommitsStackParamList = {
+  Commits: undefined;
+  // picker: who chooses the spot when the plan is "Their choice" (the
+  // receiver); unknown for meetings opened from the list.
+  Meetup: { name?: string; headline?: string; where: string; when: CommitWhen; eventName?: string; picker?: 'you' | 'them' };
+};
+
 export type MainTabParamList = {
   HomeTab: NavigatorScreenParams<HomeStackParamList> | undefined;
   GoLiveTab: NavigatorScreenParams<GoLiveStackParamList> | undefined;
   EventsTab: NavigatorScreenParams<EventsStackParamList> | undefined;
-  ChatTab: undefined;
+  ChatTab: NavigatorScreenParams<CommitsStackParamList> | undefined;
 };
