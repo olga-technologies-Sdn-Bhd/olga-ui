@@ -11,26 +11,7 @@ import {
 } from '../config/env';
 import { useAuth } from './AuthContext';
 import { useEvents } from './EventsContext';
-
-export type Seniority = 'any' | 'director' | 'c-level';
-
-export type MatchFilters = {
-  minMatch: number;
-  lookingFor: string[];
-  industries: string[];
-  seniority: Seniority;
-  allowNearMatches: boolean;
-  shareIntentChanges: boolean;
-};
-
-const DEFAULT_FILTERS: MatchFilters = {
-  minMatch: 74,
-  lookingFor: [],
-  industries: [],
-  seniority: 'director',
-  allowNearMatches: false,
-  shareIntentChanges: true,
-};
+import { MatchFilters, usePrefs } from './PrefsContext';
 
 type ActiveEvent = { eventId: string; name: string; endsAt: string; liveCount?: number } | null;
 
@@ -84,11 +65,15 @@ type LiveState = {
   // Saves the intent and runs a match request (src/api/matching.ts).
   // Throws MatchingError / ApiError; keeps the previous matches on failure.
   runMatching: () => Promise<MatchCard[]>;
+  // Board 09: Pass is silent and only ever stored on this phone.
+  passedIds: string[];
+  pass: (memberId: string) => void;
+  // Board 07: while live the intent can be changed once per session.
+  canEditIntent: boolean;
+  markIntentEdited: () => void;
+  // Saved on the phone per member (PrefsContext).
   filters: MatchFilters;
   setFilters: (filters: MatchFilters) => void;
-  sessionTags: string[];
-  addSessionTag: (tag: string) => void;
-  removeSessionTag: (tag: string) => void;
 };
 
 const LiveContext = createContext<LiveState | undefined>(undefined);
@@ -124,11 +109,16 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   );
   const [session, setSession] = useState<LiveModeSession | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [filters, setFilters] = useState<MatchFilters>(DEFAULT_FILTERS);
-  const [sessionTags, setSessionTags] = useState<string[]>([]);
+  const {
+    prefs: { filters },
+    setFilters,
+    completeTip,
+  } = usePrefs();
   const sessionRef = useRef<LiveModeSession | null>(null);
   const [intentText, setIntentText] = useState('');
+  const [intentEditSession, setIntentEditSession] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchCard[] | null>(null);
+  const [passedIds, setPassedIds] = useState<string[]>([]);
 
   const applySession = useCallback((next: LiveModeSession | null) => {
     sessionRef.current = next;
@@ -157,9 +147,10 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     setMatches(null);
   }, [memberId, applySession]);
 
-  // Matches belong to one event.
+  // Matches (and passes) belong to one event.
   useEffect(() => {
     setMatches(null);
+    setPassedIds([]);
   }, [activeEvent?.eventId]);
 
   // Event cancelled/unpublished by an admin (gone from GET /v1/events, or a
@@ -245,6 +236,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     try {
       const started = await coreApi.startLiveMode(activeEvent.eventId, { duration_minutes: LIVE_MODE_DURATION_MINUTES });
       applySession(started);
+      completeTip('wentLive');
       return null;
     } catch (e) {
       logApiError('Start Live Mode', e);
@@ -254,7 +246,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       if (blocker) return blocker;
       throw e;
     }
-  }, [activeEvent, applySession, markGone]);
+  }, [activeEvent, applySession, markGone, completeTip]);
 
   const grantLiveModeConsent = useCallback(async () => {
     try {
@@ -306,13 +298,6 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     }
   }, [activeEvent, intentText, filters.minMatch]);
 
-  const addSessionTag = useCallback((tag: string) => {
-    setSessionTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
-  }, []);
-  const removeSessionTag = useCallback((tag: string) => {
-    setSessionTags((prev) => prev.filter((t) => t !== tag));
-  }, []);
-
   const value = useMemo(
     () => ({
       activeEvent,
@@ -326,15 +311,18 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       setIntentText,
       matches,
       runMatching,
+      passedIds,
+      pass: (id: string) => setPassedIds((current) => (current.includes(id) ? current : [...current, id])),
+      canEditIntent: !(isLive && session && intentEditSession === session.session_id),
+      markIntentEdited: () => {
+        if (isLive && session) setIntentEditSession(session.session_id);
+      },
       filters,
       setFilters,
-      sessionTags,
-      addSessionTag,
-      removeSessionTag,
     }),
     // activeUntil is derived from session; listing session keeps it stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeEvent, isLive, session, goLive, grantLiveModeConsent, stopLive, intentText, matches, runMatching, filters, sessionTags, addSessionTag, removeSessionTag]
+    [activeEvent, isLive, session, goLive, grantLiveModeConsent, stopLive, intentText, matches, runMatching, filters, setFilters, intentEditSession, passedIds]
   );
 
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;

@@ -13,6 +13,8 @@ export type GoLiveStackParamList = {
   Filters: undefined;
   LiveMatches: undefined;
   EmptyRoom: undefined;
+  GoLiveColour: undefined;
+  Commit: { memberId: string };
 };
 
 export type EventsStackParamList = {

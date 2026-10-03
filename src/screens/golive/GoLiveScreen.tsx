@@ -1,39 +1,37 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { MatchingError, MatchingFailure } from '../../api/matching';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { DateBlock } from '../../components/DateBlock';
+import { FilterSummary } from '../../components/FilterSummary';
+import { GoLiveDisc } from '../../components/GoLiveDisc';
 import { Pill } from '../../components/Pill';
-import { PulseRings } from '../../components/PulseRings';
-import { RemovableTag } from '../../components/RemovableTag';
 import { Screen } from '../../components/Screen';
-import { TagInput } from '../../components/TagInput';
-import { ProgressBar } from '../../components/ProgressBar';
+import { LIVE_MODE_DURATION_MINUTES } from '../../config/env';
+import { isRegistered, useEvents } from '../../context/EventsContext';
 import { GoLiveBlocker, useLive } from '../../context/LiveContext';
+import { usePrefs } from '../../context/PrefsContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
+import { GO_LIVE_COLORS, goLiveColor } from '../../theme/goLiveColors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
+import { topMatches } from './LiveMatchesScreen';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'GoLive'>;
 
-// Matches the prototype's `startLiveSearch()` step timings.
-const SEARCH_STEPS: Array<{ delay: number; text: string }> = [
-  { delay: 0, text: "You're live. Looking around the room" },
-  { delay: 1200, text: 'Checking people against your intent' },
-  { delay: 2600, text: 'Ranking your strongest matches' },
-  { delay: 3900, text: 'Found people worth meeting' },
-];
+// The searching state plays at least this long, even if matching answers sooner.
+const MIN_SEARCH_MS = 3000;
+// Board 08: bounded automatic retries, then one manual retry. Never an
+// endless spinner.
+const AUTO_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 2000;
+const RETRYABLE: MatchingFailure[] = ['MATCHING_FAILED', 'TIMED_OUT'];
 
-// Minimum time the searching animation plays before navigating on, even if
-// the API responds sooner — keeps the choreographed steps from being cut off.
-const SEARCH_DURATION_MS = 5000;
-
-const QUICK_TAGS = ['Partnerships', 'Investors', 'Hiring', 'Customers'];
-
-const IDLE_TEXT = 'Nobody can see you yet. Tap to become visible.';
+const LIVE_LINE = 'Only your matches in this room can see you: role and intent, never your name.';
 
 const BLOCKER_MESSAGES: Record<Exclude<GoLiveBlocker, 'CONSENT_REQUIRED'>, string> = {
   REGISTRATION_REQUIRED: 'Sign up for this event first, then you can go live.',
@@ -44,104 +42,142 @@ const BLOCKER_MESSAGES: Record<Exclude<GoLiveBlocker, 'CONSENT_REQUIRED'>, strin
 };
 
 const MATCHING_MESSAGES: Record<MatchingFailure, string> = {
-  INTENT_HAS_PII: 'Your intent includes personal details. Edit it on Home, then try again.',
-  INTENT_FAILED: "We couldn't read your intent. Try rephrasing it on Home.",
-  MATCHING_FAILED: "You're live, but matching failed. Try again in a moment.",
-  TIMED_OUT: "You're live. Matching is taking longer than usual; check Live matches shortly.",
+  INTENT_HAS_PII: 'Your intent includes personal details. Edit it in your filter, then try again.',
+  INTENT_FAILED: "We couldn't read your intent. Try rephrasing it in your filter.",
+  MATCHING_FAILED: "You're live, but matching failed.",
+  TIMED_OUT: "You're live, but matching is taking longer than usual.",
 };
 
 function formatTime(date: Date) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-function wait(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
-}
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export function GoLiveScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { events } = useEvents();
+  const { prefs, setGoLiveColor } = usePrefs();
+  const disc = goLiveColor(prefs.goLiveColor);
   const {
     activeEvent,
+    setActiveEvent,
     isLive,
     activeUntil,
     goLive,
     grantLiveModeConsent,
     stopLive,
     runMatching,
+    matches,
+    passedIds,
     filters,
-    sessionTags,
-    addSessionTag,
-    removeSessionTag,
     intentText,
   } = useLive();
+  const [now, setNow] = useState(() => Date.now());
   const [searching, setSearching] = useState(false);
+  const [matchingFailed, setMatchingFailed] = useState(false);
+  const [manualRetryUsed, setManualRetryUsed] = useState(false);
   const [stopping, setStopping] = useState(false);
-  const [statusText, setStatusText] = useState(IDLE_TEXT);
   const [error, setError] = useState<string | null>(null);
-  const pulse = useRef(new Animated.Value(1)).current;
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  // The room phase follows the clock (before -> open -> ended).
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // The room: the selected event while it's still yours, else your next
+  // registered event that hasn't ended.
+  const room = useMemo(() => {
+    const mine = (events ?? [])
+      .filter((e) => isRegistered(e) && new Date(e.ends_at).getTime() > now)
+      .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+    return mine.find((e) => e.event_id === activeEvent?.eventId) ?? mine[0] ?? null;
+  }, [events, now, activeEvent?.eventId]);
 
   useEffect(() => {
-    if (!searching) {
-      pulse.setValue(1);
-      return;
+    if (!room || isLive || room.event_id === activeEvent?.eventId) return;
+    setActiveEvent({ eventId: room.event_id, name: room.name, endsAt: room.ends_at });
+  }, [room, isLive, activeEvent?.eventId, setActiveEvent]);
+
+  // Check-in is the presence gate, and Core has no check-in yet: until it
+  // does, Go Live opens when the event starts (agreed interim rule).
+  const opensAt = room ? new Date(room.starts_at) : null;
+  const beforeRoom = Boolean(opensAt && opensAt.getTime() > now);
+  const liveCount = activeEvent?.liveCount;
+
+  // Matching with bounded retries; the member stays live whatever happens.
+  const match = useCallback(async () => {
+    setSearching(true);
+    setMatchingFailed(false);
+    setError(null);
+    const started = Date.now();
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= AUTO_ATTEMPTS; attempt++) {
+      try {
+        const result = await runMatching();
+        await wait(Math.max(0, MIN_SEARCH_MS - (Date.now() - started)));
+        if (!mounted.current) return;
+        setSearching(false);
+        if (result.length === 0) navigation.navigate('EmptyRoom');
+        return;
+      } catch (e) {
+        lastError = e;
+        const retryable = e instanceof MatchingError ? RETRYABLE.includes(e.reason) : !(e instanceof ApiError && e.status >= 400 && e.status < 500);
+        if (!retryable || attempt === AUTO_ATTEMPTS) break;
+        await wait(RETRY_DELAY_MS);
+      }
     }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.06, duration: 575, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1, duration: 575, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ])
+    if (!mounted.current) return;
+    setSearching(false);
+    setMatchingFailed(true);
+    setError(
+      lastError instanceof MatchingError
+        ? MATCHING_MESSAGES[lastError.reason]
+        : lastError instanceof ApiError && lastError.status > 0
+          ? `You're live, but matching failed (${lastError.status}).`
+          : "You're live, but we couldn't reach matching."
     );
-    loop.start();
-    return () => loop.stop();
-  }, [searching, pulse]);
+  }, [runMatching, navigation]);
 
   async function handleGoLive() {
     if (!activeEvent) return;
     if (!intentText.trim()) {
-      setError("Add what you're looking for on Home first, so we can find your matches.");
+      setError("Add what you're looking for first, so we can find your matches.");
       return;
     }
-    setSearching(true);
     setError(null);
-    setStatusText(SEARCH_STEPS[0].text);
-    const stepTimers = SEARCH_STEPS.slice(1).map(({ delay, text }) => setTimeout(() => setStatusText(text), delay));
-    const reset = () => {
-      stepTimers.forEach(clearTimeout);
-      setSearching(false);
-    };
-
+    setManualRetryUsed(false);
+    setSearching(true);
     try {
       const blocker = await goLive();
       if (blocker) {
-        reset();
-        setStatusText(IDLE_TEXT);
+        setSearching(false);
         if (blocker === 'CONSENT_REQUIRED') askForConsent();
         else setError(BLOCKER_MESSAGES[blocker]);
         return;
       }
-      // Live now; matching failures keep the member live and explain why.
-      try {
-        const [found] = await Promise.all([runMatching(), wait(SEARCH_DURATION_MS)]);
-        reset();
-        navigation.navigate(found.length ? 'LiveMatches' : 'EmptyRoom');
-      } catch (e) {
-        reset();
-        if (e instanceof MatchingError) setError(MATCHING_MESSAGES[e.reason]);
-        else setError(e instanceof ApiError && e.status > 0 ? `You're live, but matching failed (${e.status})` : "You're live, but we couldn't reach matching");
-      }
     } catch (e) {
-      reset();
-      setStatusText(IDLE_TEXT);
+      setSearching(false);
       setError(e instanceof ApiError && e.status > 0 ? `Couldn't go live (${e.status})` : "Couldn't reach the server");
+      return;
     }
+    match();
   }
 
   // Live Mode needs a LIVE_MODE consent on record (403 LIVE_MODE_CONSENT_REQUIRED).
   function askForConsent() {
     Alert.alert(
       'Allow Live Mode?',
-      "While you're live, people at this event who match your intent can see you're here. You can stop anytime.",
+      "While you're live, people at this event who match your intent can see you're here. You can go invisible anytime.",
       [
         { text: 'Not now', style: 'cancel' },
         {
@@ -165,153 +201,183 @@ export function GoLiveScreen({ navigation }: Props) {
     );
   }
 
-  async function handleStopLive() {
+  async function handleGoInvisible() {
     setStopping(true);
     setError(null);
     try {
       await stopLive();
-      setStatusText(IDLE_TEXT);
+      setMatchingFailed(false);
     } catch (e) {
-      setError(e instanceof ApiError && e.status > 0 ? `Couldn't stop Live Mode (${e.status})` : "Couldn't reach the server");
+      setError(e instanceof ApiError && e.status > 0 ? `Couldn't go invisible (${e.status})` : "Couldn't reach the server");
     } finally {
       setStopping(false);
     }
   }
 
-  if (!activeEvent) {
+  const openFilter = () => navigation.navigate('Filters');
+
+  // No upcoming room: nothing to go live in.
+  if (!room) {
     return (
       <Screen>
-        <Text style={styles.h2}>Go Live</Text>
+        <View>
+          <Text style={styles.eyebrow}>Go Live</Text>
+          <Text style={styles.h2}>Not in a room yet</Text>
+        </View>
+        <GoLiveDisc locked label="GO LIVE" caption="OPENS AT CHECK-IN" fill={disc.fill} textColor={disc.text} />
+        <Text style={styles.lead}>Nobody can see you.</Text>
         <Card>
-          <Text style={styles.sub}>
-            Pick an event from the Events tab and tap "Go Live in this room" to become discoverable there.
-          </Text>
+          <Text style={styles.sub}>Sign up for an event. Go Live opens when you check in at the badge desk.</Text>
+          <Button label="Find an event" variant="secondary" small style={styles.cardButton} onPress={() => navigation.getParent()?.navigate('EventsTab')} />
         </Card>
+        <FilterSummary title="Who you'll see" intent={intentText} filters={filters} onChange={openFilter} />
       </Screen>
     );
   }
 
+  // Board 05: before the event. Locked, and says so plainly.
+  if (beforeRoom && !isLive) {
+    return (
+      <Screen>
+        <View>
+          <Text style={styles.eyebrow}>Go Live</Text>
+          <Text style={styles.h2}>Not in a room yet</Text>
+        </View>
+        <GoLiveDisc locked label="GO LIVE" caption="OPENS AT CHECK-IN" fill={disc.fill} textColor={disc.text} />
+        <Text style={styles.lead}>Nobody can see you.</Text>
+        <Card style={styles.roomCard}>
+          <DateBlock iso={room.starts_at} size="sm" />
+          <View style={styles.flex}>
+            <Text style={styles.h3}>{room.name}</Text>
+            <Text style={styles.sub}>Go Live opens when you check in at the badge desk.</Text>
+          </View>
+        </Card>
+        <FilterSummary title="Who you'll see" intent={intentText} filters={filters} onChange={openFilter} />
+      </Screen>
+    );
+  }
+
+  const until = activeUntil ? formatTime(activeUntil) : null;
+  const expectedEnd = formatTime(
+    new Date(Math.min(now + LIVE_MODE_DURATION_MINUTES * 60000, new Date(room.ends_at).getTime()))
+  );
+
+  // Board 08: live.
+  if (isLive) {
+    const count = topMatches(matches, passedIds).length;
+    const ready = !searching && count > 0;
+    return (
+      <Screen>
+        <View style={styles.header}>
+          <View style={styles.flex}>
+            <Text style={styles.eyebrow}>{room.name}</Text>
+            <Text style={styles.h2}>You're live</Text>
+          </View>
+          {until && <Pill label={`● UNTIL ${until}`} tone="positive" />}
+        </View>
+        <GoLiveDisc
+          waves
+          label={searching ? 'SEARCHING' : ready ? `LIVE · ${count} READY` : 'LIVE'}
+          caption={until ? `LIVE UNTIL ${until}` : undefined}
+          fill={disc.fill}
+          textColor={disc.text}
+          onPress={ready ? () => navigation.navigate('LiveMatches') : undefined}
+          accessibilityLabel={ready ? `Live, ${count} ready. Open your matches` : undefined}
+        />
+        <Text style={styles.lead}>
+          {searching
+            ? 'Finding your three strongest matches'
+            : ready
+              ? `Your ${count === 1 ? 'match is' : `${count} strongest matches are`} ready`
+              : matches && matches.length === 0
+                ? 'Nobody here clears your filter yet'
+                : "You're live"}
+        </Text>
+        <Text style={styles.center}>{LIVE_LINE}</Text>
+        {error && <Text style={styles.error}>{error}</Text>}
+        {matchingFailed && !manualRetryUsed && (
+          <Button
+            label="Try matching again"
+            variant="secondary"
+            onPress={() => {
+              setManualRetryUsed(true);
+              match();
+            }}
+          />
+        )}
+        {ready && <Button label="See your matches" onPress={() => navigation.navigate('LiveMatches')} />}
+        <Button label="Go invisible" variant="secondary" loading={stopping} disabled={searching} onPress={handleGoInvisible} />
+        <FilterSummary title="Live for" intent={intentText} filters={filters} onChange={openFilter} />
+      </Screen>
+    );
+  }
+
+  // Board 06: ready. Press and hold.
   return (
     <Screen>
       <View style={styles.header}>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.eyebrow}>{activeEvent.name}</Text>
-          <Text style={styles.h2}>{isLive ? "You're live" : 'Ready when you are'}</Text>
+        <View style={styles.flex}>
+          <Text style={styles.eyebrow}>{room.name}</Text>
+          <Text style={styles.h2}>Ready when you are</Text>
         </View>
-        {typeof activeEvent.liveCount === 'number' && <Pill label={`● ${activeEvent.liveCount} live`} tone="positive" />}
+        {typeof liveCount === 'number' && <Pill label={`● ${liveCount} LIVE`} tone="positive" />}
       </View>
-
-      <View style={styles.ringWrap}>
-        {/* Live ring is always green — the live signal, independent of whatever disc colour is picked. */}
-        <PulseRings active={searching} size={132} maxScale={1.75} color={colors.liveFill} />
-        <View style={styles.halo2}>
-          <View style={styles.halo1}>
-            <Animated.View style={[styles.ring, { transform: [{ scale: pulse }] }]}>
-              <Button
-                label={searching ? 'SEARCHING' : isLive ? 'STOP' : 'GO LIVE'}
-                onPress={isLive ? handleStopLive : handleGoLive}
-                disabled={searching || stopping}
-                style={styles.ringButton}
-              />
-            </Animated.View>
-          </View>
-        </View>
-      </View>
-
-      <Text style={styles.status}>
-        {isLive && !searching && activeUntil ? `You're visible in this room until ${formatTime(activeUntil)}.` : statusText}
+      <GoLiveDisc
+        label={searching ? 'SEARCHING' : 'GO LIVE'}
+        caption={searching ? undefined : 'PRESS & HOLD'}
+        waves={searching}
+        fill={disc.fill}
+        textColor={disc.text}
+        disabled={searching}
+        onHoldComplete={handleGoLive}
+      />
+      <Text style={styles.lead}>Press and hold to Go Live</Text>
+      <Text style={styles.center}>
+        Your three best matches in this room appear, and only they can see you. Nobody else. It ends at {expectedEnd}.
       </Text>
+      {error && <Text style={styles.error}>{error}</Text>}
 
-      {error && <Text style={{ color: colors.danger, fontSize: 13, textAlign: 'center' }}>{error}</Text>}
+      <View style={styles.colors}>
+        {GO_LIVE_COLORS.map((c) => (
+          <Pressable
+            key={c.key}
+            onPress={() => setGoLiveColor(c.key)}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={`${c.label} button colour`}
+            accessibilityState={{ selected: prefs.goLiveColor === c.key }}
+            style={[styles.swatchRing, prefs.goLiveColor === c.key && styles.swatchRingOn]}
+          >
+            <View style={[styles.swatch, { backgroundColor: c.fill }, c.key === 'pearl' && styles.swatchPearl]} />
+          </Pressable>
+        ))}
+        <Pressable onPress={() => navigation.navigate('GoLiveColour')} hitSlop={8} accessibilityRole="link">
+          <Text style={styles.link}>Your colour</Text>
+        </Pressable>
+      </View>
 
-      <Text style={styles.sectionTitle}>Who you want to meet</Text>
-      <Card>
-        <View style={styles.filtersRow}>
-          <Text style={styles.eyebrow}>Active filter</Text>
-          <Button label="Change" variant="ghost" small onPress={() => navigation.navigate('Filters')} />
-        </View>
-        {filters.lookingFor.length > 0 && (
-          <View style={styles.tags}>
-            {filters.lookingFor.map((tag) => (
-              <Pill key={tag} label={tag} tone="active" />
-            ))}
-          </View>
-        )}
-        <View style={[styles.filtersRow, { marginTop: 16 }]}>
-          <Text style={styles.sub}>Minimum match</Text>
-          <Text style={styles.matchValue}>{filters.minMatch}%</Text>
-        </View>
-        <View style={{ marginTop: 8 }}>
-          <ProgressBar percent={filters.minMatch} />
-        </View>
-      </Card>
-
-      <Text style={styles.sectionTitle}>Add tags for this session</Text>
-      <Card>
-        <Text style={styles.h3}>What are you open to right now?</Text>
-        <Text style={styles.sub}>Add quick tags so people can understand your current context before sending a commit.</Text>
-
-        {sessionTags.length > 0 && (
-          <View style={styles.tags}>
-            {sessionTags.map((tag) => (
-              <RemovableTag key={tag} label={tag} onRemove={() => removeSessionTag(tag)} />
-            ))}
-          </View>
-        )}
-
-        <View style={{ marginTop: 12 }}>
-          <TagInput placeholder="e.g. Co-founder, Sales, Funding" onAdd={addSessionTag} />
-        </View>
-
-        <View style={styles.tags}>
-          {QUICK_TAGS.map((tag) => (
-            <Pill key={tag} label={`+ ${tag}`} onPress={() => addSessionTag(tag)} />
-          ))}
-        </View>
-      </Card>
-
-      {isLive && <Button label="See live matches" variant="secondary" onPress={() => navigation.navigate('LiveMatches')} />}
+      <FilterSummary title="You're going live for" intent={intentText} filters={filters} onChange={openFilter} />
     </Screen>
   );
 }
 
-const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-  h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
-  h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
-  ringWrap: { alignItems: 'center', justifyContent: 'center', marginVertical: 26 },
-  halo2: {
-    width: 164,
-    height: 164,
-    borderRadius: 82,
-    backgroundColor: colors.tint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  halo1: {
-    width: 146,
-    height: 146,
-    borderRadius: 73,
-    backgroundColor: colors.tint2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ring: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    borderWidth: 1,
-    borderColor: colors.tintLine,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  ringButton: { width: 92, height: 92, borderRadius: 46, paddingHorizontal: 0 },
-  status: { textAlign: 'center', color: colors.muted, fontSize: 13, minHeight: 36 },
-  sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
-  filtersRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sub: { fontSize: 13, color: colors.muted, marginTop: 4 },
-  matchValue: { fontSize: 14, fontWeight: '800', color: colors.text },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-});
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    flex: { flex: 1, minWidth: 0 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
+    h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
+    lead: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: '700', color: colors.text, textAlign: 'center' },
+    center: { fontSize: 13, lineHeight: 19, color: colors.muted, textAlign: 'center', marginTop: -6, paddingHorizontal: 8 },
+    sub: { fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
+    error: { color: colors.danger, fontSize: 13, textAlign: 'center' },
+    roomCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    cardButton: { alignSelf: 'flex-start', marginTop: 12 },
+    colors: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' },
+    swatchRing: { padding: 3, borderRadius: 18, borderWidth: 2, borderColor: 'transparent' },
+    swatchRingOn: { borderColor: colors.text },
+    swatch: { width: 24, height: 24, borderRadius: 12 },
+    swatchPearl: { borderWidth: 1, borderColor: colors.brand2 },
+    link: { fontSize: 13, fontWeight: '700', color: colors.text, textDecorationLine: 'underline', marginLeft: 6 },
+  });
