@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 
 export type AuthStackParamList = {
   SignUp: undefined;
@@ -29,8 +31,8 @@ export type EventsStackParamList = {
 };
 
 export type MainTabParamList = {
-  HomeTab: undefined;
-  GoLiveTab: undefined;
-  EventsTab: undefined;
+  HomeTab: NavigatorScreenParams<HomeStackParamList> | undefined;
+  GoLiveTab: NavigatorScreenParams<GoLiveStackParamList> | undefined;
+  EventsTab: NavigatorScreenParams<EventsStackParamList> | undefined;
   ChatTab: undefined;
 };
