@@ -27,7 +27,7 @@ export const lightColors = {
   // Green TEXT — match scores and counts. Never used as a fill/icon color.
   positive: '#147A3A',
   // Green tint — background behind green text (e.g. a match-count pill).
-  positiveSoft: '#E7F3EA',
+  positiveSoft: '#E7F3EB',
   // Green FILL — live dot, live ring (PulseRings), live button. Never text.
   liveFill: '#16A34A',
   // Amber — outcome states only (e.g. "Confirm you met").
