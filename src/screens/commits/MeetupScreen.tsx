@@ -7,14 +7,14 @@ import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Screen } from '../../components/Screen';
-import { CommitsStackParamList } from '../../navigation/types';
+import { ChatStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
 import { WHEN_LABELS, whereLabel } from '../../utils/commitText';
 import { getInitials } from '../../utils/initials';
 
-type Props = NativeStackScreenProps<CommitsStackParamList, 'Meetup'>;
+type Props = NativeStackScreenProps<ChatStackParamList, 'Meetup'>;
 
 // After Accept both members see each other's name and the agreed plan. The
 // chat itself isn't Phase 1, so this is where the meeting is confirmed.

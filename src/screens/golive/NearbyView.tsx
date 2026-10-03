@@ -1,8 +1,9 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronRight } from 'lucide-react-native';
-import { useCallback, useMemo, useRef } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Bluetooth, ChevronRight, Info, Search, WifiOff } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BleDebugPanel } from '../../components/BleDebugPanel';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { FilterSummary } from '../../components/FilterSummary';
 import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase, useCountUp } from '../../components/GoLiveRadar';
 import { Pill } from '../../components/Pill';
@@ -45,7 +46,18 @@ const avatarStyles = StyleSheet.create({
 });
 
 // "This event | Nearby", when the member has an event to go live in.
-export function GoLiveModeSwitch({ mode, onChange, disabled }: { mode: GoLiveMode; onChange: (mode: GoLiveMode) => void; disabled?: boolean }) {
+export function GoLiveModeSwitch({
+  mode,
+  onChange,
+  disabled,
+  eventOffline,
+}: {
+  mode: GoLiveMode;
+  onChange: (mode: GoLiveMode) => void;
+  disabled?: boolean;
+  // No internet: "This event" needs Ol-ga, so it's shown faded (still tappable, to explain why).
+  eventOffline?: boolean;
+}) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const option = (value: GoLiveMode, label: string) => (
@@ -55,7 +67,7 @@ export function GoLiveModeSwitch({ mode, onChange, disabled }: { mode: GoLiveMod
       accessibilityState={{ selected: mode === value, disabled }}
       style={[styles.switchOption, mode === value && styles.switchOn]}
     >
-      <Text style={[styles.switchText, mode === value && styles.switchTextOn]}>{label}</Text>
+      <Text style={[styles.switchText, mode === value && styles.switchTextOn, value === 'event' && eventOffline && styles.switchTextOff]}>{label}</Text>
     </Pressable>
   );
   return (
@@ -83,26 +95,54 @@ export function NearbyView({ navigation, onSwitchToEvent }: Props) {
   const openPeople = useCallback(() => navigation.navigate('NearbyPeople'), [navigation]);
   const openRequest = (r: NearbyRequest) => navigation.navigate('NearbyRequest', { requestId: r.id });
 
+  // In the app's own dialog style (not the system alert).
+  const [dialog, setDialog] = useState<'intent' | 'consent' | null>(null);
+
+  // "This event" needs internet: offline, stay on Nearby and say why (briefly).
+  const [offlineNote, setOfflineNote] = useState(false);
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tryEvent = () => {
+    if (online === false) {
+      setOfflineNote(true);
+      if (noteTimer.current) clearTimeout(noteTimer.current);
+      noteTimer.current = setTimeout(() => setOfflineNote(false), 4000);
+      return;
+    }
+    onSwitchToEvent?.();
+  };
+  useEffect(() => () => {
+    if (noteTimer.current) clearTimeout(noteTimer.current);
+  }, []);
+  // Back online: the note no longer applies.
+  useEffect(() => {
+    if (online) setOfflineNote(false);
+  }, [online]);
+
+  // The "how it works" line lives in a hint bubble behind the (i).
+  const [hint, setHint] = useState(false);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toggleHint = () => {
+    if (hintTimer.current) clearTimeout(hintTimer.current);
+    setHint((open) => {
+      if (!open) hintTimer.current = setTimeout(() => setHint(false), 6000);
+      return !open;
+    });
+  };
+  useEffect(() => () => {
+    if (hintTimer.current) clearTimeout(hintTimer.current);
+  }, []);
+
   async function goAvailable() {
     const result = await setAvailable(true);
-    if (result === 'NEED_INTENT') {
-      Alert.alert('Add what you’re looking for', 'So people nearby who match it can find you.', [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Add it', onPress: openFilter },
-      ]);
-    } else if (result === 'NEED_CONSENT') {
-      Alert.alert(NEARBY_CONSENT.title, NEARBY_CONSENT.body, [
-        { text: 'Not now', style: 'cancel' },
-        {
-          text: 'Allow',
-          onPress: () => {
-            grantConsent();
-            // Consent is saved in the same tick: give it a moment to land.
-            setTimeout(() => setAvailable(true), 0);
-          },
-        },
-      ]);
-    }
+    if (result === 'NEED_INTENT') setDialog('intent');
+    else if (result === 'NEED_CONSENT') setDialog('consent');
+  }
+
+  function allowNearby() {
+    setDialog(null);
+    grantConsent();
+    // Consent is saved in the same tick: give it a moment to land.
+    setTimeout(() => setAvailable(true), 0);
   }
   const holdRef = useRef(goAvailable);
   holdRef.current = goAvailable;
@@ -143,7 +183,15 @@ export function NearbyView({ navigation, onSwitchToEvent }: Props) {
         )}
       </View>
 
-      {onSwitchToEvent && <GoLiveModeSwitch mode="nearby" onChange={(m) => m === 'event' && onSwitchToEvent()} disabled={available} />}
+      {onSwitchToEvent && (
+        <GoLiveModeSwitch mode="nearby" onChange={(m) => m === 'event' && tryEvent()} disabled={available} eventOffline={online === false} />
+      )}
+      {offlineNote && (
+        <View style={styles.offlineNote} accessibilityLiveRegion="polite">
+          <WifiOff size={14} color={colors.muted} strokeWidth={2} />
+          <Text style={styles.offlineNoteText}>“This event” needs internet. Nearby works without it.</Text>
+        </View>
+      )}
 
       <GoLiveRadar
         phase={phase}
@@ -155,8 +203,27 @@ export function NearbyView({ navigation, onSwitchToEvent }: Props) {
 
       {phase === 'idle' && (
         <>
-          <Text style={styles.lead}>Press and hold to Go Live nearby</Text>
-          <Text style={styles.center}>Ol-ga members close to you who match what you're looking for appear here. Works over Bluetooth, even without internet.</Text>
+          <Pressable
+            onPress={toggleHint}
+            style={styles.leadRow}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Press and hold to Go Live nearby. How it works"
+            accessibilityState={{ expanded: hint }}
+          >
+            <Text style={styles.lead}>Press and hold to Go Live nearby</Text>
+            <Info size={16} color={colors.muted} strokeWidth={2} />
+          </Pressable>
+          {hint && (
+            <Pressable onPress={toggleHint} style={styles.hintWrap} accessibilityRole="text">
+              <View style={styles.hintArrow} />
+              <View style={styles.hintBubble}>
+                <Text style={styles.hintText}>
+                  Ol-ga members close to you who match what you're looking for appear here. Works over Bluetooth, even without internet.
+                </Text>
+              </View>
+            </Pressable>
+          )}
         </>
       )}
       {phase === 'live' && (
@@ -246,6 +313,33 @@ export function NearbyView({ navigation, onSwitchToEvent }: Props) {
 
       <FilterSummary title={available ? 'Available for' : "You're going live for"} intent={intentText} filters={filters} onChange={openFilter} />
       {available && <BleDebugPanel />}
+      <ConfirmDialog
+        visible={dialog === 'consent'}
+        icon={Bluetooth}
+        tone="info"
+        title={NEARBY_CONSENT.title}
+        message={NEARBY_CONSENT.body}
+        primaryLabel="Allow"
+        onPrimary={allowNearby}
+        secondaryLabel="Not now"
+        onSecondary={() => setDialog(null)}
+        onDismiss={() => setDialog(null)}
+      />
+      <ConfirmDialog
+        visible={dialog === 'intent'}
+        icon={Search}
+        tone="info"
+        title="Add what you’re looking for"
+        message="So people nearby who match it can find you."
+        primaryLabel="Add it"
+        onPrimary={() => {
+          setDialog(null);
+          openFilter();
+        }}
+        secondaryLabel="Not now"
+        onSecondary={() => setDialog(null)}
+        onDismiss={() => setDialog(null)}
+      />
     </Screen>
   );
 }
@@ -262,6 +356,49 @@ const makeStyles = (colors: ThemeColors) =>
     eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
     h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
     lead: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'center' },
+    leadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'center' },
+    // The hint: a white bubble with a hairline, pointing up at the line above.
+    hintWrap: { alignItems: 'center', marginTop: -4 },
+    hintArrow: {
+      width: 12,
+      height: 12,
+      backgroundColor: colors.surface,
+      borderLeftWidth: 1,
+      borderTopWidth: 1,
+      borderColor: colors.line,
+      transform: [{ rotate: '45deg' }],
+      marginBottom: -7,
+      zIndex: 1,
+    },
+    hintBubble: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.line,
+      borderRadius: 14,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      maxWidth: 320,
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
+    },
+    hintText: { fontSize: 13, lineHeight: 19, color: colors.text, textAlign: 'center' },
+    offlineNote: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      alignSelf: 'center',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.line,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+    },
+    offlineNoteText: { fontSize: 12, color: colors.muted },
     center: { fontSize: 12, lineHeight: 18, color: colors.muted, textAlign: 'center', marginTop: -6, paddingHorizontal: 8 },
     warn: { fontSize: 12, lineHeight: 18, color: colors.danger, textAlign: 'center', paddingHorizontal: 8 },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
@@ -295,5 +432,6 @@ const makeStyles = (colors: ThemeColors) =>
     switchOption: { justifyContent: 'center', paddingHorizontal: 16, borderRadius: 999 },
     switchOn: { backgroundColor: colors.surface },
     switchText: { fontSize: 12, fontWeight: '600', color: colors.muted },
+    switchTextOff: { opacity: 0.45 },
     switchTextOn: { color: colors.text },
   });

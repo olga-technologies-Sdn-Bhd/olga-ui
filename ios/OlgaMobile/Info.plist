@@ -43,7 +43,7 @@
 		<true/>
 	</dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Ol-ga uses Bluetooth while you are live to find other Ol-ga members nearby. It shares a random code that changes each time, never your name or details.</string>
+	<string>Ol-ga uses Bluetooth while Nearby is on to find Ol-ga members close to you, and to send messages to people you're connected with when there's no internet. People nearby see your role and what you're looking for, never your name.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

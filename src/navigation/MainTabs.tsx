@@ -1,4 +1,5 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { House, LucideIcon, MessageCircle, Radio, Ticket } from 'lucide-react-native';
 import { Platform, StyleSheet, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -6,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NearbyBanner } from '../components/NearbyBanner';
 import { useLive } from '../context/LiveContext';
 import { useNearby } from '../context/NearbyContext';
-import { CommitsStack } from './CommitsStack';
+import { ChatStack } from './ChatStack';
 import { HomeStack } from './HomeStack';
 import { useTheme } from '../theme/ThemeContext';
 import { EventsStack } from './EventsStack';
@@ -50,6 +51,8 @@ export function MainTabs() {
           tabBarInactiveTintColor: colors.muted,
           // A floating glass pill above the content, not a bar docked to the edge.
           tabBarStyle: {
+            // A conversation takes the whole screen: its composer sits where the pill would.
+            ...(getFocusedRouteNameFromRoute(route) === 'Conversation' ? { display: 'none' as const } : {}),
             position: 'absolute',
             marginHorizontal: 32,
             bottom: Math.max(bottom, 8) + 6,
@@ -93,8 +96,8 @@ export function MainTabs() {
         <Tab.Screen name="HomeTab" component={HomeStack} />
         <Tab.Screen name="GoLiveTab" component={GoLiveStack} />
         <Tab.Screen name="EventsTab" component={EventsStack} />
-        {/* Board 10: Commits for you and meetings (the chat itself isn't Phase 1). */}
-        <Tab.Screen name="ChatTab" component={CommitsStack} />
+        {/* Commits and Chats. */}
+        <Tab.Screen name="ChatTab" component={ChatStack} />
       </Tab.Navigator>
       <NearbyBanner />
     </>

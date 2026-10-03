@@ -337,10 +337,11 @@ const makeStyles = (colors: ThemeColors) =>
     // Same width as the avatar, so the wordmark sits in the true centre.
     headerSpacer: { width: 34 },
     brand: { flex: 1, textAlign: 'center', fontSize: 21, color: colors.text },
-    date: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.muted },
-    greeting: { fontFamily: fonts.headingBold, fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.text },
+    date: { fontSize: 10, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.muted },
+    greeting: { fontFamily: fonts.headingBold, fontSize: 24, lineHeight: 28, fontWeight: '800', color: colors.text, marginTop: 1 },
     // A quiet line, not a call to action: no box, small muted text.
-    setup: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 32, alignSelf: 'flex-start' },
+    // Tucked under the greeting (the screen's 12 gap is too much here).
+    setup: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 24, marginTop: -8, alignSelf: 'flex-start' },
     setupText: { fontSize: 13, color: colors.muted },
     // The one large dark element on the screen, the same in both themes.
     capital: {
@@ -378,7 +379,7 @@ const makeStyles = (colors: ThemeColors) =>
       alignItems: 'flex-start',
       gap: 12,
       paddingHorizontal: 20,
-      paddingVertical: 12,
+      paddingVertical: 8,
       borderBottomWidth: 1,
       borderBottomColor: colors.line,
     },
@@ -386,7 +387,7 @@ const makeStyles = (colors: ThemeColors) =>
     iconAmber: { backgroundColor: colors.amberSoft },
     initials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
     meta: { fontSize: 12, color: colors.muted },
-    body: { fontSize: 14, lineHeight: 20, color: colors.text, marginTop: 2 },
+    body: { fontSize: 14, lineHeight: 20, color: colors.text, marginTop: 1 },
     bodyBold: { fontFamily: fonts.bodyBold, fontWeight: '700' },
     empty: { fontSize: 13, color: colors.muted, paddingHorizontal: 20, paddingVertical: 18 },
   });

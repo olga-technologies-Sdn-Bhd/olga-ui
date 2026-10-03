@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { APP_ENV } from '../config/env';
+import { useOfflineChat } from '../context/OfflineChatContext';
 import { useNearby } from '../context/NearbyContext';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
@@ -18,10 +19,18 @@ function Panel() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { ble, people, resetForTesting } = useNearby();
+  const chat = useOfflineChat();
   const confirmReset = () =>
-    Alert.alert('Reset Nearby on this phone?', "Forgets this member's Nearby consent, Commits and passes on this phone, and goes invisible. Ol-ga's own data isn't touched.", [
+    Alert.alert('Reset Nearby on this phone?', "Forgets this member's Nearby consent, Commits, passes and Bluetooth chats on this phone, and goes invisible. Ol-ga's own data isn't touched.", [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Reset', style: 'destructive', onPress: resetForTesting },
+      {
+        text: 'Reset',
+        style: 'destructive',
+        onPress: () => {
+          resetForTesting();
+          chat.resetForTesting();
+        },
+      },
     ]);
   // Ages tick once a second while the list is showing.
   const [now, setNow] = useState(Date.now());

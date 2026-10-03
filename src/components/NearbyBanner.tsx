@@ -13,15 +13,18 @@ const SHOW_MS = 8000;
 
 // Notification ids are nearby-in-<request id> (a Commit for you) and
 // nearby-ok-<request id> (your Commit was accepted): both open that request.
+// chat-<member id> (a message over Bluetooth) opens that conversation.
 function openFromNotification(id: string, attempt = 0) {
   const match = /^nearby-(?:in|ok)-(.+)$/.exec(id);
-  if (!match) return;
+  const chat = /^chat-(.+)$/.exec(id);
+  if (!match && !chat) return;
   if (!navigationRef.isReady()) {
     // Cold start: the navigator mounts after the splash.
     if (attempt < 40) setTimeout(() => openFromNotification(id, attempt + 1), 250);
     return;
   }
-  navigationRef.navigate('GoLiveTab', { screen: 'NearbyRequest', params: { requestId: match[1] } });
+  if (chat) navigationRef.navigate('ChatTab', { screen: 'Conversation', params: { memberId: chat[1] } });
+  else if (match) navigationRef.navigate('GoLiveTab', { screen: 'NearbyRequest', params: { requestId: match[1] } });
 }
 
 // Drops in over any screen when someone nearby sends a Commit; tap to answer.

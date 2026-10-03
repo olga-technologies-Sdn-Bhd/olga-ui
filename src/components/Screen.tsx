@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StatusBar, StyleSheet, View, ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StatusBar, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -7,6 +7,8 @@ type Props = {
   children: React.ReactNode;
   scroll?: boolean;
   style?: ViewStyle;
+  // Extra content padding/layout, e.g. a chat screen with a pinned composer.
+  contentStyle?: StyleProp<ViewStyle>;
   background?: React.ReactNode;
   // Pull-to-refresh (scrolling screens only).
   onRefresh?: () => Promise<void>;
@@ -51,7 +53,7 @@ export function usePullToRefresh(onRefresh?: () => Promise<void>) {
   return { refreshing, handleRefresh };
 }
 
-export function Screen({ children, scroll = true, style, background, onRefresh }: Props) {
+export function Screen({ children, scroll = true, style, contentStyle, background, onRefresh }: Props) {
   const { refreshing, handleRefresh } = usePullToRefresh(onRefresh);
   const topInset = useTopInset();
   const { colors } = useTheme();
@@ -65,7 +67,7 @@ export function Screen({ children, scroll = true, style, background, onRefresh }
       }),
     [colors]
   );
-  const content = [styles.content, { paddingTop: 12 + topInset }];
+  const content = [styles.content, { paddingTop: 12 + topInset }, contentStyle];
   const containerStyle = [styles.container, background ? styles.transparent : null, style];
 
   const body = scroll ? (

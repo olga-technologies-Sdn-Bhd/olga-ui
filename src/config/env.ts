@@ -30,6 +30,14 @@ if (APP_ENV === 'local' && !__DEV__) {
 // (deliberate scope decision); calls carry X-Member-Id, not a token.
 export const CORE_API_URL = requireUrl('Core API URL', environment.coreApiUrl);
 
+// Chat is live in dev and local builds only. In production the Chats tab
+// says "Chat feature is coming soon" (Commits still works).
+export const CHAT_COMING_SOON: boolean = APP_ENV === 'prod';
+// Chat has no real-time channel yet, so it polls while the screen is focused.
+export const CHAT_MESSAGE_POLL_MS = 4000;
+export const CHAT_INBOX_POLL_MS = 15000;
+
+
 export const NLP_API_URL = requireUrl('NLP API URL', environment.nlpApiUrl);
 
 // Keychain entries are kept per environment, so tokens and member IDs from

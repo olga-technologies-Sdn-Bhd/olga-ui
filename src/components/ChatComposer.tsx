@@ -1,21 +1,38 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { SendHorizontal } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
   placeholder: string;
   onSubmit: (value: string) => void;
   keyboardType?: 'default' | 'phone-pad' | 'email-address';
+  // Controlled text (e.g. quick replies fill it); uncontrolled when omitted.
+  value?: string;
+  onChangeText?: (value: string) => void;
+  disabled?: boolean;
+  maxLength?: number;
 };
 
 // Matches the prototype's `.chat-composer` pill input + send button.
-export function ChatComposer({ placeholder, onSubmit, keyboardType = 'default' }: Props) {
-  const [value, setValue] = useState('');
+export function ChatComposer({
+  placeholder,
+  onSubmit,
+  keyboardType = 'default',
+  value: controlledValue,
+  onChangeText,
+  disabled,
+  maxLength,
+}: Props) {
+  const [ownValue, setOwnValue] = useState('');
+  const value = controlledValue ?? ownValue;
+  const setValue = onChangeText ?? setOwnValue;
   const { colors } = useTheme();
   const styles = useMemo(
     () =>
       StyleSheet.create({
         wrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+        disabled: { opacity: 0.5 },
         input: {
           flex: 1,
           borderWidth: 1,
@@ -23,7 +40,7 @@ export function ChatComposer({ placeholder, onSubmit, keyboardType = 'default' }
           borderRadius: 999,
           paddingVertical: 12,
           paddingHorizontal: 14,
-          backgroundColor: colors.surface2,
+          backgroundColor: colors.surface,
           fontSize: 14,
           color: colors.text,
         },
@@ -37,19 +54,20 @@ export function ChatComposer({ placeholder, onSubmit, keyboardType = 'default' }
           alignItems: 'center',
           justifyContent: 'center',
         },
-        sendText: { color: colors.onInk, fontWeight: '800', fontSize: 15 },
+        // WhatsApp's paper plane, nudged right so it looks centred.
+        sendIcon: { marginLeft: 2 },
       }),
     [colors]
   );
 
   function handleSend() {
-    if (!value.trim()) return;
+    if (disabled || !value.trim()) return;
     onSubmit(value.trim());
     setValue('');
   }
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, disabled && styles.disabled]}>
       <TextInput
         value={value}
         onChangeText={setValue}
@@ -61,9 +79,11 @@ export function ChatComposer({ placeholder, onSubmit, keyboardType = 'default' }
         style={styles.input}
         onSubmitEditing={handleSend}
         returnKeyType="send"
+        editable={!disabled}
+        maxLength={maxLength}
       />
-      <Pressable style={styles.send} onPress={handleSend} hitSlop={12}>
-        <Text style={styles.sendText}>↑</Text>
+      <Pressable style={styles.send} onPress={handleSend} hitSlop={12} disabled={disabled} accessibilityLabel="Send">
+        <SendHorizontal size={19} color={colors.onInk} strokeWidth={2.2} style={styles.sendIcon} />
       </Pressable>
     </View>
   );
