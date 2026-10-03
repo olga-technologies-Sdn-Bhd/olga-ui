@@ -39,6 +39,9 @@ type FindMatchesInput = {
   eventId: string;
   eventEndsAt: string; // the intent expires with the event
   wantText: string; // what the member is looking for (Home "Your intent")
+  // What the member offers, from their profile. Others' WANTs match against
+  // it; without one this member can't show up in anyone's matches.
+  offerText?: string;
   minMatchPercent: number; // Filters "Minimum match"
 };
 
@@ -51,9 +54,25 @@ type FindMatchesInput = {
 //   3. Load each matched member's profile for the cards (GET /v1/members/{id});
 //      a failed lookup just shows the generic card.
 // Throws MatchingError for the cases above, ApiError for anything else.
-export async function findMatches({ eventId, eventEndsAt, wantText, minMatchPercent }: FindMatchesInput): Promise<MatchCard[]> {
+export async function findMatches({ eventId, eventEndsAt, wantText, offerText, minMatchPercent }: FindMatchesInput): Promise<MatchCard[]> {
   const deadline = Date.now() + MATCH_POLL_TIMEOUT_MS;
   const intentId = intentIdFor(eventId, 'WANT');
+
+  // 0. Offer (best effort): it only affects other members' matches, so a
+  // failure here must not stop this member's own matching.
+  if (offerText) {
+    try {
+      await nlpApi.createIntent({
+        intent_id: intentIdFor(eventId, 'OFFER'),
+        context_id: eventId,
+        intent_type: 'OFFER',
+        text: offerText,
+        expires_at: eventEndsAt,
+      });
+    } catch (e) {
+      console.warn(`Offer intent not saved (${e instanceof ApiError ? e.code : 'error'})`);
+    }
+  }
 
   // 1. Intent
   const saved = await nlpApi.createIntent({
