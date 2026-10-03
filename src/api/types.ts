@@ -115,6 +115,9 @@ export type EventSummary = {
   status: string;
   live_mode_enabled: boolean;
   venue?: string;
+  // Admin-entered; optional until the backend ships them.
+  description?: string;
+  venue_id?: string;
   attendee_count?: number;
   live_count?: number;
   // Only sent when X-Member-Id is present: true for a REGISTERED or

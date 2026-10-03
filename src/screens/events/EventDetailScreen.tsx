@@ -1,5 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { BackHeader } from '../../components/BackHeader';
@@ -21,23 +22,44 @@ type Props = NativeStackScreenProps<EventsStackParamList, 'EventDetail'>;
 export function EventDetailScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { events, register } = useEvents();
-  const { setActiveEvent } = useLive();
-  // Latest server state for this event (updates right after registering);
-  // the navigation param is only the snapshot it was opened with.
-  const event = events?.find((e) => e.event_id === route.params.event.event_id) ?? route.params.event;
+  const { getEvent, isGone, register, refresh, refreshIfStale } = useEvents();
+  const { setActiveEvent, intentText } = useLive();
+  // Always the latest server data (admins can edit name, times, venue).
+  const { eventId } = route.params;
+  const event = getEvent(eventId);
+  const gone = isGone(eventId);
   const [registering, setRegistering] = useState(false);
-  const registered = isRegistered(event);
   const [error, setError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshIfStale();
+    }, [refreshIfStale])
+  );
+
+  // Cancelled or unpublished by an admin: the notice comes from EventsContext.
+  useEffect(() => {
+    if (gone && navigation.canGoBack()) navigation.goBack();
+  }, [gone, navigation]);
+
+  if (!event) {
+    return (
+      <Screen>
+        <BackHeader onBack={() => navigation.goBack()} />
+        <Text style={styles.sub}>{gone ? 'This event was cancelled.' : 'Loading event…'}</Text>
+      </Screen>
+    );
+  }
+  const registered = isRegistered(event);
 
   async function handleRegister() {
     setRegistering(true);
     setError(null);
     try {
-      await register(event.event_id);
+      await register(eventId);
     } catch (e) {
       if (e instanceof ApiError && e.code === 'EVENT_NOT_FOUND') {
-        setError('This event is no longer available.');
+        setError('This event was cancelled.');
       } else {
         setError(e instanceof ApiError && e.status > 0 ? `Couldn't register (${e.status})` : "Couldn't reach the server");
       }
@@ -48,6 +70,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
   }
 
   function handleGoLive() {
+    if (!event) return;
     setActiveEvent({
       eventId: event.event_id,
       name: event.name,
@@ -59,7 +82,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen>
+    <Screen onRefresh={refresh}>
       <BackHeader
         onBack={() => navigation.goBack()}
         right={typeof event.match_count === 'number' ? <Pill label={`${event.match_count} matches`} tone="positive" /> : undefined}
@@ -73,10 +96,19 @@ export function EventDetailScreen({ route, navigation }: Props) {
         <Text style={styles.heroSub}>{[formatEventDate(event.starts_at), event.venue].filter(Boolean).join(' · ')}</Text>
       </EventHero>
 
+      {!!event.description && (
+        <>
+          <Text style={styles.sectionTitle}>About this event</Text>
+          <Card>
+            <Text style={styles.description}>{event.description}</Text>
+          </Card>
+        </>
+      )}
+
       <Text style={styles.sectionTitle}>Your fit</Text>
       <Card soft>
         <Text style={[styles.eyebrowBrand]}>Intent for this event</Text>
-        <Text style={styles.intentText}>Find telco or GLC distribution partners for an AI workforce platform.</Text>
+        <Text style={styles.intentText}>{intentText}</Text>
       </Card>
 
       <Card style={{ gap: 10 }}>
@@ -104,7 +136,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
             disabled={registered}
           />
         )}
-        <Button label="See who's going" variant="secondary" onPress={() => navigation.navigate('WhosGoing', { event })} />
+        <Button label="See who's going" variant="secondary" onPress={() => navigation.navigate('WhosGoing', { eventId })} />
       </View>
     </Screen>
   );
@@ -115,6 +147,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 4 },
   eyebrowBrand: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.brand, fontWeight: '700' },
   intentText: { marginTop: 8, lineHeight: 20, color: colors.text },
+  description: { lineHeight: 21, color: colors.text, fontSize: 14 },
   statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   statValue: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text },
   divider: { height: 1, backgroundColor: colors.line },

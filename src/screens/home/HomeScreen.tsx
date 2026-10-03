@@ -1,9 +1,9 @@
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { coreApi, CoreEvent } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -11,6 +11,7 @@ import { EventHero } from '../../components/EventHero';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
+import { useEvents } from '../../context/EventsContext';
 import { useLive } from '../../context/LiveContext';
 import { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/ThemeContext';
@@ -30,7 +31,9 @@ export function HomeScreen({ navigation }: Props) {
   const { intentText: intent, setIntentText: setIntent } = useLive();
   const [draft, setDraft] = useState(intent);
   const [editing, setEditing] = useState(false);
-  const [nextEvent, setNextEvent] = useState<CoreEvent | null>(null);
+  // Shared, admin-managed list (soonest first): always the latest data.
+  const { events, refresh, refreshIfStale } = useEvents();
+  const nextEvent = events?.[0] ?? null;
 
   const styles = useMemo(
     () =>
@@ -56,12 +59,11 @@ export function HomeScreen({ navigation }: Props) {
     [colors]
   );
 
-  useEffect(() => {
-    coreApi
-      .getEvents()
-      .then((events) => setNextEvent(events[0] ?? null))
-      .catch(() => setNextEvent(null));
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      refreshIfStale();
+    }, [refreshIfStale])
+  );
 
   function handleSave() {
     if (!draft.trim()) return;
@@ -70,7 +72,7 @@ export function HomeScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen>
+    <Screen onRefresh={refresh}>
       <View style={styles.topline}>
         <View>
           <Text style={styles.eyebrow}>Home</Text>

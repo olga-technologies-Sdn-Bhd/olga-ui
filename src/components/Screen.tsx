@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StatusBar, StyleSheet, View, ViewStyle } from 'react-native';
+import { useMemo, useState } from 'react';
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StatusBar, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -8,6 +8,8 @@ type Props = {
   scroll?: boolean;
   style?: ViewStyle;
   background?: React.ReactNode;
+  // Pull-to-refresh (scrolling screens only).
+  onRefresh?: () => Promise<void>;
 };
 
 // Android targets edge-to-edge display (OS-enforced on API 35+), so the app
@@ -20,7 +22,17 @@ export function useTopInset() {
   return Math.max(insets.top, androidFallback);
 }
 
-export function Screen({ children, scroll = true, style, background }: Props) {
+export function Screen({ children, scroll = true, style, background, onRefresh }: Props) {
+  const [refreshing, setRefreshing] = useState(false);
+  async function handleRefresh() {
+    if (!onRefresh) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }
   const topInset = useTopInset();
   const { colors } = useTheme();
   const styles = useMemo(
@@ -37,7 +49,12 @@ export function Screen({ children, scroll = true, style, background }: Props) {
   const containerStyle = [styles.container, background ? styles.transparent : null, style];
 
   const body = scroll ? (
-    <ScrollView style={containerStyle} contentContainerStyle={content} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      style={containerStyle}
+      contentContainerStyle={content}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} /> : undefined}
+    >
       {children}
     </ScrollView>
   ) : (

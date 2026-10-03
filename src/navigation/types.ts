@@ -1,4 +1,3 @@
-import { CoreEvent } from '../api/core';
 
 export type AuthStackParamList = {
   SignUp: undefined;
@@ -21,8 +20,10 @@ export type EventsStackParamList = {
   // Olga.Core only exposes GET /v1/events (list) — no single-event detail
   // endpoint — so we carry the already-fetched event through navigation
   // instead of re-fetching by id.
-  EventDetail: { event: CoreEvent };
-  WhosGoing: { event: CoreEvent };
+  // Only the ID: screens read the latest event from EventsContext, since
+  // admins can edit or cancel events at any time.
+  EventDetail: { eventId: string };
+  WhosGoing: { eventId: string };
 };
 
 export type MainTabParamList = {
