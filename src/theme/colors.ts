@@ -13,6 +13,8 @@ export const lightColors = {
   // Ink doubles as the one neutral "accent": primary buttons, selected
   // chips, progress fill, tab active tint. Never blue, never a hue.
   brand: '#171310',
+  // Text/icons on a brand (primary) button.
+  onBrand: '#ffffff',
   // Outline button border (spec: outline buttons use #CFC6B8).
   brand2: '#CFC6B8',
   // Sand strong — selected chips, icon-wrap fills.
@@ -55,10 +57,13 @@ export const darkColors = {
   muted: '#A89C8C',
   line: '#3A3025',
   brand: '#F4F1EC',
+  onBrand: '#171310',
   brand2: '#55493A',
   brandSoft: '#3A3024',
   accentSoft: '#2A2217',
-  ink: '#171310',
+  // Light 'send' button on the dark ground, dark arrow on it (the mirror of
+  // light mode); ink/onInk were both near-black, so the button disappeared.
+  ink: '#F4F1EC',
   onInk: '#171310',
   positive: '#34D399',
   positiveSoft: '#15301F',

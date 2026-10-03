@@ -1,7 +1,8 @@
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { StatusBar, Text, TextInput } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { warmUpApis } from './src/api/warmup';
 import { AuthProvider } from './src/context/AuthContext';
 import { EventsProvider } from './src/context/EventsContext';
 import { LiveProvider } from './src/context/LiveContext';
@@ -18,6 +19,10 @@ import { fonts } from './src/theme/typography';
 // Status bar and navigator background follow the in-app theme, not the OS one,
 // so screen transitions don't flash the wrong background.
 function ThemedApp() {
+  // Wake the dev APIs (cold start) while the user is still signing in.
+  useEffect(() => {
+    warmUpApis();
+  }, []);
   const { scheme, colors } = useTheme();
   const navTheme = useMemo(() => {
     const base = scheme === 'dark' ? DarkTheme : DefaultTheme;

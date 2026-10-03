@@ -40,7 +40,7 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
         disabled: { opacity: 0.5 },
         pressed: { opacity: 0.85 },
         label: { fontFamily: fonts.bodyBold, fontWeight: '700', fontSize: 15 },
-        labelPrimary: { color: colors.white },
+        labelPrimary: { color: colors.onBrand },
         labelSecondary: { color: colors.text },
         labelGhost: { color: colors.brand },
         labelOnDark: { color: colors.white },
@@ -68,7 +68,7 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.white : colors.brand} />
+        <ActivityIndicator color={variant === 'primary' ? colors.onBrand : colors.brand} />
       ) : (
         <Text
           style={[
