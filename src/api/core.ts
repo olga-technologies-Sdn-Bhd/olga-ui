@@ -3,6 +3,7 @@ import { mockEvents } from '../mocks/events';
 import { mockMembers } from '../mocks/matches';
 import { makeApiClient, RequestOptions, withEtag } from './client';
 import type {
+  ConsentPolicy,
   ConsentRequest,
   ConsentResponse,
   EventRegistration,
@@ -52,6 +53,9 @@ export const coreApi = {
         headers: { ...options?.headers, 'If-Match': ifMatch },
       })
     ),
+
+  getActiveConsentPolicy: (purposeCode: string) =>
+    client.get<ConsentPolicy>(`/v1/consent-policies/${encodeURIComponent(purposeCode)}`),
 
   recordConsent: (body: ConsentRequest, options?: RequestOptions) =>
     client.post<ConsentResponse>('/v1/me/consents', body, options),

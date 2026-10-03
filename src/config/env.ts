@@ -41,11 +41,6 @@ export const CORE_API_URL = API_URLS[APP_ENV].core;
 
 export const NLP_API_URL = API_URLS[APP_ENV].nlp;
 
-// TODO(backend): confirm the active LIVE_MODE consent policy_version on dev
-// before release. Local seed is "1"; the dev DB test seed was "test-v1", and
-// what dev actually runs is unconfirmed. A wrong value fails POST
-// /v1/me/consents with 409 CONSENT_POLICY_NOT_ACTIVE.
-export const LIVE_MODE_CONSENT_POLICY_VERSION = '1';
 
 
 // Mock switches per area. While one is true, that area's calls in api/core.ts

@@ -4,7 +4,6 @@ import { coreApi } from '../api/core';
 import { findMatches, MatchCard } from '../api/matching';
 import type { LiveModeSession } from '../api/types';
 import {
-  LIVE_MODE_CONSENT_POLICY_VERSION,
   LIVE_MODE_DURATION_MINUTES,
   PRESENCE_DEFAULT_CELL,
   PRESENCE_INTERVAL_MS,
@@ -172,9 +171,11 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
 
   const grantLiveModeConsent = useCallback(async () => {
     try {
+      // The server owns the policy version; never hard-code it.
+      const policy = await coreApi.getActiveConsentPolicy('LIVE_MODE');
       await coreApi.recordConsent({
         purpose_code: 'LIVE_MODE',
-        policy_version: LIVE_MODE_CONSENT_POLICY_VERSION,
+        policy_version: policy.version,
         decision: 'GRANTED',
         capture_channel: 'MOBILE',
         evidence: { screen: 'go_live_consent' },
