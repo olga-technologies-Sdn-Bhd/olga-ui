@@ -1,6 +1,14 @@
 import { CORE_API_URL } from '../config/env';
 import { makeApiClient, RequestOptions, withEtag } from './client';
 import type {
+  AcceptCommitResponse,
+  CommitQuota,
+  IncomingCommit,
+  MeetingPage,
+  MeetingSpot,
+  OutgoingCommit,
+  SendCommitRequest,
+  SendCommitResponse,
   EventAttendeesResponse,
   ConsentPolicy,
   ConsentRequest,
@@ -79,4 +87,21 @@ export const coreApi = {
   recordPresence: async (eventId: string, body: PresenceRequest, options?: RequestOptions) => {
     return client.post<void>(`/v1/events/${eventId}/presence`, body, options);
   },
+
+  // Commits (Docs/Core Commit API (for mobile).md).
+  sendCommit: (body: SendCommitRequest, options?: RequestOptions) =>
+    client.post<SendCommitResponse>('/v1/connection-requests', body, options),
+  getCommitQuota: (eventId: string) =>
+    client.get<CommitQuota>(`/v1/events/${encodeURIComponent(eventId)}/commits/quota`),
+  getMeetingSpots: (eventId: string) =>
+    client.get<MeetingSpot[]>(`/v1/events/${encodeURIComponent(eventId)}/meeting-spots`),
+  getIncomingCommits: () => client.get<IncomingCommit[]>('/v1/me/commits/incoming'),
+  getOutgoingCommits: () => client.get<OutgoingCommit[]>('/v1/me/commits/outgoing'),
+  acceptCommit: (requestId: string, options?: RequestOptions) =>
+    client.patch<AcceptCommitResponse>(`/v1/connection-requests/${encodeURIComponent(requestId)}`, { decision: 'ACCEPT' }, options),
+  // 204, nothing changes for the sender.
+  declineCommit: (requestId: string, options?: RequestOptions) =>
+    client.patch<void>(`/v1/connection-requests/${encodeURIComponent(requestId)}`, { decision: 'DECLINE' }, options),
+  // Accepted Commits become conversations; meetings read their plan and names.
+  getMeetings: () => client.get<MeetingPage>('/v1/conversations?limit=50'),
 };

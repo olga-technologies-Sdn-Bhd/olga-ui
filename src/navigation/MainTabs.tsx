@@ -1,11 +1,9 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { CalendarDays, House, LucideIcon, MessageCircle } from 'lucide-react-native';
-import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ComingSoonModal } from '../components/ComingSoonModal';
 import { GoLiveMark } from '../components/GoLiveMark';
 import { useLive } from '../context/LiveContext';
-import { ChatPlaceholderScreen } from '../screens/chat/ChatPlaceholderScreen';
+import { CommitsStack } from './CommitsStack';
 import { HomeStack } from './HomeStack';
 import { useTheme } from '../theme/ThemeContext';
 import { EventsStack } from './EventsStack';
@@ -31,7 +29,6 @@ const LABELS: Record<keyof MainTabParamList, string> = {
 };
 
 export function MainTabs() {
-  const [chatComingSoon, setChatComingSoon] = useState(false);
   const { colors } = useTheme();
   const { bottom } = useSafeAreaInsets();
   const { isLive } = useLive();
@@ -65,24 +62,9 @@ export function MainTabs() {
         <Tab.Screen name="HomeTab" component={HomeStack} />
         <Tab.Screen name="GoLiveTab" component={GoLiveStack} />
         <Tab.Screen name="EventsTab" component={EventsStack} />
-        <Tab.Screen
-          name="ChatTab"
-          component={ChatPlaceholderScreen}
-          listeners={{
-            tabPress: (e) => {
-              e.preventDefault();
-              setChatComingSoon(true);
-            },
-          }}
-        />
+        {/* Board 10: Commits for you and meetings (the chat itself isn't Phase 1). */}
+        <Tab.Screen name="ChatTab" component={CommitsStack} />
       </Tab.Navigator>
-
-      <ComingSoonModal
-        visible={chatComingSoon}
-        onClose={() => setChatComingSoon(false)}
-        title="Chat — coming soon!"
-        message="Conversations with your connections will land here once accepted commits go live."
-      />
     </>
   );
 }

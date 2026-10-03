@@ -53,7 +53,7 @@ export function MatchSummary({ card }: { card: MatchCard }) {
 export function LiveMatchesScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { activeEvent, activeUntil, matches, runMatching, passedIds, pass } = useLive();
+  const { activeEvent, activeUntil, matches, runMatching, passedIds, pass, committedIds } = useLive();
   const [error, setError] = useState<string | null>(null);
   const shown = topMatches(matches, passedIds);
 
@@ -101,7 +101,7 @@ export function LiveMatchesScreen({ navigation }: Props) {
           <MatchSummary card={card} />
           <View style={styles.actions}>
             <Button
-              label="Commit"
+              label={committedIds.includes(card.match.member_id) ? 'Commit sent' : 'Commit'}
               variant="charcoal"
               small
               style={styles.flex}

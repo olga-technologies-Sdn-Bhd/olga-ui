@@ -68,6 +68,9 @@ type LiveState = {
   // Board 09: Pass is silent and only ever stored on this phone.
   passedIds: string[];
   pass: (memberId: string) => void;
+  // Members this phone has sent a Commit to in the active event.
+  committedIds: string[];
+  markCommitted: (memberId: string) => void;
   // Board 07: while live the intent can be changed once per session.
   canEditIntent: boolean;
   markIntentEdited: () => void;
@@ -119,6 +122,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const [intentEditSession, setIntentEditSession] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchCard[] | null>(null);
   const [passedIds, setPassedIds] = useState<string[]>([]);
+  const [committedIds, setCommittedIds] = useState<string[]>([]);
 
   const applySession = useCallback((next: LiveModeSession | null) => {
     sessionRef.current = next;
@@ -151,6 +155,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMatches(null);
     setPassedIds([]);
+    setCommittedIds([]);
   }, [activeEvent?.eventId]);
 
   // Event cancelled/unpublished by an admin (gone from GET /v1/events, or a
@@ -313,6 +318,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       runMatching,
       passedIds,
       pass: (id: string) => setPassedIds((current) => (current.includes(id) ? current : [...current, id])),
+      committedIds,
+      markCommitted: (id: string) => setCommittedIds((current) => (current.includes(id) ? current : [...current, id])),
       canEditIntent: !(isLive && session && intentEditSession === session.session_id),
       markIntentEdited: () => {
         if (isLive && session) setIntentEditSession(session.session_id);
@@ -322,7 +329,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     }),
     // activeUntil is derived from session; listing session keeps it stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeEvent, isLive, session, goLive, grantLiveModeConsent, stopLive, intentText, matches, runMatching, filters, setFilters, intentEditSession, passedIds]
+    [activeEvent, isLive, session, goLive, grantLiveModeConsent, stopLive, intentText, matches, runMatching, filters, setFilters, intentEditSession, passedIds, committedIds]
   );
 
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
