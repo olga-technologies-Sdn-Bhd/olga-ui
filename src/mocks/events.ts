@@ -13,6 +13,8 @@ export const mockEvents: CoreEvent[] = [
     status: 'PUBLISHED',
     live_mode_enabled: true,
     venue: 'Grand Hyatt KL',
+    description:
+      "Malaysia's annual brand awards night: founders, marketers and agency leads in one room. Go Live after the keynote to meet people working on what you're looking for.",
     attendee_count: 612,
     live_count: 212,
     match_count: 41,

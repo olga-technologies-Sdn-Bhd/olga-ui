@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert } from 'react-native';
 import { ApiError } from '../api/client';
 import { coreApi } from '../api/core';
 import { findMatches, MatchCard } from '../api/matching';
@@ -9,6 +10,7 @@ import {
   PRESENCE_INTERVAL_MS,
 } from '../config/env';
 import { useAuth } from './AuthContext';
+import { useEvents } from './EventsContext';
 
 export type Seniority = 'any' | 'director' | 'c-level';
 
@@ -43,7 +45,8 @@ export type GoLiveBlocker =
   | 'REGISTRATION_REQUIRED'
   | 'EVENT_NOT_ACTIVE'
   | 'LIVE_MODE_NOT_ENABLED'
-  | 'EVENT_NOT_FOUND';
+  | 'EVENT_NOT_FOUND' // cancelled or unpublished by an admin
+  | 'TAKEN_OFFLINE'; // member's profile is no longer ACTIVE (admin action)
 
 const BLOCKERS: Record<string, GoLiveBlocker> = {
   LIVE_MODE_CONSENT_REQUIRED: 'CONSENT_REQUIRED',
@@ -51,7 +54,11 @@ const BLOCKERS: Record<string, GoLiveBlocker> = {
   EVENT_NOT_ACTIVE: 'EVENT_NOT_ACTIVE',
   LIVE_MODE_NOT_ENABLED: 'LIVE_MODE_NOT_ENABLED',
   EVENT_NOT_FOUND: 'EVENT_NOT_FOUND',
+  PROFILE_NOT_FOUND: 'TAKEN_OFFLINE',
+  MEMBER_NOT_REGISTERED: 'TAKEN_OFFLINE',
 };
+
+const TAKEN_OFFLINE_MESSAGE = "You've been taken offline. Contact support if you think this is a mistake.";
 
 type LiveState = {
   activeEvent: ActiveEvent;
@@ -101,7 +108,17 @@ async function profileOffer() {
 
 export function LiveProvider({ children }: { children: React.ReactNode }) {
   const { memberId } = useAuth();
-  const [activeEvent, setActiveEvent] = useState<ActiveEvent>(null);
+  const { getEvent, isGone, markGone, refresh: refreshEvents } = useEvents();
+  const [selectedEvent, setActiveEvent] = useState<ActiveEvent>(null);
+  // Always render the latest admin-edited name/times for the selected event.
+  const latest = selectedEvent ? getEvent(selectedEvent.eventId) : undefined;
+  const activeEvent: ActiveEvent = useMemo(
+    () =>
+      selectedEvent && latest
+        ? { ...selectedEvent, name: latest.name, endsAt: latest.ends_at, liveCount: latest.live_count }
+        : selectedEvent,
+    [selectedEvent, latest]
+  );
   const [session, setSession] = useState<LiveModeSession | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [filters, setFilters] = useState<MatchFilters>(DEFAULT_FILTERS);
@@ -142,6 +159,55 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     setMatches(null);
   }, [activeEvent?.eventId]);
 
+  // Event cancelled/unpublished by an admin (gone from GET /v1/events, or a
+  // 404 EVENT_NOT_FOUND): drop local live state; Go Live shows "pick an event".
+  const selectedId = selectedEvent?.eventId;
+  const selectedGone = selectedId ? isGone(selectedId) : false;
+  useEffect(() => {
+    if (!selectedGone) return;
+    applySession(null);
+    setMatches(null);
+    setActiveEvent(null);
+  }, [selectedGone, applySession]);
+
+  const takeOffline = useCallback(() => {
+    applySession(null);
+    setMatches(null);
+    Alert.alert('Taken offline', TAKEN_OFFLINE_MESSAGE);
+  }, [applySession]);
+
+  // The server ended this member's live session before active_until:
+  // cancelled event, admin took the member offline, or consent withdrawn.
+  const handleSessionEnded = useCallback(
+    async (eventId: string, error: ApiError) => {
+      const wasActive = Boolean(sessionRef.current && new Date(sessionRef.current.active_until).getTime() > Date.now());
+      applySession(null);
+      if (error.code === 'EVENT_NOT_FOUND') {
+        markGone(eventId);
+        return;
+      }
+      if (error.code === 'PROFILE_NOT_FOUND' || error.code === 'MEMBER_NOT_REGISTERED') {
+        takeOffline();
+        return;
+      }
+      if (!wasActive) return; // simply expired
+      try {
+        const profile = await coreApi.getMyProfile();
+        if (profile.profile_status !== 'ACTIVE') {
+          takeOffline();
+          return;
+        }
+      } catch (e) {
+        if (e instanceof ApiError && (e.code === 'PROFILE_NOT_FOUND' || e.code === 'MEMBER_NOT_REGISTERED')) {
+          takeOffline();
+          return;
+        }
+      }
+      refreshEvents(); // a cancelled event shows up as gone from the list
+    },
+    [applySession, markGone, takeOffline, refreshEvents]
+  );
+
   // Presence heartbeat while live. 403 LIVE_MODE_NOT_ACTIVE means the
   // server ended the session (expired, consent withdrawn): stop.
   useEffect(() => {
@@ -156,8 +222,12 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         });
       } catch (e) {
         logApiError('Presence', e);
-        if (e instanceof ApiError && e.code === 'LIVE_MODE_NOT_ACTIVE' && sessionRef.current?.event_id === eventId) {
-          applySession(null);
+        if (
+          e instanceof ApiError &&
+          ['LIVE_MODE_NOT_ACTIVE', 'EVENT_NOT_FOUND', 'PROFILE_NOT_FOUND', 'MEMBER_NOT_REGISTERED'].includes(e.code) &&
+          sessionRef.current?.event_id === eventId
+        ) {
+          handleSessionEnded(eventId, e);
         }
       }
     };
@@ -176,10 +246,12 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       logApiError('Start Live Mode', e);
       const blocker = e instanceof ApiError ? BLOCKERS[e.code] : undefined;
+      if (blocker === 'EVENT_NOT_FOUND') markGone(activeEvent.eventId);
+      if (blocker === 'TAKEN_OFFLINE') applySession(null);
       if (blocker) return blocker;
       throw e;
     }
-  }, [activeEvent, applySession]);
+  }, [activeEvent, applySession, markGone]);
 
   const grantLiveModeConsent = useCallback(async () => {
     try {
@@ -204,8 +276,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     try {
       await coreApi.stopLiveMode(current.event_id);
     } catch (e) {
-      // 404 LIVE_MODE_NOT_ACTIVE = already stopped/expired: that's success.
-      if (!(e instanceof ApiError && e.code === 'LIVE_MODE_NOT_ACTIVE')) {
+      // Already stopped/expired, or the event was removed: that's success.
+      if (!(e instanceof ApiError && (e.code === 'LIVE_MODE_NOT_ACTIVE' || e.code === 'EVENT_NOT_FOUND'))) {
         logApiError('Stop Live Mode', e);
         throw e;
       }

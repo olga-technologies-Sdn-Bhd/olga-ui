@@ -39,7 +39,8 @@ const BLOCKER_MESSAGES: Record<Exclude<GoLiveBlocker, 'CONSENT_REQUIRED'>, strin
   REGISTRATION_REQUIRED: 'Sign up for this event first, then you can go live.',
   EVENT_NOT_ACTIVE: 'This event has ended.',
   LIVE_MODE_NOT_ENABLED: "Live Mode isn't available for this event.",
-  EVENT_NOT_FOUND: 'This event is no longer available.',
+  EVENT_NOT_FOUND: 'This event was cancelled.',
+  TAKEN_OFFLINE: "You've been taken offline. Contact support if you think this is a mistake.",
 };
 
 const MATCHING_MESSAGES: Record<MatchingFailure, string> = {

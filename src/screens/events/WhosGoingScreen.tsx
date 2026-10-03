@@ -7,6 +7,7 @@ import { BackHeader } from '../../components/BackHeader';
 import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
+import { useEvents } from '../../context/EventsContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
@@ -17,14 +18,15 @@ type Props = NativeStackScreenProps<EventsStackParamList, 'WhosGoing'>;
 export function WhosGoingScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { event } = route.params;
+  const { getEvent } = useEvents();
+  const event = getEvent(route.params.eventId);
   const attendees = mockWhosGoing;
 
   return (
     <Screen>
       <BackHeader
         onBack={() => navigation.goBack()}
-        right={<Pill label={`${attendees.length} of ${event.attendee_count ?? attendees.length}`} />}
+        right={<Pill label={`${attendees.length} of ${event?.attendee_count ?? attendees.length}`} />}
       />
 
       <View>

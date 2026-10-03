@@ -20,14 +20,14 @@ export function EventsScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const topInset = useTopInset();
-  const { events, error, refresh } = useEvents();
+  const { events, error, refresh, refreshIfStale } = useEvents();
   const [refreshing, setRefreshing] = useState(false);
 
   // Refetch whenever the screen comes into focus (e.g. back from a register).
   useFocusEffect(
     useCallback(() => {
-      refresh();
-    }, [refresh])
+      refreshIfStale(); // at most every ~30 s; pull to refresh forces it
+    }, [refreshIfStale])
   );
 
   async function onRefresh() {
@@ -93,7 +93,7 @@ export function EventsScreen({ navigation }: Props) {
                       )
                     )}
                   </View>
-                  <Button label="View" variant="ghost" small onPress={() => navigation.navigate('EventDetail', { event })} />
+                  <Button label="View" variant="ghost" small onPress={() => navigation.navigate('EventDetail', { eventId: event.event_id })} />
                 </View>
               </Card>
             ))}
