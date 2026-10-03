@@ -76,17 +76,13 @@ export function EventDetailScreen({ route, navigation }: Props) {
       name: event.name,
       endsAt: event.ends_at,
       liveCount: event.live_count,
-      matchCount: event.match_count,
     });
     navigation.getParent()?.navigate('GoLiveTab' as never);
   }
 
   return (
     <Screen onRefresh={refresh}>
-      <BackHeader
-        onBack={() => navigation.goBack()}
-        right={typeof event.match_count === 'number' ? <Pill label={`${event.match_count} matches`} tone="positive" /> : undefined}
-      />
+      <BackHeader onBack={() => navigation.goBack()} />
 
       <EventHero
         minHeight={250}
@@ -115,11 +111,6 @@ export function EventDetailScreen({ route, navigation }: Props) {
         <View style={styles.statRow}>
           <Text style={styles.sub}>Signed up</Text>
           <Text style={styles.statValue}>{event.attendee_count ?? '—'}</Text>
-        </View>
-        <View style={styles.divider} />
-        <View style={styles.statRow}>
-          <Text style={styles.sub}>Match your intent</Text>
-          <Text style={[styles.statValue, { color: colors.positive }]}>{event.match_count ?? '—'}</Text>
         </View>
       </Card>
 

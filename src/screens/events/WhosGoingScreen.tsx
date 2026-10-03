@@ -1,7 +1,10 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { StyleSheet, Text, View } from 'react-native';
-import { mockMembers, mockWhosGoing } from '../../mocks/matches';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ApiError } from '../../api/client';
+import { coreApi } from '../../api/core';
+import type { EventAttendeesResponse } from '../../api/types';
+import { Button } from '../../components/Button';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
 import { Card } from '../../components/Card';
@@ -20,39 +23,73 @@ export function WhosGoingScreen({ route, navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { getEvent } = useEvents();
   const event = getEvent(route.params.eventId);
-  const attendees = mockWhosGoing;
+  const [data, setData] = useState<EventAttendeesResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      setData(await coreApi.getEventAttendees(route.params.eventId));
+    } catch (e) {
+      const code = e instanceof ApiError ? e.code : undefined;
+      setError(
+        code === 'EVENT_REGISTRATION_REQUIRED'
+          ? "Sign up for this event to see who's going."
+          : code === 'EVENT_NOT_FOUND'
+            ? 'This event is no longer available.'
+            : e instanceof ApiError && e.status > 0
+              ? `Couldn't load who's going (${e.status})`
+              : "Couldn't reach the server"
+      );
+    }
+  }, [route.params.eventId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const attendees = data?.attendees ?? [];
 
   return (
     <Screen>
       <BackHeader
         onBack={() => navigation.goBack()}
-        right={<Pill label={`${attendees.length} of ${event?.attendee_count ?? attendees.length}`} />}
+        right={data ? <Pill label={`${data.total} of ${event?.attendee_count ?? data.total}`} /> : undefined}
       />
 
       <View>
         <Text style={styles.h2}>Who's going</Text>
-        <Text style={styles.sub}>
-          These people match what you're looking for. Names appear when you both go live and connect.
-        </Text>
+        <Text style={styles.sub}>Names appear when you both accept.</Text>
       </View>
 
+      {!data && !error && <ActivityIndicator color={colors.muted} style={{ marginTop: 24 }} />}
+      {error && (
+        <View style={{ gap: 10 }}>
+          <Text style={styles.sub}>{error}</Text>
+          <Button label="Try again" variant="secondary" small onPress={load} />
+        </View>
+      )}
+      {data && attendees.length === 0 && <Text style={styles.sub}>Nobody else has signed up yet.</Text>}
+
       <View style={{ gap: 10 }}>
-        {attendees.map((person) => {
-          const profile = mockMembers[person.member_id];
-          return (
-            <Card key={person.member_id} style={styles.row}>
-              <Avatar initials="?" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.h3}>{profile?.headline}</Text>
-                {profile?.role_category && <Text style={styles.sub2}>{profile.role_category}</Text>}
-              </View>
-              <Text style={styles.match}>{Math.round(person.score * 100)}%</Text>
-            </Card>
-          );
-        })}
+        {attendees.map((person) => (
+          <Card key={person.member_id} style={styles.row}>
+            <Avatar initials="?" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.h3}>{person.headline || 'Attendee'}</Text>
+              {person.role_category && <Text style={styles.sub2}>{roleLabel(person.role_category)}</Text>}
+            </View>
+          </Card>
+        ))}
       </View>
     </Screen>
   );
+}
+
+// "PRODUCT_MANAGEMENT" -> "Product management"
+function roleLabel(code: string) {
+  const text = code.replace(/_/g, ' ').toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
@@ -60,6 +97,5 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   sub: { fontSize: 13, color: colors.muted, marginTop: 7, lineHeight: 19 },
   h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
   sub2: { fontSize: 13, color: colors.muted, marginTop: 2 },
-  match: { fontFamily: fonts.headingExtraBold, fontWeight: '800', color: colors.positive, fontSize: 14 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 });

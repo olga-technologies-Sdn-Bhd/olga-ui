@@ -25,17 +25,14 @@ export type MatchFilters = {
 
 const DEFAULT_FILTERS: MatchFilters = {
   minMatch: 74,
-  lookingFor: ['Distribution partners', 'Investors', 'Talent suppliers'],
-  industries: ['Telco', 'Government / GLC', 'Education'],
+  lookingFor: [],
+  industries: [],
   seniority: 'director',
   allowNearMatches: false,
   shareIntentChanges: true,
 };
 
-type ActiveEvent = { eventId: string; name: string; endsAt: string; liveCount?: number; matchCount?: number } | null;
-
-// Matches the prototype's pre-filled sample intent on the Home screen.
-const SAMPLE_INTENT = 'Find telco / GLC distribution partners for an AI workforce platform';
+type ActiveEvent = { eventId: string; name: string; endsAt: string; liveCount?: number } | null;
 
 // What goLive() couldn't do, in terms the screen can act on. The server
 // checks in this order: event, duration, registration, consent, event
@@ -122,9 +119,9 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<LiveModeSession | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [filters, setFilters] = useState<MatchFilters>(DEFAULT_FILTERS);
-  const [sessionTags, setSessionTags] = useState<string[]>(['AI partnerships', 'Hiring', 'Malaysia market']);
+  const [sessionTags, setSessionTags] = useState<string[]>([]);
   const sessionRef = useRef<LiveModeSession | null>(null);
-  const [intentText, setIntentText] = useState(SAMPLE_INTENT);
+  const [intentText, setIntentText] = useState('');
   const [matches, setMatches] = useState<MatchCard[] | null>(null);
 
   const applySession = useCallback((next: LiveModeSession | null) => {

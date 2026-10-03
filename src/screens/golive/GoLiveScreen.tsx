@@ -73,6 +73,7 @@ export function GoLiveScreen({ navigation }: Props) {
     sessionTags,
     addSessionTag,
     removeSessionTag,
+    intentText,
   } = useLive();
   const [searching, setSearching] = useState(false);
   const [stopping, setStopping] = useState(false);
@@ -97,6 +98,10 @@ export function GoLiveScreen({ navigation }: Props) {
 
   async function handleGoLive() {
     if (!activeEvent) return;
+    if (!intentText.trim()) {
+      setError("Add what you're looking for on Home first, so we can find your matches.");
+      return;
+    }
     setSearching(true);
     setError(null);
     setStatusText(SEARCH_STEPS[0].text);

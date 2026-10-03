@@ -99,10 +99,6 @@ export function FiltersScreen({ navigation }: Props) {
           minimumTrackTintColor={colors.brand}
           style={{ marginTop: 12 }}
         />
-        <View style={[styles.matchRow, { marginTop: 16 }]}>
-          <Text style={styles.sub}>In this room right now</Text>
-          <Text style={styles.matchValue}>11 people</Text>
-        </View>
       </Card>
 
       <Text style={styles.sectionTitle}>Privacy</Text>

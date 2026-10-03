@@ -1,5 +1,4 @@
-import { NLP_API_URL, NLP_TIMEOUT_MS, USE_MOCK_MATCHING } from '../config/env';
-import { mockMatches } from '../mocks/matches';
+import { NLP_API_URL, NLP_TIMEOUT_MS } from '../config/env';
 import { getMemberId, makeApiClient, RequestOptions, withEtag } from './client';
 import type {
   IntentBody,
@@ -52,22 +51,10 @@ function hash128(str: string) {
 // Longer timeout for every NLP call (cold starts), unless the caller sets one.
 const nlp = (options?: RequestOptions): RequestOptions => ({ timeoutMs: NLP_TIMEOUT_MS, ...options });
 
-// While USE_MOCK_MATCHING is true (src/config/env.ts) these return canned data
-// from src/mocks/ instead of calling olga-nlp-api.
 export const nlpApi = {
   // 200 = processed; 202 = still processing, poll getIntent until MATCH_READY.
   // ifMatch: etag from a previous save, for edits.
   createIntent: async (body: UpsertIntentRequest, ifMatch?: string, options?: RequestOptions): Promise<UpsertIntentResponse> => {
-    if (USE_MOCK_MATCHING) {
-      return {
-        intent_id: body.intent_id,
-        status: 'MATCH_READY',
-        model_version: 'mock',
-        preprocessing_version: 'mock',
-        contains_pii: false,
-        etag: '"mock"',
-      };
-    }
     return withEtag(
       await client.send<UpsertIntentBody>(
         'POST',
@@ -83,16 +70,6 @@ export const nlpApi = {
   // Leave request_id out: the server uses the Idempotency-Key. status other
   // than COMPLETED → poll getMatchRequest(request_id) every 1–2 s.
   requestMatches: async (body: MatchRequest, options?: RequestOptions): Promise<MatchRequestResponse> => {
-    if (USE_MOCK_MATCHING) {
-      return {
-        request_id: 'mock-request',
-        matches: mockMatches,
-        model_version: 'mock',
-        preprocessing_version: 'mock',
-        ranking_version: 'mock',
-        status: 'COMPLETED',
-      };
-    }
     return client.post<MatchRequestResponse>('/v1/match-requests', body, nlp(options));
   },
   getMatchRequest: (requestId: string) =>
