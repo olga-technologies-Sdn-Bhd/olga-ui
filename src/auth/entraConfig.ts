@@ -6,7 +6,14 @@
 // back to dev values: it fails loudly until the prd tenant/app/scope are
 // filled in. The redirect scheme must also match the native config
 // (Android appAuthRedirectScheme / iOS Info.plist).
+import { Platform } from 'react-native';
 import { APP_ENV, AppEnv } from '../config/env';
+
+// Microsoft redirects back as "olga-dev://auth/?code=…" (it adds a slash after
+// the host). iOS AppAuth compares the path strictly ("" vs "/"), rejects the
+// URL and silently drops the error, so authorize() never settles. Sending the
+// slash on iOS makes both sides agree; Android matches on scheme only.
+const REDIRECT_URI = Platform.OS === 'ios' ? 'olga-dev://auth/' : 'olga-dev://auth';
 
 type EntraSettings = {
   clientId: string;
@@ -22,7 +29,7 @@ const DEV_TENANT: EntraSettings = {
   clientId: 'e8db01a0-3a93-48e0-86fa-68123e026088',
   tenantId: 'd6b05a66-a3b7-442c-b56f-d4d7a9e154ba',
   authority: 'https://olgaconnectdev.ciamlogin.com',
-  redirectUri: 'olga-dev://auth',
+  redirectUri: REDIRECT_URI,
   apiScope: 'api://733db389-f55d-4a33-8cd6-18a14393e3d9/access_as_user',
   tenantSubdomain: 'olgaconnectdev',
 };
