@@ -2,8 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Alert } from 'react-native';
 import { ApiError } from '../api/client';
 import { coreApi } from '../api/core';
-import { findMatches, MatchCard } from '../api/matching';
-import type { LiveModeSession } from '../api/types';
+import { findMatches, MatchCard, MatchingError } from '../api/matching';
+import type { ConsentDecision, LiveModeSession } from '../api/types';
 import {
   LIVE_MODE_DURATION_MINUTES,
   PRESENCE_DEFAULT_CELL,
@@ -42,6 +42,17 @@ const BLOCKERS: Record<string, GoLiveBlocker> = {
 // Codes meaning the member's profile is no longer ACTIVE.
 const OFFLINE_CODES = ['MEMBER_NOT_ACTIVE', 'PROFILE_NOT_FOUND', 'MEMBER_NOT_REGISTERED'];
 
+// Consents the app asks for before Go Live. MATCHING: matching only
+// considers members who granted it (requester and candidates).
+export type ConsentPurpose = 'LIVE_MODE' | 'MATCHING';
+
+// What checkConsent() found:
+// GRANTED: already on record, don't ask. ASK: never answered, denied or withdrawn.
+// NO_POLICY: 404 CONSENT_POLICY_NOT_ACTIVE, nothing to agree to; don't block.
+// UNKNOWN: couldn't check (offline, server error); carry on and let the
+// server decide (Live Mode still answers 403 LIVE_MODE_CONSENT_REQUIRED).
+export type ConsentStatus = 'GRANTED' | 'ASK' | 'NO_POLICY' | 'UNKNOWN';
+
 const TAKEN_OFFLINE_MESSAGE = "You've been taken offline. Contact support if you think this is a mistake.";
 
 type LiveState = {
@@ -53,8 +64,11 @@ type LiveState = {
   // Starts (or extends) Live Mode for activeEvent. Resolves with a blocker
   // the screen should handle, or null when live. Throws ApiError otherwise.
   goLive: () => Promise<GoLiveBlocker | null>;
-  // Records a LIVE_MODE consent decision (GRANTED) for the current policy.
-  grantLiveModeConsent: () => Promise<void>;
+  // The member's current decision for the active policy (GET
+  // /v1/consent-policies/{purpose} current_decision). GRANTED is cached.
+  checkConsent: (purpose: ConsentPurpose) => Promise<ConsentStatus>;
+  // Records a decision for the active policy version. Throws ApiError.
+  recordConsentDecision: (purpose: ConsentPurpose, decision: Exclude<ConsentDecision, 'WITHDRAWN'>) => Promise<void>;
   stopLive: () => Promise<void>;
   // What the member is looking for (Home "Your intent"); saved as the WANT
   // intent for the active event when matching runs.
@@ -63,7 +77,8 @@ type LiveState = {
   // Latest matches for the active event; null until matching has run.
   matches: MatchCard[] | null;
   // Saves the intent and runs a match request (src/api/matching.ts).
-  // Throws MatchingError / ApiError; keeps the previous matches on failure.
+  // Throws MatchingError (CONSENT_DENIED when the member declined MATCHING)
+  // / ApiError; keeps the previous matches on failure.
   runMatching: () => Promise<MatchCard[]>;
   // Board 09: Pass is silent and only ever stored on this phone.
   passedIds: string[];
@@ -119,6 +134,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const [intentEditSession, setIntentEditSession] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchCard[] | null>(null);
   const [passedIds, setPassedIds] = useState<string[]>([]);
+  // Latest known consent decisions for this member (from GET or our POST).
+  const decisions = useRef<Partial<Record<ConsentPurpose, string>>>({});
 
   const applySession = useCallback((next: LiveModeSession | null) => {
     sessionRef.current = next;
@@ -145,6 +162,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     applySession(null);
     setMatches(null);
+    decisions.current = {};
   }, [memberId, applySession]);
 
   // Matches (and passes) belong to one event.
@@ -241,6 +259,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       logApiError('Start Live Mode', e);
       const blocker = e instanceof ApiError ? BLOCKERS[e.code] : undefined;
+      if (blocker === 'CONSENT_REQUIRED') delete decisions.current.LIVE_MODE;
       if (blocker === 'EVENT_NOT_FOUND') markGone(activeEvent.eventId);
       if (blocker === 'TAKEN_OFFLINE') applySession(null);
       if (blocker) return blocker;
@@ -248,22 +267,39 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     }
   }, [activeEvent, applySession, markGone, completeTip]);
 
-  const grantLiveModeConsent = useCallback(async () => {
+  const checkConsent = useCallback(async (purpose: ConsentPurpose): Promise<ConsentStatus> => {
+    if (decisions.current[purpose] === 'GRANTED') return 'GRANTED';
     try {
-      // The server owns the policy version; never hard-code it.
-      const policy = await coreApi.getActiveConsentPolicy('LIVE_MODE');
-      await coreApi.recordConsent({
-        purpose_code: 'LIVE_MODE',
-        policy_version: policy.version,
-        decision: 'GRANTED',
-        capture_channel: 'MOBILE',
-        evidence: { screen: 'go_live_consent' },
-      });
+      const policy = await coreApi.getActiveConsentPolicy(purpose);
+      decisions.current[purpose] = policy.current_decision;
+      return policy.current_decision === 'GRANTED' ? 'GRANTED' : 'ASK';
     } catch (e) {
-      logApiError('Live Mode consent', e);
-      throw e;
+      logApiError(`${purpose} consent policy`, e);
+      return e instanceof ApiError && e.code === 'CONSENT_POLICY_NOT_ACTIVE' ? 'NO_POLICY' : 'UNKNOWN';
     }
   }, []);
+
+  const recordConsentDecision = useCallback(
+    async (purpose: ConsentPurpose, decision: Exclude<ConsentDecision, 'WITHDRAWN'>) => {
+      try {
+        // The server owns the policy version; never hard-code it. The
+        // wording is the app's (Core stores only its content hash).
+        const policy = await coreApi.getActiveConsentPolicy(purpose);
+        await coreApi.recordConsent({
+          purpose_code: purpose,
+          policy_version: policy.version,
+          decision,
+          capture_channel: 'MOBILE',
+          evidence: { screen: purpose === 'LIVE_MODE' ? 'go_live_consent' : 'go_live_matching_consent' },
+        });
+        decisions.current[purpose] = decision;
+      } catch (e) {
+        logApiError(`${purpose} consent`, e);
+        throw e;
+      }
+    },
+    []
+  );
 
   const stopLive = useCallback(async () => {
     const current = sessionRef.current;
@@ -282,6 +318,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
 
   const runMatching = useCallback(async () => {
     if (!activeEvent) return [];
+    if (decisions.current.MATCHING === 'DENIED') throw new MatchingError('CONSENT_DENIED');
     try {
       const found = await findMatches({
         eventId: activeEvent.eventId,
@@ -305,7 +342,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       isLive,
       activeUntil: isLive ? activeUntil : null,
       goLive,
-      grantLiveModeConsent,
+      checkConsent,
+      recordConsentDecision,
       stopLive,
       intentText,
       setIntentText,
@@ -322,7 +360,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     }),
     // activeUntil is derived from session; listing session keeps it stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeEvent, isLive, session, goLive, grantLiveModeConsent, stopLive, intentText, matches, runMatching, filters, setFilters, intentEditSession, passedIds]
+    [activeEvent, isLive, session, goLive, checkConsent, recordConsentDecision, stopLive, intentText, matches, runMatching, filters, setFilters, intentEditSession, passedIds]
   );
 
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;

@@ -65,7 +65,14 @@ export function LiveMatchesScreen({ navigation }: Props) {
       const found = await runMatching();
       if (!found.length) navigation.replace('EmptyRoom');
     } catch (e) {
-      if (e instanceof MatchingError) setError(e.reason === 'TIMED_OUT' ? 'Still matching. Try again in a moment.' : "Couldn't find matches right now.");
+      if (e instanceof MatchingError)
+        setError(
+          e.reason === 'TIMED_OUT'
+            ? 'Still matching. Try again in a moment.'
+            : e.reason === 'CONSENT_DENIED'
+              ? "Matching is off, so we can't find your matches."
+              : "Couldn't find matches right now."
+        );
       else setError(e instanceof ApiError && e.status > 0 ? `Couldn't load matches (${e.status})` : "Couldn't reach the server");
     }
   }, [activeEvent, runMatching, navigation]);

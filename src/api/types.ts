@@ -101,10 +101,16 @@ export type EventAttendeesResponse = { attendees: EventAttendee[]; total: number
 // GET /v1/consent-policies/{purposeCode}: the active version to send in
 // POST /v1/me/consents. 404 CONSENT_POLICY_NOT_ACTIVE when none is active.
 export type ConsentPolicy = {
+  policy_id?: string;
   purpose_code: string;
   version: string;
   locale?: string;
+  content_hash?: string;
   effective_from: string;
+  // The caller's latest decision for this policy (with X-Member-Id); absent
+  // when they've never answered.
+  current_decision?: ConsentDecision | (string & {});
+  decision_captured_at?: string;
 };
 
 export type ConsentResponse = {
@@ -137,6 +143,11 @@ export type EventSummary = {
   // Only sent when X-Member-Id is present: true for a REGISTERED or
   // CHECKED_IN registration (the same rule that allows Go Live).
   is_registered?: boolean;
+  // When true, matching only includes members whose registration_status is
+  // CHECKED_IN (event staff check them in). Registration and Live Mode
+  // aren't blocked. registration_status is only sent with X-Member-Id.
+  check_in_required?: boolean;
+  registration_status?: 'REGISTERED' | 'CHECKED_IN' | (string & {});
 };
 
 export type EventRegistration = {
@@ -144,6 +155,7 @@ export type EventRegistration = {
   member_id: string;
   status: string;
   registered_at: string;
+  checked_in_at?: string;
 };
 
 export type LiveModeRequest = {

@@ -12,7 +12,7 @@ import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { LIVE_MODE_DURATION_MINUTES } from '../../config/env';
 import { isRegistered, useEvents } from '../../context/EventsContext';
-import { GoLiveBlocker, useLive } from '../../context/LiveContext';
+import { ConsentPurpose, GoLiveBlocker, useLive } from '../../context/LiveContext';
 import { usePrefs } from '../../context/PrefsContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
@@ -46,7 +46,23 @@ const MATCHING_MESSAGES: Record<MatchingFailure, string> = {
   INTENT_FAILED: "We couldn't read your intent. Try rephrasing it in your filter.",
   MATCHING_FAILED: "You're live, but matching failed.",
   TIMED_OUT: "You're live, but matching is taking longer than usual.",
+  CONSENT_DENIED: "Matching is off, so we can't find your matches. Go Live again and allow matching to turn it on.",
 };
+
+// Consent wording is the app's; Core keeps the policy version and hash.
+// MATCHING text is placeholder plain language until the client approves it.
+const CONSENT_PROMPTS: Record<ConsentPurpose, { title: string; body: string }> = {
+  LIVE_MODE: {
+    title: 'Allow Live Mode?',
+    body: "While you're live, people at this event who match your intent can see you're here. You can go invisible anytime.",
+  },
+  MATCHING: {
+    title: 'Allow matching?',
+    body: "To find your matches, Ol-ga compares what you're looking for with the other people at this event who allowed matching. Your matches see your role and intent, never your name.",
+  },
+};
+
+const CHECK_IN_NOTE = 'This event needs check-in: check in at the badge desk before you appear in matches.';
 
 function formatTime(date: Date) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
@@ -66,7 +82,8 @@ export function GoLiveScreen({ navigation }: Props) {
     isLive,
     activeUntil,
     goLive,
-    grantLiveModeConsent,
+    checkConsent,
+    recordConsentDecision,
     stopLive,
     runMatching,
     matches,
@@ -108,10 +125,12 @@ export function GoLiveScreen({ navigation }: Props) {
     setActiveEvent({ eventId: room.event_id, name: room.name, endsAt: room.ends_at });
   }, [room, isLive, activeEvent?.eventId, setActiveEvent]);
 
-  // Check-in is the presence gate, and Core has no check-in yet: until it
-  // does, Go Live opens when the event starts (agreed interim rule).
+  // Board 05: Go Live opens when the event starts. Check-in (done by event
+  // staff) doesn't block it, but where the event requires check-in,
+  // matching skips members who aren't CHECKED_IN: say so.
   const opensAt = room ? new Date(room.starts_at) : null;
   const beforeRoom = Boolean(opensAt && opensAt.getTime() > now);
+  const awaitingCheckIn = Boolean(room?.check_in_required && room.registration_status !== 'CHECKED_IN');
   const liveCount = activeEvent?.liveCount;
 
   // Matching with bounded retries; the member stays live whatever happens.
@@ -155,13 +174,22 @@ export function GoLiveScreen({ navigation }: Props) {
       return;
     }
     setError(null);
+    // Ask for what isn't on record yet (Live Mode, then matching). An
+    // unknown answer (no policy, offline) doesn't block: the server decides.
+    for (const purpose of ['LIVE_MODE', 'MATCHING'] as const) {
+      if ((await checkConsent(purpose)) === 'ASK') {
+        askForConsent(purpose);
+        return;
+      }
+    }
     setManualRetryUsed(false);
     setSearching(true);
     try {
       const blocker = await goLive();
       if (blocker) {
         setSearching(false);
-        if (blocker === 'CONSENT_REQUIRED') askForConsent();
+        // Fallback: the server still wants LIVE_MODE consent.
+        if (blocker === 'CONSENT_REQUIRED') askForConsent('LIVE_MODE');
         else setError(BLOCKER_MESSAGES[blocker]);
         return;
       }
@@ -173,32 +201,32 @@ export function GoLiveScreen({ navigation }: Props) {
     match();
   }
 
-  // Live Mode needs a LIVE_MODE consent on record (403 LIVE_MODE_CONSENT_REQUIRED).
-  function askForConsent() {
-    Alert.alert(
-      'Allow Live Mode?',
-      "While you're live, people at this event who match your intent can see you're here. You can go invisible anytime.",
-      [
-        { text: 'Not now', style: 'cancel' },
-        {
-          text: 'Allow',
-          onPress: async () => {
-            try {
-              await grantLiveModeConsent();
-              handleGoLive();
-            } catch (e) {
-              setError(
-                e instanceof ApiError && e.code === 'CONSENT_POLICY_NOT_ACTIVE'
-                  ? "Live Mode isn't available right now. Please try again later."
-                  : e instanceof ApiError && e.status > 0
-                    ? `Couldn't save your consent (${e.status})`
-                    : "Couldn't reach the server"
-              );
-            }
-          },
-        },
-      ]
-    );
+  // Records the answer, then carries on with Go Live (which asks for the
+  // next missing consent). Declining matching records DENIED and stops.
+  function askForConsent(purpose: ConsentPurpose) {
+    const save = async (decision: 'GRANTED' | 'DENIED') => {
+      try {
+        await recordConsentDecision(purpose, decision);
+      } catch (e) {
+        setError(
+          e instanceof ApiError && e.code === 'CONSENT_POLICY_NOT_ACTIVE'
+            ? purpose === 'LIVE_MODE'
+              ? "Live Mode isn't available right now. Please try again later."
+              : "Matching isn't available right now. Please try again later."
+            : e instanceof ApiError && e.status > 0
+              ? `Couldn't save your consent (${e.status})`
+              : "Couldn't reach the server"
+        );
+        return;
+      }
+      if (decision === 'GRANTED') handleGoLive();
+      else setError(MATCHING_MESSAGES.CONSENT_DENIED);
+    };
+    Alert.alert(CONSENT_PROMPTS[purpose].title, CONSENT_PROMPTS[purpose].body, [
+      // Not now on Live Mode just closes; on matching it's a recorded decline.
+      { text: 'Not now', style: 'cancel', onPress: purpose === 'MATCHING' ? () => save('DENIED') : undefined },
+      { text: 'Allow', onPress: () => save('GRANTED') },
+    ]);
   }
 
   async function handleGoInvisible() {
@@ -294,6 +322,7 @@ export function GoLiveScreen({ navigation }: Props) {
                 : "You're live"}
         </Text>
         <Text style={styles.center}>{LIVE_LINE}</Text>
+        {awaitingCheckIn && <Text style={styles.center}>{CHECK_IN_NOTE}</Text>}
         {error && <Text style={styles.error}>{error}</Text>}
         {matchingFailed && !manualRetryUsed && (
           <Button
@@ -335,6 +364,7 @@ export function GoLiveScreen({ navigation }: Props) {
       <Text style={styles.center}>
         Your three best matches in this room appear, and only they can see you. Nobody else. It ends at {expectedEnd}.
       </Text>
+      {awaitingCheckIn && <Text style={styles.center}>{CHECK_IN_NOTE}</Text>}
       {error && <Text style={styles.error}>{error}</Text>}
 
       <View style={styles.colors}>

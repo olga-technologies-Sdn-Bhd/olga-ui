@@ -11,7 +11,8 @@ export type MatchingFailure =
   | 'INTENT_HAS_PII' // ask the user to remove personal details from the intent
   | 'INTENT_FAILED' // intent couldn't be processed: ask the user to rephrase
   | 'MATCHING_FAILED' // match request FAILED server-side
-  | 'TIMED_OUT'; // still processing after MATCH_POLL_TIMEOUT_MS
+  | 'TIMED_OUT' // still processing after MATCH_POLL_TIMEOUT_MS
+  | 'CONSENT_DENIED'; // the member declined MATCHING consent: don't call NLP
 
 export class MatchingError extends Error {
   reason: MatchingFailure;
