@@ -65,6 +65,10 @@ export function EventDetailScreen({ route, navigation }: Props) {
   }
   const registered = isRegistered(event);
   const open = isEventLive(event);
+  const checkedIn = event.registration_status === 'CHECKED_IN';
+  // Check-in (badge desk staff, not the app) doesn't block Go Live, but
+  // where the event requires it, matching skips members not checked in.
+  const awaitingCheckIn = Boolean(event.check_in_required && !checkedIn);
 
   async function handleRegister() {
     setRegistering(true);
@@ -174,12 +178,15 @@ export function EventDetailScreen({ route, navigation }: Props) {
               <GoLiveMark size={20} color={colors.text} />
             </View>
             <View style={styles.flex}>
-              <Text style={styles.h3}>You're signed up</Text>
+              <Text style={styles.h3}>{checkedIn ? "You're checked in" : "You're signed up"}</Text>
               <Text style={styles.sub}>
                 {open
                   ? "That doesn't make you visible. Go Live when you're in the room."
                   : "That doesn't make you visible. Go Live opens on the day, once you check in at the badge desk."}
               </Text>
+              {awaitingCheckIn && (
+                <Text style={styles.sub}>This event needs check-in: check in at the badge desk before you appear in matches.</Text>
+              )}
             </View>
           </Card>
           {open && event.live_mode_enabled && <Button label="Go Live in this room" variant="charcoal" onPress={handleGoLive} />}
