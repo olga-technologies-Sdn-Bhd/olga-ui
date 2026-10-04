@@ -1,7 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { CalendarDays, House, LucideIcon, MessageCircle } from 'lucide-react-native';
+import { CalendarDays, House, LucideIcon, MessageCircle, Radio } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GoLiveMark } from '../components/GoLiveMark';
 import { useLive } from '../context/LiveContext';
 import { CommitsStack } from './CommitsStack';
 import { HomeStack } from './HomeStack';
@@ -12,9 +11,9 @@ import { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-// Go Live uses its own mark (board 11), not a Lucide icon.
-const ICONS: Record<Exclude<keyof MainTabParamList, 'GoLiveTab'>, LucideIcon> = {
+const ICONS: Record<keyof MainTabParamList, LucideIcon> = {
   HomeTab: House,
+  GoLiveTab: Radio,
   EventsTab: CalendarDays,
   ChatTab: MessageCircle,
 };
@@ -49,12 +48,10 @@ export function MainTabs() {
           },
           tabBarLabelStyle: { fontSize: 12, fontWeight: '600', marginTop: 2 },
           tabBarIcon: ({ color, focused }) => {
-            if (route.name === 'GoLiveTab') {
-              // The dot steps inside while live; the live dot is green.
-              return <GoLiveMark size={ICON_SIZE} color={color} live={isLive} dotColor={isLive ? colors.liveFill : undefined} />;
-            }
-            const Icon = ICONS[route.name as Exclude<keyof MainTabParamList, 'GoLiveTab'>];
-            return <Icon size={ICON_SIZE} color={color} strokeWidth={focused ? 2.4 : 1.8} />;
+            const Icon = ICONS[route.name as keyof MainTabParamList];
+            // Go Live turns green while the member is live.
+            const tint = route.name === 'GoLiveTab' && isLive ? colors.liveFill : color;
+            return <Icon size={ICON_SIZE} color={tint} strokeWidth={focused ? 2.4 : 1.8} />;
           },
           tabBarLabel: LABELS[route.name as keyof MainTabParamList],
         })}
