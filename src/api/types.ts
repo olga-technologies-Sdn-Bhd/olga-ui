@@ -60,7 +60,9 @@ export type MemberLookupResponse = WithEtag<MemberLookupBody>;
 // Email and phone are never returned.
 export type ProfileBody = {
   member_id: string;
-  display_name: string;
+  // GET /v1/members/{id} only sends it for yourself or a connected member:
+  // names stay hidden until a Commit is accepted.
+  display_name?: string;
   headline?: string;
   professional_summary?: string;
   role_category?: string;
@@ -279,3 +281,82 @@ export type MatchRequestStatusResponse = {
   completed_at?: string;
   error_code?: string;
 };
+
+// ---- Core: Commits (Docs/Core Commit API (for mobile).md) ----
+// A Commit is a connection request scoped to an event (context_id), with a
+// plan: a short meeting in this room. Names stay hidden until Accept.
+
+export type CommitWhen = 'NOW' | 'IN_10_MIN' | 'NEXT_BREAK' | 'AFTER_SESSION';
+
+export type CommitWhereRequest = { type: 'THEIR_CHOICE' } | { type: 'SPOT'; spot_id: string };
+
+export type SendCommitRequest = {
+  recipient_member_id: string;
+  context_id: string; // event_id
+  match_result_id?: number;
+  plan: { where: CommitWhereRequest; when: CommitWhen };
+  note?: string;
+};
+
+export type SendCommitResponse = {
+  request_id: string;
+  sender_member_id: string;
+  recipient_member_id: string;
+  status: 'PENDING';
+  expires_at: string;
+  commits_remaining: number;
+};
+
+export type CommitQuota = { limit: number; used: number; remaining: number };
+
+export type MeetingSpot = { spot_id: string; label: string };
+
+// "THEIR_CHOICE" or a spot label.
+export type CommitPlan = { where: string; when: CommitWhen; event_id: string };
+
+export type IncomingCommit = {
+  request_id: string;
+  event: { event_id: string; name: string };
+  plan: CommitPlan;
+  // Never a name, photo, contact or member ID before Accept.
+  sender: { headline?: string; role_category?: string; score?: number };
+  expires_at: string;
+  created_at: string;
+};
+
+// A declined Commit stays PENDING for the sender until it expires.
+export type OutgoingCommitStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED';
+
+export type OutgoingCommit = {
+  request_id: string;
+  event: { event_id: string; name: string };
+  plan: CommitPlan;
+  recipient: { headline?: string; role_category?: string; display_name?: string }; // name only once ACCEPTED
+  status: OutgoingCommitStatus;
+  expires_at: string;
+  created_at: string;
+  conversation_id?: string; // only once ACCEPTED
+};
+
+// PATCH /v1/connection-requests/{id} ACCEPT -> 200 (DECLINE -> 204, no body).
+export type AcceptCommitResponse = {
+  connection_id: string;
+  member_id: string;
+  status: 'ACTIVE';
+  conversation_id: string;
+  display_name?: string;
+};
+
+// GET /v1/conversations: only what meetings need (the chat itself isn't
+// Phase 1). Null fields are omitted.
+export type Meeting = {
+  conversation_id: string;
+  member_id: string;
+  display_name?: string;
+  headline?: string;
+  role_category?: string;
+  plan?: CommitPlan;
+  last_activity_at: string;
+};
+
+export type MeetingPage = { items: Meeting[]; next_cursor?: string; has_more: boolean };
