@@ -31,6 +31,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate, RNAppAuthAuthorizationFlo
       launchOptions: launchOptions
     )
 
+    // React Native paints its root view with systemBackgroundColor (white), so
+    // the splash dissolved into white before the app drew. Keep it the same
+    // bone (#F4F1EC) as the launch screen and the app.
+    let bone = UIColor(red: 0.95686, green: 0.94510, blue: 0.92549, alpha: 1)
+    window?.backgroundColor = bone
+    window?.rootViewController?.view.backgroundColor = bone
+
     return true
   }
 
