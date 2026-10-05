@@ -23,6 +23,8 @@ class MainActivity : ReactActivity() {
    * rebuilds the screens itself. (react-native-screens Android setup.)
    */
   override fun onCreate(savedInstanceState: Bundle?) {
+    // Leave the splash theme (see SplashTheme) before the app draws.
+    setTheme(R.style.AppTheme)
     super.onCreate(null)
   }
 

@@ -1,0 +1,11 @@
+<resources>
+
+    <!-- Android 12+ draws the launch screen itself from these attributes. The
+         wordmark is 150dp wide on a 288dp canvas so it fits the icon circle. -->
+    <style name="SplashTheme" parent="AppTheme">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+    </style>
+
+</resources>
