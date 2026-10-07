@@ -46,13 +46,16 @@ export function FiltersScreen({ navigation }: Props) {
   function handleDone() {
     setFilters({ minMatch, lookingFor, industries, seniority, allowNearMatches, shareIntentChanges });
     const nextIntent = intent.trim();
-    if (nextIntent && nextIntent !== intentText.trim()) {
+    const intentChanged = Boolean(nextIntent) && nextIntent !== intentText.trim();
+    if (intentChanged) {
       setIntentText(nextIntent);
-      if (isLive) {
-        // "This will find you a new three": once per live session.
-        markIntentEdited();
-        runMatching().catch(() => {});
-      }
+      // "This will find you a new three": once per live session.
+      if (isLive) markIntentEdited();
+    }
+    // Minimum match is the only filter matching uses; a new one (e.g. from
+    // "Widen my filter") or a new intent needs a fresh search.
+    if (isLive && (intentChanged || minMatch !== filters.minMatch)) {
+      runMatching({ intentText: intentChanged ? nextIntent : undefined, minMatch }).catch(() => {});
     }
     navigation.goBack();
   }

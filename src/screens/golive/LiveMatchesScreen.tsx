@@ -114,7 +114,7 @@ export function LiveMatchesScreen({ navigation }: Props) {
               style={styles.flex}
               onPress={() => navigation.navigate('Commit', { memberId: card.match.member_id })}
             />
-            <Button label="Pass" variant="secondary" small style={styles.pass} onPress={() => pass(card.match.member_id)} />
+            <Button label="Pass" variant="secondary" small style={styles.flex} onPress={() => pass(card.match.member_id)} />
           </View>
         </Card>
       ))}
@@ -134,6 +134,5 @@ const makeStyles = (colors: ThemeColors) =>
     reason: { fontSize: 13, lineHeight: 19, color: colors.text, marginTop: 10 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     actions: { flexDirection: 'row', gap: 10, marginTop: 12 },
-    pass: { minWidth: 84 },
     footer: { fontSize: 12, color: colors.muted, textAlign: 'center' },
   });
