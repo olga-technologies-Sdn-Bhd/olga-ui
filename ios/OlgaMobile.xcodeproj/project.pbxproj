@@ -318,7 +318,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.olga.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.olga.connect;
 				PRODUCT_NAME = OlgaMobile;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -348,7 +348,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.olga.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.olga.connect;
 				PRODUCT_NAME = OlgaMobile;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
