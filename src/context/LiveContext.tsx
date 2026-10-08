@@ -78,8 +78,9 @@ type LiveState = {
   matches: MatchCard[] | null;
   // Saves the intent and runs a match request (src/api/matching.ts).
   // Throws MatchingError (CONSENT_DENIED when the member declined MATCHING)
-  // / ApiError; keeps the previous matches on failure.
-  runMatching: () => Promise<MatchCard[]>;
+  // / ApiError; keeps the previous matches on failure. Pass `next` with values
+  // set in the same tick (state isn't updated until the next render).
+  runMatching: (next?: { intentText?: string; minMatch?: number }) => Promise<MatchCard[]>;
   // Board 09: Pass is silent and only ever stored on this phone.
   passedIds: string[];
   pass: (memberId: string) => void;
@@ -321,16 +322,16 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     applySession(null);
   }, [applySession]);
 
-  const runMatching = useCallback(async () => {
+  const runMatching = useCallback(async (next?: { intentText?: string; minMatch?: number }) => {
     if (!activeEvent) return [];
     if (decisions.current.MATCHING === 'DENIED') throw new MatchingError('CONSENT_DENIED');
     try {
       const found = await findMatches({
         eventId: activeEvent.eventId,
         eventEndsAt: activeEvent.endsAt,
-        wantText: intentText,
+        wantText: next?.intentText ?? intentText,
         offerText: await profileOffer(),
-        minMatchPercent: filters.minMatch,
+        minMatchPercent: next?.minMatch ?? filters.minMatch,
       });
       setMatches(found);
       return found;

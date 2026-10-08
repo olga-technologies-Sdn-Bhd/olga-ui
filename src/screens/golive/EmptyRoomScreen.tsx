@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
@@ -17,8 +17,14 @@ type Props = NativeStackScreenProps<GoLiveStackParamList, 'EmptyRoom'>;
 export function EmptyRoomScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { activeEvent } = useLive();
+  const { activeEvent, matches } = useLive();
   const [notifyRequested, setNotifyRequested] = useState(false);
+
+  // A new search (e.g. after "Widen my filter") found someone: show them.
+  const found = (matches?.length ?? 0) > 0;
+  useEffect(() => {
+    if (found) navigation.replace('LiveMatches');
+  }, [found, navigation]);
 
   return (
     <Screen>
