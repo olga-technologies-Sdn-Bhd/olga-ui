@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { authorize, refresh, AuthConfiguration, AuthorizeResult, RefreshResult } from 'react-native-app-auth';
 import * as Keychain from 'react-native-keychain';
-import { entraConfig, entraIssuer, entraScopes } from './entraConfig';
+import { keychainService } from '../config/env';
+import { entraConfig, entraIssuer, entraScopes, inAppEmailOtp } from './entraConfig';
 import {
   isNativeAuthUnavailable,
   isRegistrationRequired,
@@ -16,7 +17,7 @@ import {
 // runs the whole PKCE authorization-code flow in one native call instead of the
 // manual discovery/useAuthRequest/exchangeCodeAsync steps that guide documents,
 // and react-native-keychain replaces expo-secure-store for the token at rest.
-const KEYCHAIN_SERVICE = 'olga.entra.session';
+const KEYCHAIN_SERVICE = keychainService('olga.entra.session');
 
 const authConfig: AuthConfiguration = {
   issuer: entraIssuer,
@@ -70,7 +71,7 @@ declare function atob(data: string): string;
 // Reads the email claim from the ID token payload. No signature check: the
 // token came straight from Microsoft over the PKCE flow and is only used to
 // label the local session, never sent to Olga APIs.
-// §10 check: the access token must come from the dev External ID tenant and
+// §10 check: the access token must come from this environment's External ID tenant and
 // target the OLGA API. Logs only issuer host and audience, never the token.
 function logTokenTarget(accessToken: string) {
   try {
@@ -117,8 +118,9 @@ function sessionFromNative(tokens: NativeTokenResponse): StoredSession {
 export type EntraLoginOptions = { loginHint?: string; provider?: EntraProvider };
 
 // Values that route Entra straight to the provider (no Microsoft chooser).
-// Verified against the dev tenant on 2026-10-02 by following the authorize
-// redirect: "Google" -> accounts.google.com, "apple" -> appleid.apple.com.
+// Verified against the dev tenant on 2026-10-02 and the production tenant on
+// 2026-10-11 by following the authorize redirect: "Google" ->
+// accounts.google.com, "apple" -> appleid.apple.com.
 // Case matters for Google: "google" fails with AADSTS90023, and "google.com"
 // / "apple.com" fall back to Entra's own sign-in page.
 const PROVIDER_DOMAIN_HINT: Record<EntraProvider, string> = {
@@ -212,6 +214,8 @@ export function useEntraLogin() {
   // user is never asked whether they have an account, and both paths show
   // the same "enter the code sent to your email" screen.
   const startEmail = useCallback(async (email: string): Promise<EmailStartResult> => {
+    // Environments without in-app OTP (production) never call native auth.
+    if (!inAppEmailOtp) return { mode: 'browser' };
     const started = Date.now();
     let flow: PendingEmail['flow'] = 'signin';
     let continuation: string;
