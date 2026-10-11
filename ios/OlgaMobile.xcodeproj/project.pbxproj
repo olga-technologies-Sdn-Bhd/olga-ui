@@ -318,6 +318,7 @@
 					"-ObjC",
 					"-lc++",
 				);
+				OLGA_AUTH_SCHEME = "olga-dev";
 				PRODUCT_BUNDLE_IDENTIFIER = com.olga.connect;
 				PRODUCT_NAME = OlgaMobile;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -348,6 +349,7 @@
 					"-ObjC",
 					"-lc++",
 				);
+				OLGA_AUTH_SCHEME = "olga-dev";
 				PRODUCT_BUNDLE_IDENTIFIER = com.olga.connect;
 				PRODUCT_NAME = OlgaMobile;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

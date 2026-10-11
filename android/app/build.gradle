@@ -60,6 +60,30 @@ react {
 def enableProguardInReleaseBuilds = false
 
 /**
+ * Which backends and sign-in tenant this build targets: OLGA_ENV = dev | prod | local.
+ * Metro reads the same variable to pick src/config/environments/<name>.ts, so the
+ * JS bundle and the sign-in redirect scheme below always belong to one environment.
+ * Debug builds default to dev. A release build must name its environment.
+ */
+def olgaEnvironments = ["dev", "prod", "local"]
+def requestedOlgaEnv = System.getenv("OLGA_ENV")
+def olgaEnv = requestedOlgaEnv ?: "dev"
+if (!olgaEnvironments.contains(olgaEnv)) {
+    throw new GradleException("OLGA_ENV must be one of ${olgaEnvironments.join(', ')} (got '${olgaEnv}')")
+}
+gradle.taskGraph.whenReady { graph ->
+    def buildsRelease = graph.allTasks.any { it.project == project && it.name.contains("Release") }
+    if (buildsRelease && !requestedOlgaEnv) {
+        throw new GradleException("Release builds need an explicit environment: set OLGA_ENV to dev or prod (for example 'npm run build:android:prod').")
+    }
+    if (buildsRelease && olgaEnv == "local") {
+        throw new GradleException("OLGA_ENV=local can't be used for a release build.")
+    }
+}
+// Must match redirectScheme in src/config/environments/<name>.ts.
+def olgaAuthRedirectScheme = olgaEnv == "prod" ? "olga" : "olga-dev"
+
+/**
  * The preferred build flavor of JavaScriptCore (JSC)
  *
  * For example, to use the international variant, you can use:
@@ -84,9 +108,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
-        // Claimed by react-native-app-auth to catch the olga-dev://auth
+        // Claimed by react-native-app-auth to catch the <scheme>://auth
         // redirect back from Entra External ID's hosted sign-in page.
-        manifestPlaceholders = [appAuthRedirectScheme: "olga-dev"]
+        manifestPlaceholders = [appAuthRedirectScheme: olgaAuthRedirectScheme]
     }
     signingConfigs {
         debug {
@@ -108,6 +132,11 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
+}
+
+// Rebuild the JS bundle when the environment changes.
+tasks.matching { it.name.startsWith("createBundle") }.configureEach {
+    inputs.property("olgaEnv", olgaEnv)
 }
 
 dependencies {

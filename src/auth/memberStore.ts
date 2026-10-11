@@ -1,4 +1,5 @@
 import * as Keychain from 'react-native-keychain';
+import { keychainService } from '../config/env';
 import { EMPTY_STORE, MemberStore } from './memberSession';
 
 export type { MemberStore, StoredMember } from './memberSession';
@@ -6,7 +7,7 @@ export { normalizeEmail } from './memberSession';
 
 // Keychain persistence for the member store. The decisions about what goes in
 // it live in memberSession.ts (pure, unit-tested).
-const SERVICE = 'olga.members';
+const SERVICE = keychainService('olga.members');
 
 export async function loadMemberStore(): Promise<MemberStore> {
   try {

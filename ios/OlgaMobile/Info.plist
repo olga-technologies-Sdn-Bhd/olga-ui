@@ -27,7 +27,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>olga-dev</string>
+				<string>$(OLGA_AUTH_SCHEME)</string>
 			</array>
 		</dict>
 	</array>

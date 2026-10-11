@@ -1,48 +1,40 @@
-// App environment. Change APP_ENV to switch every backend the app talks to:
-//   'local' - Olga.Core / olga-nlp-api running on your machine (local DB).
+// App environment: which backends and sign-in tenant this build talks to.
 //   'dev'   - the shared Azure dev deployment (default).
-//   'prod'  - production. Not deployed yet: selecting it fails fast until the
-//             URLs below (and the prod Entra settings) are filled in.
-// Commit it as 'dev'. Sign-in (Entra) settings per environment live in
-// src/auth/entraConfig.ts.
-export type AppEnv = 'local' | 'dev' | 'prod';
-export const APP_ENV: AppEnv = 'dev';
+//   'prod'  - production.
+//   'local' - Olga.Core / olga-nlp-api running on your machine (local DB).
+// It is chosen when the app is bundled, by the OLGA_ENV variable (see
+// src/config/environments/selected.ts and the README), not by editing code.
+// The values live in src/config/environments/<name>.ts.
+import { environment } from './environments/selected';
+import type { AppEnv } from './environments/types';
 
-// 'local' only. Physical Android phone over USB: 'localhost' plus
-//   adb reverse tcp:5000 tcp:5000 && adb reverse tcp:5080 tcp:5080
-// Android emulator: '10.0.2.2' (the emulator's alias for your machine).
-// Ports: Olga.Core `dotnet run --project src/Olga.Core.Api` -> 5000,
-// olga-nlp-api launch profile -> 5080. Debug builds allow plain http.
-const LOCAL_HOST = 'localhost';
+export type { AppEnv };
+export const APP_ENV: AppEnv = environment.name;
 
-const API_URLS: Record<AppEnv, { core: string; nlp: string }> = {
-  local: {
-    core: `http://${LOCAL_HOST}:5000`,
-    nlp: `http://${LOCAL_HOST}:5080`,
-  },
-  dev: {
-    core: 'https://ca-olga-core-api-dev.agreeableocean-8bb4ca77.malaysiawest.azurecontainerapps.io',
-    nlp: 'https://ca-olga-nlp-api-dev.agreeableocean-8bb4ca77.malaysiawest.azurecontainerapps.io',
-  },
-  // TODO(infra): fill in once prod is deployed (Olga.Infrastructure, prd).
-  prod: {
-    core: '',
-    nlp: '',
-  },
-};
+// Fail closed: a build with a missing or malformed value must not start, and
+// must never fall back to another environment's value.
+function requireUrl(name: string, value: string) {
+  const scheme = APP_ENV === 'local' ? /^https?:\/\// : /^https:\/\//;
+  if (!value || !scheme.test(value) || value.endsWith('/')) {
+    throw new Error(`${name} is missing or invalid for APP_ENV '${APP_ENV}' (src/config/environments/${APP_ENV}.ts)`);
+  }
+  return value;
+}
 
-if (!API_URLS[APP_ENV].core || !API_URLS[APP_ENV].nlp) {
-  throw new Error(`No API URLs configured for APP_ENV '${APP_ENV}' (src/config/env.ts)`);
+// A release build is never allowed to point at a developer's machine.
+if (APP_ENV === 'local' && !__DEV__) {
+  throw new Error("APP_ENV 'local' can't be used in a release build");
 }
 
 // Both Olga.Core and olga-nlp-api run without authentication for the MVP
 // (deliberate scope decision); calls carry X-Member-Id, not a token.
-export const CORE_API_URL = API_URLS[APP_ENV].core;
+export const CORE_API_URL = requireUrl('Core API URL', environment.coreApiUrl);
 
-export const NLP_API_URL = API_URLS[APP_ENV].nlp;
+export const NLP_API_URL = requireUrl('NLP API URL', environment.nlpApiUrl);
 
-
-
+// Keychain entries are kept per environment, so tokens and member IDs from
+// one environment are never read by a build for another.
+export const keychainService = (name: string) => `${name}.${APP_ENV}`;
 
 // Timeout for NLP calls (cold starts can take ~50 s); same as the client default.
 export const NLP_TIMEOUT_MS = 60000;
