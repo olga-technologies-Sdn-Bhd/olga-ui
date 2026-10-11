@@ -3,6 +3,7 @@ import { makeApiClient, RequestOptions, withEtag } from './client';
 import type {
   AcceptCommitResponse,
   CommitQuota,
+  Connection,
   IncomingCommit,
   MeetingPage,
   MeetingSpot,
@@ -103,5 +104,7 @@ export const coreApi = {
   declineCommit: (requestId: string, options?: RequestOptions) =>
     client.patch<void>(`/v1/connection-requests/${encodeURIComponent(requestId)}`, { decision: 'DECLINE' }, options),
   // Accepted Commits become conversations; meetings read their plan and names.
+  // Confirmed relationships (an accepted Commit creates one).
+  getConnections: () => client.get<Connection[]>('/v1/connections'),
   getMeetings: () => client.get<MeetingPage>('/v1/conversations?limit=50'),
 };
