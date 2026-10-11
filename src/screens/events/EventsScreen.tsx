@@ -1,40 +1,53 @@
-import { useFocusEffect } from '@react-navigation/native';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { CompositeScreenProps, useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Check } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronRight } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { CoreEvent } from '../../api/core';
+import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { DateBlock } from '../../components/DateBlock';
-import { Pill } from '../../components/Pill';
 import { useTopInset } from '../../components/Screen';
+import { useAuth } from '../../context/AuthContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
-import { EventsStackParamList } from '../../navigation/types';
-import { ThemeColors } from '../../theme/colors';
+import { EventsStackParamList, MainTabParamList } from '../../navigation/types';
+import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
 
-type Props = NativeStackScreenProps<EventsStackParamList, 'Events'>;
+type Props = CompositeScreenProps<
+  NativeStackScreenProps<EventsStackParamList, 'Events'>,
+  BottomTabScreenProps<MainTabParamList>
+>;
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+type Tab = 'upcoming' | 'past';
 
 export function isEventLive(event: CoreEvent, now = Date.now()) {
   return new Date(event.starts_at).getTime() <= now && now < new Date(event.ends_at).getTime();
 }
 
-// Board 02: date blocks, titles that wrap, and three sections. Match counts
-// per card need Core (not in GET /v1/events yet). Built to take other room
-// types (venues) in Phase 2: a row only needs a name, times and a venue.
+// Upcoming (Registered, then Open for registration) and Past, as flat rows.
+// The location filter lists the venues of the published events. Built to take
+// other room types (venues) in Phase 2: a row only needs a name, times and a
+// venue.
 export function EventsScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const topInset = useTopInset();
+  const { name } = useAuth();
   const { events, error, refresh, refreshIfStale, register } = useEvents();
+  const [tab, setTab] = useState<Tab>('upcoming');
+  // null = all locations.
+  const [location, setLocation] = useState<string | null>(null);
+  const [choosingLocation, setChoosingLocation] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [signingUp, setSigningUp] = useState<string | null>(null);
-  const [signUpError, setSignUpError] = useState<string | null>(null);
+  const [registering, setRegistering] = useState<string | null>(null);
+  const [registerError, setRegisterError] = useState<string | null>(null);
+  const initial = (name?.trim()[0] ?? '?').toUpperCase();
 
   // Refetch whenever the screen comes into focus (e.g. back from a register).
   useFocusEffect(
@@ -49,139 +62,249 @@ export function EventsScreen({ navigation }: Props) {
     setRefreshing(false);
   }
 
-  async function signUp(eventId: string) {
-    setSigningUp(eventId);
-    setSignUpError(null);
+  async function handleRegister(eventId: string) {
+    setRegistering(eventId);
+    setRegisterError(null);
     try {
       await register(eventId);
     } catch (e) {
-      setSignUpError(
+      setRegisterError(
         e instanceof ApiError && e.code === 'EVENT_NOT_FOUND'
           ? 'That event was cancelled.'
           : e instanceof ApiError && e.status > 0
-            ? `Couldn't sign you up (${e.status})`
+            ? `Couldn't register you (${e.status})`
             : "Couldn't reach the server"
       );
     } finally {
-      setSigningUp(null);
+      setRegistering(null);
     }
   }
 
   const now = Date.now();
-  const list = events ?? [];
-  const past = list.filter((e) => new Date(e.ends_at).getTime() <= now);
+  const all = events ?? [];
+  const locations = [...new Set(all.map((e) => e.venue?.trim()).filter((v): v is string => Boolean(v)))].sort();
+  // A venue can disappear from the list (event unpublished): fall back to all.
+  const activeLocation = location && locations.includes(location) ? location : null;
+  const list = activeLocation ? all.filter((e) => e.venue?.trim() === activeLocation) : all;
   const upcoming = list.filter((e) => new Date(e.ends_at).getTime() > now);
-  const going = upcoming.filter(isRegistered);
+  // Most recent first.
+  const past = list.filter((e) => new Date(e.ends_at).getTime() <= now).reverse();
+  const registered = upcoming.filter(isRegistered);
   const open = upcoming.filter((e) => !isRegistered(e));
 
   function renderEvent(event: CoreEvent) {
-    const registered = isRegistered(event);
+    const mine = isRegistered(event);
+    const isPast = new Date(event.ends_at).getTime() <= now;
     const start = new Date(event.starts_at);
     const live = isEventLive(event, now) && typeof event.live_count === 'number' && event.live_count > 0;
+    const attending =
+      typeof event.attendee_count === 'number'
+        ? `${event.attendee_count.toLocaleString('en-US')} ${event.attendee_count === 1 ? 'member' : 'members'} ${isPast ? 'attended' : 'attending'}`
+        : null;
     return (
       <Pressable
         key={event.event_id}
+        style={styles.row}
         onPress={() => navigation.navigate('EventDetail', { eventId: event.event_id })}
         accessibilityRole="button"
         accessibilityLabel={event.name}
       >
-        <Card style={styles.row}>
-          <DateBlock iso={event.starts_at} />
-          <View style={styles.flex}>
-            <Text style={styles.h3} numberOfLines={2}>
-              {event.name}
-            </Text>
-            <Text style={styles.sub}>{[WEEKDAYS[start.getDay()], event.venue].filter(Boolean).join(' · ')}</Text>
-            <View style={styles.stats}>
-              {live && <Text style={styles.live}>● {event.live_count} live</Text>}
-              {typeof event.attendee_count === 'number' && (
-                <Text style={styles.sub}>{event.attendee_count} signed up</Text>
-              )}
-            </View>
-            {registered ? (
-              <View style={styles.signedUp}>
-                <Check size={14} color={colors.text} strokeWidth={2.6} />
-                <Text style={styles.signedUpText}>Signed up</Text>
-              </View>
-            ) : (
-              <Button
-                label="Sign up"
-                variant="secondary"
-                small
-                style={styles.signUp}
-                loading={signingUp === event.event_id}
-                onPress={() => signUp(event.event_id)}
-              />
+        <DateBlock iso={event.starts_at} outlined />
+        <View style={styles.flex}>
+          <Text style={styles.h3} numberOfLines={2}>
+            {event.name}
+          </Text>
+          <Text style={styles.where}>{[WEEKDAYS[start.getDay()], event.venue].filter(Boolean).join(' · ')}</Text>
+          <Text style={styles.stat}>
+            {mine && !isPast && (
+              <Text style={styles.registered}>
+                <Check size={13} color={colors.positive} strokeWidth={3} /> Registered
+              </Text>
             )}
-          </View>
-        </Card>
+            {mine && !isPast && (live || attending) ? ' · ' : ''}
+            {live && <Text style={styles.live}>● {event.live_count} live</Text>}
+            {live && attending ? ' · ' : ''}
+            {attending}
+          </Text>
+        </View>
+        {mine || isPast ? (
+          <ChevronRight size={20} color={colors.muted} />
+        ) : (
+          <Button
+            label="Register"
+            variant="ghost"
+            small
+            loading={registering === event.event_id}
+            onPress={() => handleRegister(event.event_id)}
+          />
+        )}
       </Pressable>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: 20 + topInset }]}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <View style={styles.topline}>
-        <View>
-          <Text style={styles.eyebrow}>Discover</Text>
-          <Text style={styles.h2}>Events</Text>
+    <View style={styles.container}>
+      <View style={[styles.top, { paddingTop: 20 + topInset }]}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => navigation.navigate('HomeTab', { screen: 'Profile' })}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Your account"
+          >
+            <Avatar initials={initial} size="sm" dark />
+          </Pressable>
+          <Text style={styles.title}>Events</Text>
+          <Pressable
+            style={styles.locationButton}
+            onPress={() => setChoosingLocation(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`Location: ${activeLocation ?? 'All locations'}`}
+          >
+            <Text style={styles.locationText} numberOfLines={1}>
+              {activeLocation ?? 'All locations'}
+            </Text>
+            <ChevronDown size={16} color={colors.text} />
+          </Pressable>
         </View>
-        <Pill label="All cities" tone="active" />
+
+        <View style={styles.tabs}>
+          {(['upcoming', 'past'] as const).map((key) => {
+            const active = tab === key;
+            return (
+              <Pressable
+                key={key}
+                style={styles.tab}
+                onPress={() => setTab(key)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+              >
+                <Text style={[styles.tabText, active && styles.tabTextActive]}>{key === 'upcoming' ? 'Upcoming' : 'Past'}</Text>
+                <View style={[styles.tabLine, active && styles.tabLineActive]} />
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
-      {events === null && !error && <Text style={styles.sub}>Loading events…</Text>}
-      {error && <Text style={[styles.sub, { color: colors.danger }]}>{error}</Text>}
-      {signUpError && <Text style={[styles.sub, { color: colors.danger }]}>{signUpError}</Text>}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {events === null && !error && <Text style={styles.note}>Loading events…</Text>}
+        {error && <Text style={[styles.note, styles.error]}>{error}</Text>}
+        {registerError && <Text style={[styles.note, styles.error]}>{registerError}</Text>}
 
-      {going.length > 0 && (
-        <>
-          <Text style={styles.sectionTitle}>You're going</Text>
-          <View style={styles.list}>{going.map(renderEvent)}</View>
-        </>
-      )}
+        {events !== null && tab === 'upcoming' && (
+          <>
+            {registered.length > 0 && (
+              <>
+                <Text style={styles.section}>Registered</Text>
+                {registered.map(renderEvent)}
+              </>
+            )}
+            <Text style={styles.section}>Open for registration</Text>
+            {open.length > 0 ? open.map(renderEvent) : <Text style={styles.note}>No other upcoming events right now.</Text>}
+            <Text style={styles.footnote}>Completed events move to Past, along with the professionals you met.</Text>
+          </>
+        )}
 
-      {events !== null && (
-        <>
-          <Text style={styles.sectionTitle}>Open for sign-up</Text>
-          {open.length > 0 ? (
-            <View style={styles.list}>{open.map(renderEvent)}</View>
-          ) : (
-            <Text style={styles.sub}>No other upcoming events right now.</Text>
-          )}
+        {events !== null && tab === 'past' && (
+          <>
+            {past.map(renderEvent)}
+            {past.length === 0 && <Text style={styles.note}>Events you attend will appear here, with the professionals you met.</Text>}
+          </>
+        )}
+      </ScrollView>
 
-          <Text style={styles.sectionTitle}>Past</Text>
-          {past.length > 0 ? (
-            <View style={styles.list}>{past.map(renderEvent)}</View>
-          ) : (
-            <Text style={styles.sub}>Events you attend will appear here, with who you met.</Text>
-          )}
-        </>
-      )}
-    </ScrollView>
+      <Modal visible={choosingLocation} transparent animationType="fade" onRequestClose={() => setChoosingLocation(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setChoosingLocation(false)} accessibilityLabel="Close">
+          <Pressable style={[styles.menu, { marginTop: 64 + topInset }]}>
+            <ScrollView>
+              {[null, ...locations].map((option) => {
+                const selected = option === activeLocation;
+                return (
+                  <Pressable
+                    key={option ?? 'all'}
+                    style={styles.menuRow}
+                    onPress={() => {
+                      setLocation(option);
+                      setChoosingLocation(false);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={[styles.menuText, selected && styles.menuTextActive]}>{option ?? 'All locations'}</Text>
+                    {selected && <Check size={16} color={colors.text} strokeWidth={2.6} />}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
   );
 }
 
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    container: { flex: 1, backgroundColor: colors.bg },
-    content: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
-    topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
-    h3: { fontFamily: fonts.headingBold, fontSize: 16, lineHeight: 21, fontWeight: '700', color: colors.text },
-    sub: { fontSize: 13, color: colors.muted, marginTop: 2 },
-    sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 6 },
-    list: { gap: 10 },
-    row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-    stats: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 4 },
-    // Green text token, never the green fill colour (board 02).
-    live: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.positive, marginTop: 2 },
-    signedUp: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-    signedUpText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
-    signUp: { alignSelf: 'flex-start', marginTop: 10 },
+    container: { flex: 1, backgroundColor: colors.surface },
+    top: { borderBottomWidth: 1, borderBottomColor: colors.line },
+    header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 },
+    title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 22, fontWeight: '700', color: colors.text },
+    locationButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      maxWidth: 190,
+      minHeight: 40,
+      paddingHorizontal: 14,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.brand2,
+    },
+    locationText: { flexShrink: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    tabs: { flexDirection: 'row', marginTop: 10 },
+    tab: { flex: 1, alignItems: 'center', paddingTop: 10, minHeight: 44 },
+    tabText: { fontSize: 16, color: colors.muted, paddingBottom: 10 },
+    tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
+    tabLine: { height: 3, width: 76, borderRadius: 2, backgroundColor: 'transparent' },
+    tabLineActive: { backgroundColor: colors.charcoal },
+    content: { paddingBottom: 40 },
+    section: { fontFamily: fonts.bodyBold, fontSize: 20, fontWeight: '700', color: colors.text, paddingHorizontal: 20, marginTop: 18 },
+    // Rows run edge to edge, split by hairlines.
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.line,
+    },
+    h3: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 22, fontWeight: '700', color: colors.text },
+    where: { fontSize: 15, lineHeight: 21, color: colors.muted, marginTop: 2 },
+    stat: { fontSize: 13, lineHeight: 19, color: colors.muted, marginTop: 2 },
+    // Green text token, never the green fill colour.
+    registered: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.positive },
+    live: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.positive },
+    note: { fontSize: 14, color: colors.muted, paddingHorizontal: 20, paddingVertical: 14 },
+    error: { color: colors.danger },
+    footnote: { fontSize: 13, lineHeight: 18, color: colors.muted, paddingHorizontal: 20, paddingTop: 16 },
+    backdrop: { flex: 1, backgroundColor: 'rgba(23,19,16,0.25)', alignItems: 'flex-end', paddingHorizontal: 20 },
+    menu: {
+      minWidth: 220,
+      maxWidth: 300,
+      maxHeight: 360,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.line,
+      paddingVertical: 6,
+    },
+    menuRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44, paddingHorizontal: 16 },
+    menuText: { flexShrink: 1, fontSize: 15, color: colors.text },
+    menuTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700' },
   });

@@ -359,6 +359,15 @@ export type AcceptCommitResponse = {
   display_name?: string;
 };
 
+// GET /v1/connections: the member's confirmed relationships.
+export type Connection = {
+  connection_id: string;
+  member_id: string;
+  status: string; // ACTIVE
+  conversation_id: string;
+  display_name?: string;
+};
+
 // GET /v1/conversations: only what meetings need (the chat itself isn't
 // Phase 1). Null fields are omitted.
 export type Meeting = {
