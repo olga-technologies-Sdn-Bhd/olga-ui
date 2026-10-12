@@ -34,10 +34,11 @@ export const lightColors = {
   amber: '#F2A93B',
   amberSoft: '#FBEBD0',
   amberText: '#7A4E0F',
-  // The one large dark element (default Go Live button).
-  charcoal: '#3A3531',
+  // The one large dark element (Social Capital card, default Go Live
+  // button): graphite, a neutral near-black with no brown cast.
+  charcoal: '#1F2123',
   // Selected chip / active tab underline, and the text on it.
-  selected: '#3A3531',
+  selected: '#1F2123',
   onSelected: '#ffffff',
   danger: '#ef5a67',
   white: '#ffffff',

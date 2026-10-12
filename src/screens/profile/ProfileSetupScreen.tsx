@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ComponentRef, useEffect, useMemo, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import { ApiError } from '../../api/client';
 import { coreApi } from '../../api/core';
 import type { Profile } from '../../api/types';
@@ -34,6 +34,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
   const [headline, setHeadline] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
 
   useEffect(() => {
     let active = true;
@@ -92,10 +93,17 @@ export function ProfileSetupScreen({ navigation }: Props) {
   const askedSummary = step === 'summary' || step === 'saving' || step === 'done';
 
   return (
-    <Screen>
+    <Screen scroll={false}>
       <BackHeader onBack={() => navigation.goBack()} title="Profile" />
 
-      <View style={styles.chatStack}>
+      <ScrollView
+        ref={scroller}
+        style={styles.flex}
+        contentContainerStyle={styles.chatStack}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        onContentSizeChange={() => scroller.current?.scrollToEnd({ animated: true })}
+      >
         <ChatBubble
           from="them"
           text={`${firstName ? `${firstName}, let` : 'Let'} me help you set up your profile. Two quick questions, and your matches will know who they're meeting.`}
@@ -134,7 +142,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
         {step === 'done' && (
           <ChatBubble from="them" text="All set. That is what your matches will see. Your name stays private until you both accept a Commit." />
         )}
-      </View>
+      </ScrollView>
 
       {step === 'headline' && (
         <>
@@ -156,6 +164,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
 
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    chatStack: { gap: 10, marginTop: 6 },
+    flex: { flex: 1 },
+    chatStack: { gap: 10, paddingVertical: 6 },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted },
   });
