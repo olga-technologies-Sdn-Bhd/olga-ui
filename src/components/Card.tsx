@@ -12,7 +12,7 @@ type Props = {
 };
 
 export function Card({ children, soft, style }: Props) {
-  const { colors, scheme } = useTheme();
+  const { colors } = useTheme();
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -20,21 +20,14 @@ export function Card({ children, soft, style }: Props) {
           backgroundColor: colors.surface,
           borderRadius: radius.lg,
           padding: 16,
-          // A soft lift on the light ground; a hairline on the dark one, where
-          // shadows don't show.
-          ...(scheme === 'dark'
-            ? { borderWidth: 1, borderColor: colors.line }
-            : {
-                shadowColor: colors.charcoal,
-                shadowOpacity: 0.08,
-                shadowRadius: 12,
-                shadowOffset: { width: 0, height: 4 },
-                elevation: 2,
-              }),
+          // A hairline, never an elevation shadow: on Android the shadow turns
+          // into a square-cornered box behind the card while screens animate.
+          borderWidth: 1,
+          borderColor: colors.line,
         },
-        soft: { backgroundColor: colors.accentSoft, borderWidth: 0, shadowOpacity: 0, elevation: 0 },
+        soft: { backgroundColor: colors.accentSoft, borderWidth: 0 },
       }),
-    [colors, scheme]
+    [colors]
   );
 
   return <View style={[styles.base, soft && styles.soft, style]}>{children}</View>;
