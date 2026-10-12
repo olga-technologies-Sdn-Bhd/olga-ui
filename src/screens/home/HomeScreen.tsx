@@ -52,6 +52,13 @@ type Update = {
   onPress?: () => void;
 };
 
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function greeting(date: Date) {
+  const hour = date.getHours();
+  return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+}
+
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 function initialsOf(name: string) {
@@ -180,11 +187,20 @@ export function HomeScreen({ navigation }: Props) {
   return (
     <Screen onRefresh={refresh} style={styles.page}>
       <View style={styles.header}>
+        <Text style={styles.brand}>Ol-ga</Text>
         <Pressable onPress={() => navigation.navigate('Profile')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Your account">
           <Avatar initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" dark />
         </Pressable>
-        <Text style={styles.brand}>Ol-ga</Text>
-        <View style={styles.headerSpacer} />
+      </View>
+
+      <View>
+        <Text style={styles.date}>
+          {WEEKDAYS[today.getDay()]} {today.getDate()} {MONTHS[today.getMonth()]}
+        </Text>
+        <Text style={styles.greeting} numberOfLines={1}>
+          {greeting(today)}
+          {firstName ? `, ${firstName}` : ''}
+        </Text>
       </View>
 
       <Pressable
@@ -234,18 +250,19 @@ export function HomeScreen({ navigation }: Props) {
           </Text>
         )}
       </View>
-      <View style={styles.chips}>
+      <View style={styles.tabs}>
         {FILTERS.map((f) => {
           const active = f.key === filter;
           return (
             <Pressable
               key={f.key}
               onPress={() => setFilter(f.key)}
-              style={[styles.chip, active && styles.chipActive]}
-              accessibilityRole="button"
+              style={styles.tab}
+              accessibilityRole="tab"
               accessibilityState={{ selected: active }}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.label}</Text>
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>{f.label}</Text>
+              <View style={[styles.tabLine, active && styles.tabLineActive]} />
             </Pressable>
           );
         })}
@@ -292,20 +309,26 @@ const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
     page: { backgroundColor: colors.surface },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    headerSpacer: { width: 34 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+    brand: { fontSize: 21, color: colors.text },
+    date: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.muted },
+    greeting: { fontFamily: fonts.headingBold, fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.text },
     // A quiet line, not a call to action: no box, small muted text.
     setup: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 32, alignSelf: 'flex-start' },
     setupText: { fontSize: 13, color: colors.muted },
-    brand: { fontSize: 17, color: colors.text },
     // The one large dark element on the screen, the same in both themes.
     capital: {
       backgroundColor: colors.charcoal,
       borderRadius: radius.xl,
       padding: 18,
-      marginHorizontal: -6,
+      marginHorizontal: 0,
       marginTop: 2,
       overflow: 'hidden',
+      shadowColor: colors.charcoal,
+      shadowOpacity: 0.25,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 6,
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.08)',
     },
@@ -320,21 +343,15 @@ const makeStyles = (colors: ThemeColors) =>
     updatesHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginTop: 8 },
     h2: { fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: '700', color: colors.text },
     sub: { fontSize: 12, color: colors.muted },
-    chips: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-    chip: {
-      minHeight: 32,
-      justifyContent: 'center',
-      paddingHorizontal: 14,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: colors.brand2,
-      backgroundColor: colors.surface,
-    },
-    chipActive: { backgroundColor: colors.selected, borderColor: colors.selected },
-    chipText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
-    chipTextActive: { color: colors.onSelected },
+    // Filters as text tabs with an underline, edge to edge above the list.
+    tabs: { flexDirection: 'row', marginHorizontal: -20, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
+    tab: { flex: 1, alignItems: 'center', paddingTop: 8, minHeight: 44 },
+    tabText: { fontSize: 14, color: colors.muted, paddingBottom: 9 },
+    tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
+    tabLine: { height: 3, width: 44, borderRadius: 2, backgroundColor: 'transparent' },
+    tabLineActive: { backgroundColor: colors.selected },
     // Rows run edge to edge, split by hairlines.
-    list: { marginHorizontal: -20, borderTopWidth: 1, borderTopColor: colors.line, marginTop: 4 },
+    list: { marginHorizontal: -20 },
     row: {
       flexDirection: 'row',
       alignItems: 'flex-start',

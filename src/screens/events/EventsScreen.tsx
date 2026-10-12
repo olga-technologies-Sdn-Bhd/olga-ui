@@ -140,14 +140,6 @@ export function EventsScreen({ navigation }: Props) {
     <View style={styles.container}>
       <View style={[styles.top, { paddingTop: 12 + topInset }]}>
         <View style={styles.header}>
-          <Pressable
-            onPress={() => navigation.navigate('HomeTab', { screen: 'Profile' })}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Your account"
-          >
-            <Avatar initials={initial} size="sm" dark />
-          </Pressable>
           <Text style={styles.title}>Events</Text>
           <Pressable
             style={styles.locationButton}
@@ -159,6 +151,14 @@ export function EventsScreen({ navigation }: Props) {
               {activeLocation ?? 'All locations'}
             </Text>
             <ChevronDown size={16} color={colors.text} />
+          </Pressable>
+          <Pressable
+            onPress={() => navigation.navigate('HomeTab', { screen: 'Profile' })}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Your account"
+          >
+            <Avatar initials={initial} size="sm" dark />
           </Pressable>
         </View>
 

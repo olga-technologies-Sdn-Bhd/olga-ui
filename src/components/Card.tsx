@@ -12,20 +12,29 @@ type Props = {
 };
 
 export function Card({ children, soft, style }: Props) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const styles = useMemo(
     () =>
       StyleSheet.create({
         base: {
           backgroundColor: colors.surface,
-          borderWidth: 1,
-          borderColor: colors.line,
           borderRadius: radius.lg,
           padding: 16,
+          // A soft lift on the light ground; a hairline on the dark one, where
+          // shadows don't show.
+          ...(scheme === 'dark'
+            ? { borderWidth: 1, borderColor: colors.line }
+            : {
+                shadowColor: colors.charcoal,
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 2,
+              }),
         },
-        soft: { backgroundColor: colors.accentSoft, borderWidth: 0 },
+        soft: { backgroundColor: colors.accentSoft, borderWidth: 0, shadowOpacity: 0, elevation: 0 },
       }),
-    [colors]
+    [colors, scheme]
   );
 
   return <View style={[styles.base, soft && styles.soft, style]}>{children}</View>;
