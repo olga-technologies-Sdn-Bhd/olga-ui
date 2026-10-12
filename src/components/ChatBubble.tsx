@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { Avatar } from './Avatar';
+import { fonts } from '../theme/typography';
 
 type Props = {
   from: 'them' | 'me';
@@ -18,6 +18,9 @@ export function ChatBubble({ from, text }: Props) {
         wrapMe: { alignSelf: 'flex-end' },
         row: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, maxWidth: '92%' },
         bubble: { flexShrink: 1 },
+        // Ol-ga's avatar carries her full name, like the app icon.
+        olga: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.charcoal, alignItems: 'center', justifyContent: 'center' },
+        olgaText: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: '700', color: colors.white },
         text: {
           paddingVertical: 12,
           paddingHorizontal: 14,
@@ -36,7 +39,9 @@ export function ChatBubble({ from, text }: Props) {
   if (from === 'them') {
     return (
       <View style={styles.row}>
-        <Avatar initials="O" size="sm" dark />
+        <View style={styles.olga}>
+          <Text style={styles.olgaText}>Ol-ga</Text>
+        </View>
         <Text style={[styles.text, styles.textThem, styles.bubble]}>{text}</Text>
       </View>
     );

@@ -1,53 +1,56 @@
-// Design system: warm neutral ground (bone/sand/ink), no blue, no gradients.
-// Green is reserved for live/match signals only; amber for outcome states
-// only. Everything else (buttons, selected chips, progress, tab icons) uses
-// the single ink neutral. Both light and dark variants share the same shape
-// so any screen can switch via useTheme() without branching logic.
+// Design system: a quiet neutral ground (off-white, white, graphite), no blue,
+// no gradients. Green is reserved for live/match signals only; a muted gold
+// for outcome states only. Everything else (buttons, selected chips,
+// progress, tab icons) uses the single ink neutral. Both light and dark
+// variants share the same shape so any screen can switch via useTheme()
+// without branching logic.
 export const lightColors = {
-  bg: '#F4F1EC', // Bone — app ground
-  surface: '#FFFDF9', // Card surface
-  surface2: '#EDE5D8', // Sand — secondary surface (date blocks, pill base)
-  text: '#171310', // Ink
-  muted: '#6B6259', // Muted — secondary text, 5.3:1 on bone
-  line: '#E6DFD4', // Card border
+  bg: '#F6F6F4', // App ground
+  surface: '#FFFFFF', // Card surface
+  surface2: '#EEEEEB', // Secondary surface (date blocks, inputs, pill base)
+  text: '#111214', // Ink
+  muted: '#666A70', // Secondary text
+  line: '#E4E4E1', // Hairlines and card borders
   // Ink doubles as the one neutral "accent": primary buttons, selected
   // chips, progress fill, tab active tint. Never blue, never a hue.
-  brand: '#171310',
+  brand: '#111214',
   // Text/icons on a brand (primary) button.
   onBrand: '#ffffff',
-  // Outline button border (spec: outline buttons use #CFC6B8).
-  brand2: '#CFC6B8',
-  // Sand strong — selected chips, icon-wrap fills.
-  brandSoft: '#E4DACB',
-  // Sand — avatar/icon backgrounds, soft pill tint, chat "me" bubble.
-  accentSoft: '#EDE5D8',
-  // Functional near-black for buttons like chat "send" — same as text/ink.
-  ink: '#171310',
-  onInk: '#FFFDF9',
-  // Green TEXT — match scores and counts. Never used as a fill/icon color.
+  // Outline button border.
+  brand2: '#CFCFCB',
+  // Selected chips, icon-wrap fills.
+  brandSoft: '#E4E4E0',
+  // Avatar/icon backgrounds, soft pill tint, chat "me" bubble.
+  accentSoft: '#EEEEEB',
+  // Functional near-black for buttons like chat "send": same as text/ink.
+  ink: '#111214',
+  onInk: '#FFFFFF',
+  // Green TEXT: match scores and counts. Never used as a fill/icon color.
   positive: '#147A3A',
-  // Green tint — background behind green text (e.g. a match-count pill).
+  // Green tint: background behind green text (e.g. a match-count pill).
   positiveSoft: '#E7F3EB',
-  // Green FILL — live dot, live ring (PulseRings), live button. Never text.
+  // Green FILL: live dot, live ring (PulseRings), live button. Never text.
   liveFill: '#16A34A',
-  // Amber — outcome states only (e.g. "Confirm you met").
-  amber: '#F2A93B',
-  amberSoft: '#FBEBD0',
-  amberText: '#7A4E0F',
+  // Muted gold: outcome states only (e.g. "Confirm you met").
+  amber: '#B8975A',
+  amberSoft: '#F3ECDD',
+  amberText: '#6B5220',
   // The one large dark element (Social Capital card, default Go Live
   // button): graphite, a neutral near-black with no brown cast.
   charcoal: '#1F2123',
+  // Champagne: the small title on the graphite card.
+  champagne: '#D8C8A8',
   // Selected chip / active tab underline, and the text on it.
   selected: '#1F2123',
   onSelected: '#ffffff',
-  danger: '#ef5a67',
+  danger: '#D64555',
   white: '#ffffff',
-  // Warm concentric halo behind the Go Live ring, lightest to deepest.
-  tint: '#F1EBE0',
-  tint2: '#E7DCC9',
-  tintLine: '#CFC6B8',
-  track: '#D9D3C8',
-  progressTrack: '#EFEAE0',
+  // Concentric halo behind the Go Live ring, lightest to deepest.
+  tint: '#EFEFEC',
+  tint2: '#E4E4E0',
+  tintLine: '#CFCFCB',
+  track: '#D6D6D2',
+  progressTrack: '#ECECE9',
 };
 
 export const darkColors = {
@@ -72,11 +75,12 @@ export const darkColors = {
   positive: '#34D399',
   positiveSoft: '#14291E',
   liveFill: '#16A34A',
-  amber: '#F2C98A',
-  amberSoft: '#33280F',
-  amberText: '#F2C98A',
+  amber: '#D8C8A8',
+  amberSoft: '#2B2820',
+  amberText: '#D8C8A8',
   // A step lighter than the surfaces so the dark card and buttons still read.
   charcoal: '#2E3034',
+  champagne: '#D8C8A8',
   selected: '#F2F3F4',
   onSelected: '#121314',
   danger: '#ff7a86',

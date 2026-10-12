@@ -195,7 +195,12 @@ export function HomeScreen({ navigation }: Props) {
         <ChevronRight size={18} color={colors.muted} />
       </Pressable>
 
-      <View style={styles.capital}>
+      <Pressable
+        style={({ pressed }) => [styles.capital, pressed && styles.pressed]}
+        onPress={() => setIndexSoon(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Your Social Capital Graph"
+      >
         <View style={styles.capitalTop}>
           <Text style={styles.capitalTitle} numberOfLines={1}>
             {firstName ? `${firstName}'s Social Capital` : 'My Social Capital'}
@@ -207,16 +212,11 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         </View>
         <Text style={styles.count}>{relationships === null ? '–' : relationships.toLocaleString('en-US')}</Text>
-        <Text style={styles.countLabel}>Confirmed professional relationships</Text>
-        <Pressable
-          style={({ pressed }) => [styles.indexButton, pressed && styles.pressed]}
-          onPress={() => setIndexSoon(true)}
-          accessibilityRole="button"
-        >
-          <Text style={styles.indexLabel}>Your Social Capital Graph</Text>
-          <ChevronRight size={18} color="#171310" />
-        </Pressable>
-      </View>
+        <View style={styles.capitalFoot}>
+          <Text style={styles.countLabel}>Confirmed professional relationships</Text>
+          <ChevronRight size={22} color={colors.white} />
+        </View>
+      </Pressable>
 
       <View style={styles.updatesHead}>
         <Text style={styles.h2}>Updates</Text>
@@ -302,22 +302,12 @@ const makeStyles = (colors: ThemeColors) =>
     // The one large dark element on the screen, the same in both themes.
     capital: { backgroundColor: colors.charcoal, borderRadius: radius.xl, padding: 16, marginHorizontal: -6, marginTop: 2 },
     capitalTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    capitalTitle: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.amber },
+    capitalTitle: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.champagne },
     month: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
     monthText: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.white },
     count: { fontFamily: fonts.headingBold, fontSize: 40, lineHeight: 44, fontWeight: '700', color: colors.white, marginTop: 6 },
-    countLabel: { fontSize: 14, color: 'rgba(255,255,255,0.86)' },
-    indexButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      backgroundColor: colors.white,
-      borderRadius: 999,
-      minHeight: 44,
-      marginTop: 14,
-    },
-    indexLabel: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: '#171310' },
+    capitalFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 2 },
+    countLabel: { flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.78)' },
     pressed: { opacity: 0.85 },
     updatesHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginTop: 8 },
     h2: { fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: '700', color: colors.text },
