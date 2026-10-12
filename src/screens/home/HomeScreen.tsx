@@ -186,6 +186,15 @@ export function HomeScreen({ navigation }: Props) {
         <View style={styles.headerSpacer} />
       </View>
 
+      <Pressable
+        onPress={() => navigation.navigate('ProfileSetup')}
+        accessibilityRole="button"
+        style={({ pressed }) => [styles.setup, pressed && styles.pressed]}
+      >
+        <Text style={styles.setupText}>Let me help you set up your profile</Text>
+        <ChevronRight size={18} color={colors.muted} />
+      </Pressable>
+
       <View style={styles.capital}>
         <View style={styles.capitalTop}>
           <Text style={styles.capitalTitle} numberOfLines={1}>
@@ -277,6 +286,18 @@ const makeStyles = (colors: ThemeColors) =>
     page: { backgroundColor: colors.surface },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     headerSpacer: { width: 34 },
+    setup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+      minHeight: 44,
+      paddingHorizontal: 14,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.line,
+    },
+    setupText: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
     brand: { fontSize: 17, color: colors.text },
     // The one large dark element on the screen, the same in both themes.
     capital: { backgroundColor: colors.charcoal, borderRadius: radius.xl, padding: 16, marginHorizontal: -6, marginTop: 2 },

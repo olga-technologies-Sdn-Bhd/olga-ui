@@ -6,13 +6,14 @@ import { fonts } from '../theme/typography';
 
 type Props = {
   onBack: () => void;
+  // Screen title, on the left beside the arrow.
+  title?: string;
   right?: React.ReactNode;
-  rightLabel?: string;
 };
 
-// Matches the prototype's `.back` circular button + right-side slot pattern
-// used in the topline of most secondary screens.
-export function BackHeader({ onBack, right, rightLabel }: Props) {
+// The circular back button, an optional title beside it, and a right-side
+// slot, used in the topline of most secondary screens.
+export function BackHeader({ onBack, title, right }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
@@ -20,14 +21,22 @@ export function BackHeader({ onBack, right, rightLabel }: Props) {
       <Pressable onPress={onBack} style={styles.back}>
         <Text style={styles.backText}>←</Text>
       </Pressable>
+      {title ? (
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+      ) : (
+        <View style={styles.fill} />
+      )}
       {right}
-      {rightLabel && <Text style={styles.rightLabel}>{rightLabel}</Text>}
     </View>
   );
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  fill: { flex: 1 },
+  title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: '700', color: colors.text },
   back: {
     width: 38,
     height: 38,
@@ -39,5 +48,4 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   backText: { fontSize: 14, color: colors.text },
-  rightLabel: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
 });

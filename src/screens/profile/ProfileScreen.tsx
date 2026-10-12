@@ -62,7 +62,7 @@ export function ProfileScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <BackHeader onBack={() => navigation.goBack()} rightLabel="Profile" />
+      <BackHeader onBack={() => navigation.goBack()} title="Profile" />
 
       <View style={styles.identity}>
         <Avatar initials={(name ?? '?').slice(0, 1).toUpperCase()} size="lg" />
