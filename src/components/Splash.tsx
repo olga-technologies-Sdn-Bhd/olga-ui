@@ -11,8 +11,8 @@ const LOGO_SIZE = 288;
 const EDGES = [0, 122.3, 132.6, 147.8, 184.1, LOGO_SIZE];
 const LETTERS = EDGES.length - 1;
 
-const FADE_MS = 900; // one character coming in
-const STAGGER_MS = 550; // gap between characters
+const FADE_MS = 420; // one character coming in
+const STAGGER_MS = 200; // gap between characters
 const REVEAL_MS = STAGGER_MS * (LETTERS - 1) + FADE_MS;
 const ZOOM_MS = 1500; // the whole word, once
 const HOLD_MS = 300;
