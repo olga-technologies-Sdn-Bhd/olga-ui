@@ -47,6 +47,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 13,
     backgroundColor: colors.surface,
-    fontSize: 14,
+    fontSize: 13,
   },
 });

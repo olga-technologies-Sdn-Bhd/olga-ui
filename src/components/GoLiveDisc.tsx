@@ -148,6 +148,6 @@ const makeStyles = (colors: ThemeColors) =>
       paddingHorizontal: 14,
     },
     pearl: { borderWidth: 1, borderColor: colors.line },
-    label: { fontFamily: fonts.headingExtraBold, fontSize: 25, fontWeight: '800', letterSpacing: 0.5 },
+    label: { fontFamily: fonts.headingExtraBold, fontSize: 20, fontWeight: '800', letterSpacing: 0.5 },
     caption: { fontFamily: fonts.monoBold, fontSize: 9, letterSpacing: 1.5, fontWeight: '700', marginTop: 4, opacity: 0.85 },
   });

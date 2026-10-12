@@ -188,7 +188,9 @@ export function HomeScreen({ navigation }: Props) {
 
       <View style={styles.capital}>
         <View style={styles.capitalTop}>
-          <Text style={styles.capitalTitle}>Ol-ga Social Capital</Text>
+          <Text style={styles.capitalTitle} numberOfLines={1}>
+            {firstName ? `${firstName}'s Social Capital` : 'My Social Capital'}
+          </Text>
           <View style={styles.month}>
             <Text style={styles.monthText}>
               {MONTHS[today.getMonth()]} {today.getFullYear()}
@@ -275,15 +277,15 @@ const makeStyles = (colors: ThemeColors) =>
     page: { backgroundColor: colors.surface },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     headerSpacer: { width: 34 },
-    brand: { fontSize: 20, color: colors.text },
+    brand: { fontSize: 17, color: colors.text },
     // The one large dark element on the screen, the same in both themes.
-    capital: { backgroundColor: colors.charcoal, borderRadius: radius.xl, padding: 18, marginHorizontal: -6, marginTop: 4 },
+    capital: { backgroundColor: colors.charcoal, borderRadius: radius.xl, padding: 16, marginHorizontal: -6, marginTop: 2 },
     capitalTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    capitalTitle: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 16, fontWeight: '700', color: colors.amber },
+    capitalTitle: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.amber },
     month: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
-    monthText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.white },
-    count: { fontFamily: fonts.headingBold, fontSize: 56, lineHeight: 62, fontWeight: '700', color: colors.white, marginTop: 10 },
-    countLabel: { fontSize: 15, color: 'rgba(255,255,255,0.86)' },
+    monthText: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.white },
+    count: { fontFamily: fonts.headingBold, fontSize: 40, lineHeight: 44, fontWeight: '700', color: colors.white, marginTop: 6 },
+    countLabel: { fontSize: 14, color: 'rgba(255,255,255,0.86)' },
     indexButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -291,17 +293,17 @@ const makeStyles = (colors: ThemeColors) =>
       gap: 6,
       backgroundColor: colors.white,
       borderRadius: 999,
-      minHeight: 48,
-      marginTop: 16,
+      minHeight: 44,
+      marginTop: 14,
     },
-    indexLabel: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: '700', color: '#171310' },
+    indexLabel: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: '#171310' },
     pressed: { opacity: 0.85 },
     updatesHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginTop: 8 },
-    h2: { fontFamily: fonts.bodyBold, fontSize: 22, fontWeight: '700', color: colors.text },
-    sub: { fontSize: 13, color: colors.muted },
+    h2: { fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: '700', color: colors.text },
+    sub: { fontSize: 12, color: colors.muted },
     chips: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
     chip: {
-      minHeight: 36,
+      minHeight: 32,
       justifyContent: 'center',
       paddingHorizontal: 14,
       borderRadius: 999,
@@ -310,7 +312,7 @@ const makeStyles = (colors: ThemeColors) =>
       backgroundColor: colors.surface,
     },
     chipActive: { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
-    chipText: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    chipText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
     chipTextActive: { color: colors.white },
     // Rows run edge to edge, split by hairlines.
     list: { marginHorizontal: -20, borderTopWidth: 1, borderTopColor: colors.line, marginTop: 4 },
@@ -319,15 +321,15 @@ const makeStyles = (colors: ThemeColors) =>
       alignItems: 'flex-start',
       gap: 12,
       paddingHorizontal: 20,
-      paddingVertical: 14,
+      paddingVertical: 12,
       borderBottomWidth: 1,
       borderBottomColor: colors.line,
     },
-    icon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+    icon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
     iconAmber: { backgroundColor: colors.amberSoft },
-    initials: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
-    meta: { fontSize: 13, color: colors.muted },
-    body: { fontSize: 16, lineHeight: 23, color: colors.text, marginTop: 2 },
+    initials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
+    meta: { fontSize: 12, color: colors.muted },
+    body: { fontSize: 14, lineHeight: 20, color: colors.text, marginTop: 2 },
     bodyBold: { fontFamily: fonts.bodyBold, fontWeight: '700' },
-    empty: { fontSize: 14, color: colors.muted, paddingHorizontal: 20, paddingVertical: 18 },
+    empty: { fontSize: 13, color: colors.muted, paddingHorizontal: 20, paddingVertical: 18 },
   });

@@ -81,7 +81,7 @@ export function SocialSignInButton({ provider, onPress, loading, disabled }: Pro
         },
         pressed: { opacity: 0.85 },
         disabled: { opacity: 0.5 },
-        label: { fontSize: 16, fontWeight: '500', color: palette.text },
+        label: { fontSize: 14, fontWeight: '500', color: palette.text },
         logo: { width: 22, alignItems: 'center' },
       }),
     [palette]

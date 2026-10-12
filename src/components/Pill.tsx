@@ -32,7 +32,7 @@ export function Pill({ label, tone = 'default', onPress }: Props) {
         // the app rather than a separate status color.
         soft: { backgroundColor: colors.accentSoft, borderColor: colors.accentSoft },
         positive: { backgroundColor: colors.positiveSoft, borderColor: colors.positiveSoft },
-        label: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.muted },
+        label: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: '700', color: colors.muted },
         labelActive: { color: colors.text },
         labelSoft: { color: colors.brand },
         labelPositive: { color: colors.positive },

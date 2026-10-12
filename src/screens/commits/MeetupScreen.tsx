@@ -69,12 +69,12 @@ const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
     eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginBottom: 4 },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, lineHeight: 27, fontWeight: '800', color: colors.text },
-    h3: { fontFamily: fonts.headingBold, fontSize: 16, fontWeight: '700', color: colors.text },
-    sub: { fontSize: 13, lineHeight: 19, color: colors.muted, marginTop: 4 },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, lineHeight: 22, fontWeight: '800', color: colors.text },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    sub: { fontSize: 12, lineHeight: 18, color: colors.muted, marginTop: 4 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     plan: { backgroundColor: colors.positiveSoft, borderRadius: radius.md, padding: 16 },
     label: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.positive, fontWeight: '700' },
     planRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-    planText: { fontFamily: fonts.headingBold, fontSize: 17, fontWeight: '700', color: colors.positive },
+    planText: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.positive },
   });

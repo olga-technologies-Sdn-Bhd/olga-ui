@@ -9,7 +9,7 @@ import { CoreEvent } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { DateBlock } from '../../components/DateBlock';
-import { useTopInset } from '../../components/Screen';
+import { usePullToRefresh, useTopInset } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
 import { EventsStackParamList, MainTabParamList } from '../../navigation/types';
@@ -40,11 +40,11 @@ export function EventsScreen({ navigation }: Props) {
   const topInset = useTopInset();
   const { name } = useAuth();
   const { events, error, refresh, refreshIfStale, register } = useEvents();
+  const { refreshing, handleRefresh } = usePullToRefresh(refresh);
   const [tab, setTab] = useState<Tab>('upcoming');
   // null = all locations.
   const [location, setLocation] = useState<string | null>(null);
   const [choosingLocation, setChoosingLocation] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [registering, setRegistering] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const initial = (name?.trim()[0] ?? '?').toUpperCase();
@@ -55,12 +55,6 @@ export function EventsScreen({ navigation }: Props) {
       refreshIfStale(); // at most every ~30 s; pull to refresh forces it
     }, [refreshIfStale])
   );
-
-  async function onRefresh() {
-    setRefreshing(true);
-    await refresh();
-    setRefreshing(false);
-  }
 
   async function handleRegister(eventId: string) {
     setRegistering(eventId);
@@ -144,7 +138,7 @@ export function EventsScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.top, { paddingTop: 20 + topInset }]}>
+      <View style={[styles.top, { paddingTop: 12 + topInset }]}>
         <View style={styles.header}>
           <Pressable
             onPress={() => navigation.navigate('HomeTab', { screen: 'Profile' })}
@@ -189,7 +183,7 @@ export function EventsScreen({ navigation }: Props) {
 
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         {events === null && !error && <Text style={styles.note}>Loading events…</Text>}
         {error && <Text style={[styles.note, styles.error]}>{error}</Text>}
@@ -253,7 +247,7 @@ const makeStyles = (colors: ThemeColors) =>
     container: { flex: 1, backgroundColor: colors.surface },
     top: { borderBottomWidth: 1, borderBottomColor: colors.line },
     header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 },
-    title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 22, fontWeight: '700', color: colors.text },
+    title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: '700', color: colors.text },
     locationButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -265,34 +259,34 @@ const makeStyles = (colors: ThemeColors) =>
       borderWidth: 1,
       borderColor: colors.brand2,
     },
-    locationText: { flexShrink: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    locationText: { flexShrink: 1, fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
     tabs: { flexDirection: 'row', marginTop: 10 },
     tab: { flex: 1, alignItems: 'center', paddingTop: 10, minHeight: 44 },
-    tabText: { fontSize: 16, color: colors.muted, paddingBottom: 10 },
+    tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
     tabLine: { height: 3, width: 76, borderRadius: 2, backgroundColor: 'transparent' },
     tabLineActive: { backgroundColor: colors.charcoal },
     content: { paddingBottom: 40 },
-    section: { fontFamily: fonts.bodyBold, fontSize: 20, fontWeight: '700', color: colors.text, paddingHorizontal: 20, marginTop: 18 },
+    section: { fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: '700', color: colors.text, paddingHorizontal: 20, marginTop: 16 },
     // Rows run edge to edge, split by hairlines.
     row: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 14,
+      gap: 12,
       paddingHorizontal: 20,
-      paddingVertical: 16,
+      paddingVertical: 12,
       borderBottomWidth: 1,
       borderBottomColor: colors.line,
     },
-    h3: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 22, fontWeight: '700', color: colors.text },
-    where: { fontSize: 15, lineHeight: 21, color: colors.muted, marginTop: 2 },
-    stat: { fontSize: 13, lineHeight: 19, color: colors.muted, marginTop: 2 },
+    h3: { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20, fontWeight: '700', color: colors.text },
+    where: { fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
+    stat: { fontSize: 12, lineHeight: 18, color: colors.muted, marginTop: 2 },
     // Green text token, never the green fill colour.
     registered: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.positive },
     live: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.positive },
-    note: { fontSize: 14, color: colors.muted, paddingHorizontal: 20, paddingVertical: 14 },
+    note: { fontSize: 13, color: colors.muted, paddingHorizontal: 20, paddingVertical: 14 },
     error: { color: colors.danger },
-    footnote: { fontSize: 13, lineHeight: 18, color: colors.muted, paddingHorizontal: 20, paddingTop: 16 },
+    footnote: { fontSize: 12, lineHeight: 17, color: colors.muted, paddingHorizontal: 20, paddingTop: 16 },
     backdrop: { flex: 1, backgroundColor: 'rgba(23,19,16,0.25)', alignItems: 'flex-end', paddingHorizontal: 20 },
     menu: {
       minWidth: 220,
@@ -305,6 +299,6 @@ const makeStyles = (colors: ThemeColors) =>
       paddingVertical: 6,
     },
     menuRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44, paddingHorizontal: 16 },
-    menuText: { flexShrink: 1, fontSize: 15, color: colors.text },
+    menuText: { flexShrink: 1, fontSize: 14, color: colors.text },
     menuTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700' },
   });

@@ -128,11 +128,11 @@ const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
     eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
-    h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
-    sub: { fontSize: 13, color: colors.muted, marginTop: 2 },
-    reason: { fontSize: 13, lineHeight: 19, color: colors.text, marginTop: 10 },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    sub: { fontSize: 12, color: colors.muted, marginTop: 2 },
+    reason: { fontSize: 12, lineHeight: 18, color: colors.text, marginTop: 10 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     actions: { flexDirection: 'row', gap: 10, marginTop: 12 },
-    footer: { fontSize: 12, color: colors.muted, textAlign: 'center' },
+    footer: { fontSize: 11, color: colors.muted, textAlign: 'center' },
   });
