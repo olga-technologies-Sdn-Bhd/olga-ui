@@ -8,7 +8,7 @@ import { Screen } from '../../components/Screen';
 import { usePrefs } from '../../context/PrefsContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
-import { GO_LIVE_COLORS, goLiveColor } from '../../theme/goLiveColors';
+import { goLiveColor, goLiveColors } from '../../theme/goLiveColors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
 
@@ -23,7 +23,7 @@ export function GoLiveColourScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { prefs, setGoLiveColor } = usePrefs();
-  const selected = goLiveColor(prefs.goLiveColor);
+  const selected = goLiveColor(prefs.goLiveColor, colors.charcoal);
 
   return (
     <Screen>
@@ -39,7 +39,7 @@ export function GoLiveColourScreen({ navigation }: Props) {
 
       <Text style={styles.sectionTitle}>Pick one</Text>
       <View style={styles.row}>
-        {GO_LIVE_COLORS.map((c) => {
+        {goLiveColors(colors.charcoal).map((c) => {
           const on = c.key === selected.key;
           return (
             <Pressable

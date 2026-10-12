@@ -311,9 +311,9 @@ const makeStyles = (colors: ThemeColors) =>
       borderColor: colors.brand2,
       backgroundColor: colors.surface,
     },
-    chipActive: { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
+    chipActive: { backgroundColor: colors.selected, borderColor: colors.selected },
     chipText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
-    chipTextActive: { color: colors.white },
+    chipTextActive: { color: colors.onSelected },
     // Rows run edge to edge, split by hairlines.
     list: { marginHorizontal: -20, borderTopWidth: 1, borderTopColor: colors.line, marginTop: 4 },
     row: {

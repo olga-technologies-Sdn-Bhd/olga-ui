@@ -125,7 +125,6 @@ export function CommitsScreen({ navigation }: Props) {
   return (
     <Screen onRefresh={load}>
       <View>
-        <Text style={styles.eyebrow}>Chat</Text>
         <Text style={styles.h2}>Chat</Text>
         <Pressable
           onPress={() => navigation.getParent()?.navigate('GoLiveTab', { screen: 'Filters' })}
@@ -247,7 +246,6 @@ export function CommitsScreen({ navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
     h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
     h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
