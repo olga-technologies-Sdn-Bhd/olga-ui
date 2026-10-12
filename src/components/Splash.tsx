@@ -5,25 +5,21 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 const LOGO = require('../assets/images/olga-logo.png');
 const LOGO_SIZE = 288;
 
-// How long the splash holds: one slow, smooth zoom.
-export const SPLASH_MIN_MS = 4200;
+// The logo breathes: one second in, one second out, on a sine curve so it
+// never jolts. The splash holds for two full breaths.
+const PHASE_MS = 1000;
+export const SPLASH_MIN_MS = 4 * PHASE_MS;
 
 export function Splash() {
-  const progress = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    const zoom = Animated.timing(progress, {
-      toValue: 1,
-      duration: SPLASH_MIN_MS,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    });
-    zoom.start();
-    return () => zoom.stop();
-  }, [progress]);
-
-  // The logo eases from slightly small to full size and settles there.
-  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] });
+    const ease = Easing.inOut(Easing.sin);
+    const to = (toValue: number) => Animated.timing(scale, { toValue, duration: PHASE_MS, easing: ease, useNativeDriver: true });
+    const breathe = Animated.loop(Animated.sequence([to(1.1), to(1)]));
+    breathe.start();
+    return () => breathe.stop();
+  }, [scale]);
 
   return (
     <View style={styles.wrap}>
