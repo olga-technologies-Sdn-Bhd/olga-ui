@@ -265,7 +265,7 @@ const makeStyles = (colors: ThemeColors) =>
     tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
     tabLine: { height: 3, width: 76, borderRadius: 2, backgroundColor: 'transparent' },
-    tabLineActive: { backgroundColor: colors.charcoal },
+    tabLineActive: { backgroundColor: colors.selected },
     content: { paddingBottom: 40 },
     section: { fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: '700', color: colors.text, paddingHorizontal: 20, marginTop: 16 },
     // Rows run edge to edge, split by hairlines.

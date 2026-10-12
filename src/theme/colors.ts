@@ -36,6 +36,9 @@ export const lightColors = {
   amberText: '#7A4E0F',
   // The one large dark element (default Go Live button).
   charcoal: '#3A3531',
+  // Selected chip / active tab underline, and the text on it.
+  selected: '#3A3531',
+  onSelected: '#ffffff',
   danger: '#ef5a67',
   white: '#ffffff',
   // Warm concentric halo behind the Go Live ring, lightest to deepest.
@@ -47,38 +50,41 @@ export const lightColors = {
 };
 
 export const darkColors = {
-  // Dark mode isn't covered by the brand spec (which is light/warm only) —
-  // this is a reasonable warm-neutral inversion of the same roles, not a
-  // client-approved palette. Revisit if/when the client defines one.
-  bg: '#17120C',
-  surface: '#211A12',
-  surface2: '#2A2217',
-  text: '#F4F1EC',
-  muted: '#A89C8C',
-  line: '#3A3025',
-  brand: '#F4F1EC',
-  onBrand: '#171310',
-  brand2: '#55493A',
-  brandSoft: '#3A3024',
-  accentSoft: '#2A2217',
+  // Dark mode isn't covered by the brand spec (which is light/warm only).
+  // Graphite: neutral near-black greys with no brown cast, same roles as the
+  // light palette. Not a client-approved palette yet.
+  bg: '#121314',
+  surface: '#1B1C1E',
+  surface2: '#242628',
+  text: '#F2F3F4',
+  muted: '#9DA1A6',
+  line: '#2E3033',
+  brand: '#F2F3F4',
+  onBrand: '#121314',
+  brand2: '#4A4D52',
+  brandSoft: '#303236',
+  accentSoft: '#242628',
   // Light 'send' button on the dark ground, dark arrow on it (the mirror of
   // light mode); ink/onInk were both near-black, so the button disappeared.
-  ink: '#F4F1EC',
-  onInk: '#171310',
+  ink: '#F2F3F4',
+  onInk: '#121314',
   positive: '#34D399',
-  positiveSoft: '#15301F',
+  positiveSoft: '#14291E',
   liveFill: '#16A34A',
   amber: '#F2C98A',
-  amberSoft: '#3A2A10',
+  amberSoft: '#33280F',
   amberText: '#F2C98A',
-  charcoal: '#3A3531',
+  // A step lighter than the surfaces so the dark card and buttons still read.
+  charcoal: '#2E3034',
+  selected: '#F2F3F4',
+  onSelected: '#121314',
   danger: '#ff7a86',
   white: '#ffffff',
-  tint: '#241D14',
-  tint2: '#2E2518',
-  tintLine: '#4A3F30',
-  track: '#473C2D',
-  progressTrack: '#2b2735',
+  tint: '#1E1F21',
+  tint2: '#26282A',
+  tintLine: '#3E4145',
+  track: '#3A3D41',
+  progressTrack: '#2A2C2F',
 };
 
 export type ThemeColors = typeof lightColors;

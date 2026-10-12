@@ -16,7 +16,7 @@ import { ConsentPurpose, GoLiveBlocker, useLive } from '../../context/LiveContex
 import { usePrefs } from '../../context/PrefsContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
-import { GO_LIVE_COLORS, goLiveColor } from '../../theme/goLiveColors';
+import { goLiveColor, goLiveColors } from '../../theme/goLiveColors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
 import { topMatches } from './LiveMatchesScreen';
@@ -75,7 +75,7 @@ export function GoLiveScreen({ navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { events } = useEvents();
   const { prefs, setGoLiveColor } = usePrefs();
-  const disc = goLiveColor(prefs.goLiveColor);
+  const disc = goLiveColor(prefs.goLiveColor, colors.charcoal);
   const {
     activeEvent,
     setActiveEvent,
@@ -368,7 +368,7 @@ export function GoLiveScreen({ navigation }: Props) {
       {error && <Text style={styles.error}>{error}</Text>}
 
       <View style={styles.colors}>
-        {GO_LIVE_COLORS.map((c) => (
+        {goLiveColors(colors.charcoal).map((c) => (
           <Pressable
             key={c.key}
             onPress={() => setGoLiveColor(c.key)}
