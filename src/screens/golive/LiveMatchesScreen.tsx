@@ -20,10 +20,6 @@ type Props = NativeStackScreenProps<GoLiveStackParamList, 'LiveMatches'>;
 // Board 09: at most three, strongest first. Never padded with weak matches.
 const MAX_SHOWN = 3;
 
-function formatTime(date: Date) {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
 export function topMatches(matches: MatchCard[] | null, passedIds: string[]) {
   return (matches ?? [])
     .filter((m) => !passedIds.includes(m.match.member_id))
@@ -88,7 +84,7 @@ export function LiveMatchesScreen({ navigation }: Props) {
     <Screen>
       <BackHeader
         onBack={() => navigation.goBack()}
-        right={activeUntil ? <Pill label={`● LIVE · ${formatTime(activeUntil)}`} tone="positive" /> : undefined}
+        right={activeUntil ? <Pill label="● LIVE" tone="positive" /> : undefined}
       />
       <View>
         <Text style={styles.eyebrow}>{activeEvent?.name ?? 'Event'}</Text>
