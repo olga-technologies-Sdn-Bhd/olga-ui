@@ -1,5 +1,5 @@
-// Design system: a quiet neutral ground (off-white, white, graphite), no blue,
-// no gradients. Green is reserved for live/match signals only; a muted gold
+// Design system: a quiet neutral ground (off-white, white) with midnight navy
+// as the one deep colour, no gradients. Green is reserved for live/match signals only; a muted gold
 // for outcome states only. Everything else (buttons, selected chips,
 // progress, tab icons) uses the single ink neutral. Both light and dark
 // variants share the same shape so any screen can switch via useTheme()
@@ -8,12 +8,12 @@ export const lightColors = {
   bg: '#F6F6F4', // App ground
   surface: '#FFFFFF', // Card surface
   surface2: '#EEEEEB', // Secondary surface (date blocks, inputs, pill base)
-  text: '#111214', // Ink
-  muted: '#666A70', // Secondary text
+  text: '#141B26', // Ink, with a navy cast
+  muted: '#646B76', // Secondary text
   line: '#E4E4E1', // Hairlines and card borders
-  // Ink doubles as the one neutral "accent": primary buttons, selected
-  // chips, progress fill, tab active tint. Never blue, never a hue.
-  brand: '#111214',
+  // Midnight navy is the one "accent": primary buttons, selected
+  // chips, progress fill, tab active tint. Low saturation, never bright.
+  brand: '#1B2A41',
   // Text/icons on a brand (primary) button.
   onBrand: '#ffffff',
   // Outline button border.
@@ -22,8 +22,8 @@ export const lightColors = {
   brandSoft: '#E4E4E0',
   // Avatar/icon backgrounds, soft pill tint, chat "me" bubble.
   accentSoft: '#EEEEEB',
-  // Functional near-black for buttons like chat "send": same as text/ink.
-  ink: '#111214',
+  // Buttons like chat "send": the same navy as brand.
+  ink: '#1B2A41',
   onInk: '#FFFFFF',
   // Green TEXT: match scores and counts. Never used as a fill/icon color.
   positive: '#147A3A',
@@ -36,12 +36,13 @@ export const lightColors = {
   amberSoft: '#F3ECDD',
   amberText: '#6B5220',
   // The one large dark element (Social Capital card, default Go Live
-  // button): graphite, a neutral near-black with no brown cast.
-  charcoal: '#1F2123',
-  // Champagne: the small title on the graphite card.
+  // button): midnight navy, which reads as trust and calm where black
+  // read as heavy.
+  charcoal: '#1B2A41',
+  // Champagne: the small title on the navy card.
   champagne: '#D8C8A8',
   // Selected chip / active tab underline, and the text on it.
-  selected: '#1F2123',
+  selected: '#1B2A41',
   onSelected: '#ffffff',
   danger: '#D64555',
   white: '#ffffff',
@@ -54,42 +55,41 @@ export const lightColors = {
 };
 
 export const darkColors = {
-  // Dark mode isn't covered by the brand spec (which is light/warm only).
-  // Graphite: neutral near-black greys with no brown cast, same roles as the
-  // light palette. Not a client-approved palette yet.
-  bg: '#121314',
-  surface: '#1B1C1E',
-  surface2: '#242628',
-  text: '#F2F3F4',
-  muted: '#9DA1A6',
-  line: '#2E3033',
-  brand: '#F2F3F4',
-  onBrand: '#121314',
-  brand2: '#4A4D52',
-  brandSoft: '#303236',
-  accentSoft: '#242628',
+  // Midnight: the same navy family as light mode, taken deep. Same roles as
+  // the light palette. Not a client-approved palette yet.
+  bg: '#0E1522',
+  surface: '#151E2E',
+  surface2: '#1C2738',
+  text: '#F1F3F6',
+  muted: '#9AA4B2',
+  line: '#263247',
+  brand: '#F1F3F6',
+  onBrand: '#0E1522',
+  brand2: '#3D4B63',
+  brandSoft: '#27344A',
+  accentSoft: '#1C2738',
   // Light 'send' button on the dark ground, dark arrow on it (the mirror of
-  // light mode); ink/onInk were both near-black, so the button disappeared.
-  ink: '#F2F3F4',
-  onInk: '#121314',
+  // light mode).
+  ink: '#F1F3F6',
+  onInk: '#0E1522',
   positive: '#34D399',
-  positiveSoft: '#14291E',
+  positiveSoft: '#12302A',
   liveFill: '#16A34A',
   amber: '#D8C8A8',
-  amberSoft: '#2B2820',
+  amberSoft: '#2B2A26',
   amberText: '#D8C8A8',
   // A step lighter than the surfaces so the dark card and buttons still read.
-  charcoal: '#2E3034',
+  charcoal: '#24334D',
   champagne: '#D8C8A8',
-  selected: '#F2F3F4',
-  onSelected: '#121314',
+  selected: '#F1F3F6',
+  onSelected: '#0E1522',
   danger: '#ff7a86',
   white: '#ffffff',
-  tint: '#1E1F21',
-  tint2: '#26282A',
-  tintLine: '#3E4145',
-  track: '#3A3D41',
-  progressTrack: '#2A2C2F',
+  tint: '#131C2B',
+  tint2: '#1A2537',
+  tintLine: '#33415A',
+  track: '#2F3C54',
+  progressTrack: '#1F2A3D',
 };
 
 export type ThemeColors = typeof lightColors;
