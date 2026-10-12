@@ -190,10 +190,11 @@ export function HomeScreen({ navigation }: Props) {
       <Pressable
         onPress={() => navigation.navigate('ProfileSetup')}
         accessibilityRole="button"
+        hitSlop={8}
         style={({ pressed }) => [styles.setup, pressed && styles.pressed]}
       >
         <Text style={styles.setupText}>Let me help you set up your profile</Text>
-        <ChevronRight size={18} color={colors.muted} />
+        <ChevronRight size={15} color={colors.muted} />
       </Pressable>
 
       <Pressable
@@ -293,18 +294,9 @@ const makeStyles = (colors: ThemeColors) =>
     page: { backgroundColor: colors.surface },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     headerSpacer: { width: 34 },
-    setup: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 8,
-      minHeight: 44,
-      paddingHorizontal: 14,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.line,
-    },
-    setupText: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    // A quiet line, not a call to action: no box, small muted text.
+    setup: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 32, alignSelf: 'flex-start' },
+    setupText: { fontSize: 13, color: colors.muted },
     brand: { fontSize: 17, color: colors.text },
     // The one large dark element on the screen, the same in both themes.
     capital: {

@@ -29,7 +29,7 @@ export function ChatBubble({ from, text }: Props) {
           alignItems: 'center',
           justifyContent: 'center',
         },
-        olgaText: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: '700', color: '#000000' },
+        olgaText: { fontFamily: fonts.bodyRegular, fontSize: 11, fontWeight: '400', color: '#000000' },
         text: {
           paddingVertical: 12,
           paddingHorizontal: 14,

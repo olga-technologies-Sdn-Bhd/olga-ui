@@ -1,28 +1,29 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
-// Same artwork and size as the native splash, so the hand-over is seamless
-// and the logo simply starts to beat.
+// Same artwork and size as the native splash, so the hand-over is seamless.
 const LOGO = require('../assets/images/olga-logo.png');
 const LOGO_SIZE = 288;
 
-// One slow heartbeat (two soft swells, then a rest) takes 2.4 s; the splash
-// holds for two of them.
-export const SPLASH_MIN_MS = 4800;
+// How long the splash holds: one slow, smooth zoom.
+export const SPLASH_MIN_MS = 4200;
 
 export function Splash() {
-  const scale = useRef(new Animated.Value(1)).current;
+  const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const ease = Easing.inOut(Easing.quad);
-    const to = (toValue: number, duration: number) =>
-      Animated.timing(scale, { toValue, duration, easing: ease, useNativeDriver: true });
-    const beat = Animated.loop(
-      Animated.sequence([to(1.1, 380), to(1, 380), to(1.06, 340), to(1, 420), Animated.delay(880)])
-    );
-    beat.start();
-    return () => beat.stop();
-  }, [scale]);
+    const zoom = Animated.timing(progress, {
+      toValue: 1,
+      duration: SPLASH_MIN_MS,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
+    zoom.start();
+    return () => zoom.stop();
+  }, [progress]);
+
+  // The logo eases from slightly small to full size and settles there.
+  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] });
 
   return (
     <View style={styles.wrap}>
