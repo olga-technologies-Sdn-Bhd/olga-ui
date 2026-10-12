@@ -188,7 +188,9 @@ export function HomeScreen({ navigation }: Props) {
 
       <View style={styles.capital}>
         <View style={styles.capitalTop}>
-          <Text style={styles.capitalTitle}>Ol-ga Social Capital</Text>
+          <Text style={styles.capitalTitle} numberOfLines={1}>
+            {firstName ? `${firstName}'s Social Capital` : 'My Social Capital'}
+          </Text>
           <View style={styles.month}>
             <Text style={styles.monthText}>
               {MONTHS[today.getMonth()]} {today.getFullYear()}
