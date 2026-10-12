@@ -55,41 +55,42 @@ export const lightColors = {
 };
 
 export const darkColors = {
-  // Midnight: the same navy family as light mode, taken deep. Same roles as
-  // the light palette. Not a client-approved palette yet.
-  bg: '#0E1522',
-  surface: '#151E2E',
-  surface2: '#1C2738',
-  text: '#F1F3F6',
-  muted: '#9AA4B2',
-  line: '#263247',
-  brand: '#F1F3F6',
-  onBrand: '#0E1522',
-  brand2: '#3D4B63',
-  brandSoft: '#27344A',
-  accentSoft: '#1C2738',
+  // Dark mode isn't covered by the brand spec (which is light/warm only).
+  // Graphite: neutral near-black greys with no brown cast, same roles as the
+  // light palette. Not a client-approved palette yet.
+  bg: '#121314',
+  surface: '#1B1C1E',
+  surface2: '#242628',
+  text: '#F2F3F4',
+  muted: '#9DA1A6',
+  line: '#2E3033',
+  brand: '#F2F3F4',
+  onBrand: '#121314',
+  brand2: '#4A4D52',
+  brandSoft: '#303236',
+  accentSoft: '#242628',
   // Light 'send' button on the dark ground, dark arrow on it (the mirror of
-  // light mode).
-  ink: '#F1F3F6',
-  onInk: '#0E1522',
+  // light mode); ink/onInk were both near-black, so the button disappeared.
+  ink: '#F2F3F4',
+  onInk: '#121314',
   positive: '#34D399',
-  positiveSoft: '#12302A',
+  positiveSoft: '#14291E',
   liveFill: '#16A34A',
-  amber: '#D8C8A8',
-  amberSoft: '#2B2A26',
-  amberText: '#D8C8A8',
+  amber: '#F2C98A',
+  amberSoft: '#33280F',
+  amberText: '#F2C98A',
   // A step lighter than the surfaces so the dark card and buttons still read.
-  charcoal: '#24334D',
+  charcoal: '#2E3034',
   champagne: '#D8C8A8',
-  selected: '#F1F3F6',
-  onSelected: '#0E1522',
+  selected: '#F2F3F4',
+  onSelected: '#121314',
   danger: '#ff7a86',
   white: '#ffffff',
-  tint: '#131C2B',
-  tint2: '#1A2537',
-  tintLine: '#33415A',
-  track: '#2F3C54',
-  progressTrack: '#1F2A3D',
+  tint: '#1E1F21',
+  tint2: '#26282A',
+  tintLine: '#3E4145',
+  track: '#3A3D41',
+  progressTrack: '#2A2C2F',
 };
 
 export type ThemeColors = typeof lightColors;

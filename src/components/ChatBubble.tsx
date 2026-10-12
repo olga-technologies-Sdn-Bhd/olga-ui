@@ -18,9 +18,18 @@ export function ChatBubble({ from, text }: Props) {
         wrapMe: { alignSelf: 'flex-end' },
         row: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, maxWidth: '92%' },
         bubble: { flexShrink: 1 },
-        // Ol-ga's avatar carries her full name, like the app icon.
-        olga: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.charcoal, alignItems: 'center', justifyContent: 'center' },
-        olgaText: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: '700', color: colors.white },
+        // Ol-ga's avatar is her wordmark: black on white, in both themes.
+        olga: {
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: '#FFFFFF',
+          borderWidth: 1,
+          borderColor: colors.line,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        olgaText: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: '700', color: '#000000' },
         text: {
           paddingVertical: 12,
           paddingHorizontal: 14,

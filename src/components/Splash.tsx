@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
 
 // Same artwork and size as the native splash, so the hand-over is seamless
 // and the logo simply starts to beat.
@@ -11,15 +10,6 @@ const LOGO_SIZE = 288;
 export const SPLASH_BEAT_MS = 2400;
 
 export function Splash() {
-  const { colors } = useTheme();
-  const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-        logo: { width: LOGO_SIZE, height: LOGO_SIZE, tintColor: colors.text },
-      }),
-    [colors]
-  );
   const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -39,3 +29,9 @@ export function Splash() {
     </View>
   );
 }
+
+// The wordmark is always black on white, whatever the theme.
+const styles = StyleSheet.create({
+  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
+  logo: { width: LOGO_SIZE, height: LOGO_SIZE },
+});
