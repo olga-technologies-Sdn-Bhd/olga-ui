@@ -6,8 +6,9 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 const LOGO = require('../assets/images/olga-logo.png');
 const LOGO_SIZE = 288;
 
-// One slow heartbeat: two soft swells, then a rest.
-export const SPLASH_BEAT_MS = 2400;
+// One slow heartbeat (two soft swells, then a rest) takes 2.4 s; the splash
+// holds for two of them.
+export const SPLASH_MIN_MS = 4800;
 
 export function Splash() {
   const scale = useRef(new Animated.Value(1)).current;

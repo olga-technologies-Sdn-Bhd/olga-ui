@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Splash, SPLASH_BEAT_MS } from '../components/Splash';
+import { Splash, SPLASH_MIN_MS } from '../components/Splash';
 import { useAuth } from '../context/AuthContext';
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
 
 export function RootNavigator() {
   const { isAuthenticated, isRestoring, needsOnboarding } = useAuth();
-  // The splash stays for one full heartbeat even when the session restores
+  // The splash stays for two full heartbeats even when the session restores
   // faster, so the app never opens on a flicker.
   const [beatDone, setBeatDone] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setBeatDone(true), SPLASH_BEAT_MS);
+    const timer = setTimeout(() => setBeatDone(true), SPLASH_MIN_MS);
     return () => clearTimeout(timer);
   }, []);
 

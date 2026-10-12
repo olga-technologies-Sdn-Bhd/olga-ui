@@ -39,6 +39,9 @@ export const lightColors = {
   // button): midnight navy, which reads as trust and calm where black
   // read as heavy.
   charcoal: '#1B2A41',
+  // The Social Capital card: a slow diagonal fade within the same navy.
+  cardFrom: '#2A4066',
+  cardTo: '#111C2E',
   // Champagne: the small title on the navy card.
   champagne: '#D8C8A8',
   // Selected chip / active tab underline, and the text on it.
@@ -81,6 +84,8 @@ export const darkColors = {
   amberText: '#F2C98A',
   // A step lighter than the surfaces so the dark card and buttons still read.
   charcoal: '#2E3034',
+  cardFrom: '#3A3D43',
+  cardTo: '#24262A',
   champagne: '#D8C8A8',
   selected: '#F2F3F4',
   onSelected: '#121314',

@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Check, ChevronRight, SlidersHorizontal, Ticket } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { coreApi } from '../../api/core';
 import type { Meeting } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
@@ -201,6 +202,12 @@ export function HomeScreen({ navigation }: Props) {
         accessibilityRole="button"
         accessibilityLabel="Your Social Capital Graph"
       >
+        <LinearGradient
+          colors={[colors.cardFrom, colors.cardTo]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.capitalTop}>
           <Text style={styles.capitalTitle} numberOfLines={1}>
             {firstName ? `${firstName}'s Social Capital` : 'My Social Capital'}
@@ -300,7 +307,16 @@ const makeStyles = (colors: ThemeColors) =>
     setupText: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
     brand: { fontSize: 17, color: colors.text },
     // The one large dark element on the screen, the same in both themes.
-    capital: { backgroundColor: colors.charcoal, borderRadius: radius.xl, padding: 16, marginHorizontal: -6, marginTop: 2 },
+    capital: {
+      backgroundColor: colors.charcoal,
+      borderRadius: radius.xl,
+      padding: 18,
+      marginHorizontal: -6,
+      marginTop: 2,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.08)',
+    },
     capitalTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
     capitalTitle: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.champagne },
     month: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
