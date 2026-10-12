@@ -94,9 +94,9 @@ export function ProfileScreen({ navigation }: Props) {
           style={({ pressed }) => [styles.row, pressed && styles.pressed]}
         >
           <View style={styles.rowText}>
-            <Text style={styles.label}>What you're looking for</Text>
+            <Text style={styles.label}>Your intent</Text>
             <Text style={styles.sub} numberOfLines={2}>
-              {intentText.trim() || 'Add your intent, so I can find your matches'}
+              {intentText.trim() || 'Set your intent, so I can find your matches'}
             </Text>
           </View>
           <ChevronRight size={18} color={colors.muted} />
