@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StatusBar, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
@@ -22,17 +22,34 @@ export function useTopInset() {
   return Math.max(insets.top, androidFallback);
 }
 
-export function Screen({ children, scroll = true, style, background, onRefresh }: Props) {
+// The APIs can take up to a minute to answer after idling (cold start). The
+// pull-to-refresh spinner stops after this long; the request carries on and
+// the screen updates when the data arrives.
+const REFRESH_SPINNER_MAX_MS = 10000;
+
+export function usePullToRefresh(onRefresh?: () => Promise<void>) {
   const [refreshing, setRefreshing] = useState(false);
-  async function handleRefresh() {
+  const latest = useRef(0);
+  const handleRefresh = useCallback(async () => {
     if (!onRefresh) return;
+    const run = ++latest.current;
+    const stop = () => {
+      if (latest.current === run) setRefreshing(false);
+    };
     setRefreshing(true);
+    const timer = setTimeout(stop, REFRESH_SPINNER_MAX_MS);
     try {
       await onRefresh();
     } finally {
-      setRefreshing(false);
+      clearTimeout(timer);
+      stop();
     }
-  }
+  }, [onRefresh]);
+  return { refreshing, handleRefresh };
+}
+
+export function Screen({ children, scroll = true, style, background, onRefresh }: Props) {
+  const { refreshing, handleRefresh } = usePullToRefresh(onRefresh);
   const topInset = useTopInset();
   const { colors } = useTheme();
   const styles = useMemo(

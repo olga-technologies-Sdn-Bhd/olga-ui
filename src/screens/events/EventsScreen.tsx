@@ -9,7 +9,7 @@ import { CoreEvent } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { DateBlock } from '../../components/DateBlock';
-import { useTopInset } from '../../components/Screen';
+import { usePullToRefresh, useTopInset } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
 import { EventsStackParamList, MainTabParamList } from '../../navigation/types';
@@ -40,11 +40,11 @@ export function EventsScreen({ navigation }: Props) {
   const topInset = useTopInset();
   const { name } = useAuth();
   const { events, error, refresh, refreshIfStale, register } = useEvents();
+  const { refreshing, handleRefresh } = usePullToRefresh(refresh);
   const [tab, setTab] = useState<Tab>('upcoming');
   // null = all locations.
   const [location, setLocation] = useState<string | null>(null);
   const [choosingLocation, setChoosingLocation] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [registering, setRegistering] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const initial = (name?.trim()[0] ?? '?').toUpperCase();
@@ -55,12 +55,6 @@ export function EventsScreen({ navigation }: Props) {
       refreshIfStale(); // at most every ~30 s; pull to refresh forces it
     }, [refreshIfStale])
   );
-
-  async function onRefresh() {
-    setRefreshing(true);
-    await refresh();
-    setRefreshing(false);
-  }
 
   async function handleRegister(eventId: string) {
     setRegistering(eventId);
@@ -189,7 +183,7 @@ export function EventsScreen({ navigation }: Props) {
 
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         {events === null && !error && <Text style={styles.note}>Loading events…</Text>}
         {error && <Text style={[styles.note, styles.error]}>{error}</Text>}
