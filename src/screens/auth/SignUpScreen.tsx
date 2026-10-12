@@ -246,7 +246,7 @@ export function SignUpScreen() {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    logo: { fontFamily: fonts.headingExtraBold, fontWeight: '800', letterSpacing: 3, fontSize: 14, color: colors.text },
+    logo: { fontFamily: fonts.headingExtraBold, fontWeight: '800', letterSpacing: 3, fontSize: 13, color: colors.text },
     eyebrow: {
       fontFamily: fonts.monoBold,
       fontSize: 11,
@@ -255,10 +255,10 @@ const makeStyles = (colors: ThemeColors) =>
       color: colors.muted,
       fontWeight: '700',
     },
-    h1: { fontFamily: fonts.headingExtraBold, fontSize: 28, fontWeight: '800', color: colors.text, marginTop: 8 },
-    sub: { fontSize: 14, lineHeight: 20, color: colors.muted },
+    h1: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 8 },
+    sub: { fontSize: 13, lineHeight: 19, color: colors.muted },
     chatStack: { gap: 10, marginTop: 6 },
     dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
     dividerLine: { flex: 1, height: 1, backgroundColor: colors.line },
-    dividerText: { fontSize: 13, color: colors.muted },
+    dividerText: { fontSize: 12, color: colors.muted },
   });

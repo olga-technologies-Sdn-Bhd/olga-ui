@@ -71,6 +71,10 @@ export type ProfileBody = {
   completeness_score: number;
   e_tag?: string;
   updated_at: string;
+  // /v1/me/profile only: the member's own masked contact details. Omitted
+  // when the member has no value; the full values are never returned.
+  email_hint?: string;
+  phone_hint?: string;
 };
 export type Profile = WithEtag<ProfileBody>;
 
@@ -355,6 +359,15 @@ export type AcceptCommitResponse = {
   connection_id: string;
   member_id: string;
   status: 'ACTIVE';
+  conversation_id: string;
+  display_name?: string;
+};
+
+// GET /v1/connections: the member's confirmed relationships.
+export type Connection = {
+  connection_id: string;
+  member_id: string;
+  status: string; // ACTIVE
   conversation_id: string;
   display_name?: string;
 };

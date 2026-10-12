@@ -1,52 +1,38 @@
-// Microsoft Entra External ID (email OTP) settings per APP_ENV
-// (src/config/env.ts). These are public identifiers, not credentials — see
-// OLGA_Mobile_Authentication_Guide.docx. Never put a client secret here.
+// Microsoft Entra External ID settings for the selected environment
+// (src/config/environments). These are public identifiers, not credentials.
+// Never put a client secret, or a Google or Apple value, here: both providers
+// are reached through Entra.
 //
-// Local development signs in against the dev tenant. Prod must never fall
-// back to dev values: it fails loudly until the prd tenant/app/scope are
-// filled in. The redirect scheme must also match the native config
-// (Android appAuthRedirectScheme / iOS Info.plist).
+// Production never falls back to dev values: the app fails on start if any
+// value is missing. The redirect scheme must also match the native config
+// (Android appAuthRedirectScheme / iOS OLGA_AUTH_SCHEME).
 import { Platform } from 'react-native';
-import { APP_ENV, AppEnv } from '../config/env';
+import { APP_ENV } from '../config/env';
+import { environment } from '../config/environments/selected';
 
-// Microsoft redirects back as "olga-dev://auth/?code=…" (it adds a slash after
+const { entra } = environment;
+
+if (Object.values(entra).some((value) => !value)) {
+  throw new Error(`Entra sign-in is not configured for APP_ENV '${APP_ENV}' (src/config/environments/${APP_ENV}.ts)`);
+}
+
+// Microsoft redirects back as "<scheme>://auth/?code=…" (it adds a slash after
 // the host). iOS AppAuth compares the path strictly ("" vs "/"), rejects the
 // URL and silently drops the error, so authorize() never settles. Sending the
 // slash on iOS makes both sides agree; Android matches on scheme only.
-const REDIRECT_URI = Platform.OS === 'ios' ? 'olga-dev://auth/' : 'olga-dev://auth';
+const redirectUri = `${entra.redirectScheme}://auth${Platform.OS === 'ios' ? '/' : ''}`;
 
-type EntraSettings = {
-  clientId: string;
-  tenantId: string;
-  authority: string;
-  redirectUri: string;
-  apiScope: string;
-  // <subdomain>.onmicrosoft.com — the native auth REST API path segment.
-  tenantSubdomain: string;
+export const entraConfig = {
+  clientId: entra.clientId,
+  tenantId: entra.tenantId,
+  authority: entra.authority,
+  redirectUri,
+  apiScope: entra.apiScope,
+  tenantSubdomain: entra.tenantSubdomain,
 };
 
-const DEV_TENANT: EntraSettings = {
-  clientId: 'e8db01a0-3a93-48e0-86fa-68123e026088',
-  tenantId: 'd6b05a66-a3b7-442c-b56f-d4d7a9e154ba',
-  authority: 'https://olgaconnectdev.ciamlogin.com',
-  redirectUri: REDIRECT_URI,
-  apiScope: 'api://733db389-f55d-4a33-8cd6-18a14393e3d9/access_as_user',
-  tenantSubdomain: 'olgaconnectdev',
-};
-
-const ENTRA: Record<AppEnv, EntraSettings> = {
-  local: DEV_TENANT,
-  dev: DEV_TENANT,
-  // TODO(infra): prd External ID tenant values (Olga.Infrastructure
-  // docs/ENTRA_EXTERNAL_ID.md) once the production tenant exists.
-  prod: { clientId: '', tenantId: '', authority: '', redirectUri: '', apiScope: '', tenantSubdomain: '' },
-};
-
-export const entraConfig = ENTRA[APP_ENV];
-
-if (Object.values(entraConfig).some((value) => !value)) {
-  throw new Error(`Entra sign-in is not configured for APP_ENV '${APP_ENV}' (src/auth/entraConfig.ts)`);
-}
+// Continue with Email inside the app; off means the Microsoft-hosted page.
+export const inAppEmailOtp = environment.inAppEmailOtp;
 
 // react-native-app-auth wants the full issuer URL for discovery.
 export const entraIssuer = `${entraConfig.authority}/${entraConfig.tenantId}/v2.0`;

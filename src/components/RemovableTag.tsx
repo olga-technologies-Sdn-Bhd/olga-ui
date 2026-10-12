@@ -35,6 +35,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd2ff',
   },
-  label: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.brand },
-  remove: { fontSize: 14, color: colors.brand, lineHeight: 14 },
+  label: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: '700', color: colors.brand },
+  remove: { fontSize: 13, color: colors.brand, lineHeight: 13 },
 });

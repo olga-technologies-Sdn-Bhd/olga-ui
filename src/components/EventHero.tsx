@@ -46,6 +46,6 @@ const makeStyles = (colors: ThemeColors) =>
     },
     topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
     spacer: { flex: 1 },
-    title: { fontFamily: fonts.headingExtraBold, color: colors.text, fontSize: 24, fontWeight: '800', marginTop: 8 },
-    subtitle: { color: colors.muted, marginTop: 4, fontSize: 13 },
+    title: { fontFamily: fonts.headingExtraBold, color: colors.text, fontSize: 20, fontWeight: '800', marginTop: 8 },
+    subtitle: { color: colors.muted, marginTop: 4, fontSize: 12 },
   });

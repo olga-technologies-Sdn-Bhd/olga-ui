@@ -125,7 +125,6 @@ export function CommitsScreen({ navigation }: Props) {
   return (
     <Screen onRefresh={load}>
       <View>
-        <Text style={styles.eyebrow}>Chat</Text>
         <Text style={styles.h2}>Chat</Text>
         <Pressable
           onPress={() => navigation.getParent()?.navigate('GoLiveTab', { screen: 'Filters' })}
@@ -247,18 +246,17 @@ export function CommitsScreen({ navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
-    h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
-    sub: { fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
-    small: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 8 },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
+    small: { fontSize: 11, lineHeight: 16, color: colors.muted, marginTop: 8 },
     link: { color: colors.text, fontWeight: '700', textDecorationLine: 'underline' },
     filterLine: { alignSelf: 'flex-start', marginTop: 2 },
     sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
-    error: { fontSize: 13, color: colors.danger, marginTop: 6 },
+    error: { fontSize: 12, color: colors.danger, marginTop: 6 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
     actions: { flexDirection: 'row', gap: 10, marginTop: 12 },
     planRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
-    planText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.positive },
+    planText: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.positive },
   });

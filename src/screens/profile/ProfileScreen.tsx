@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
+import { coreApi } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
@@ -23,6 +24,23 @@ export function ProfileScreen({ navigation }: Props) {
   const { colors, scheme, setScheme } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [loggingOut, setLoggingOut] = useState(false);
+  // The server only ever returns the masked number, so that is what a
+  // reinstall, a new device or a fresh sign-in shows.
+  const [phoneHint, setPhoneHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!memberId) return;
+    let active = true;
+    coreApi
+      .getMyProfile()
+      .then((profile) => {
+        if (active) setPhoneHint(profile.phone_hint ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [memberId]);
 
   function confirmLogOut() {
     Alert.alert('Log out?', 'You can sign back in any time with the same email.', [
@@ -56,7 +74,7 @@ export function ProfileScreen({ navigation }: Props) {
       <Card style={styles.list}>
         <Row label="Email" value={email} styles={styles} />
         <View style={styles.divider} />
-        <Row label="Mobile" value={mobile} styles={styles} />
+        <Row label="Mobile" value={mobile ?? phoneHint} styles={styles} />
         <View style={styles.divider} />
         <Row label="Member ID" value={memberId} styles={styles} small />
         <View style={styles.divider} />
@@ -101,15 +119,15 @@ function Row({
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   identity: { alignItems: 'center', gap: 6, marginTop: 4 },
-  h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 8 },
-  sub: { fontSize: 13, color: colors.muted },
+  h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 8 },
+  sub: { fontSize: 12, color: colors.muted },
   sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
   list: { paddingVertical: 4 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 10 },
   rowText: { flex: 1 },
-  label: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
-  value: { fontSize: 14, color: colors.muted, flexShrink: 1, textAlign: 'right' },
-  valueSmall: { fontSize: 12 },
+  label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
+  value: { fontSize: 13, color: colors.muted, flexShrink: 1, textAlign: 'right' },
+  valueSmall: { fontSize: 11 },
   divider: { height: 1, backgroundColor: colors.line },
   logout: { marginTop: 8 },
 });

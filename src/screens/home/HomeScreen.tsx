@@ -2,18 +2,17 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { Check, ChevronRight, SlidersHorizontal } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { CalendarDays, Check, ChevronRight, SlidersHorizontal } from 'lucide-react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { coreApi } from '../../api/core';
+import type { Meeting } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
-import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { DateBlock } from '../../components/DateBlock';
+import { ComingSoonModal } from '../../components/ComingSoonModal';
 import { GoLiveMark } from '../../components/GoLiveMark';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
-import { useLive } from '../../context/LiveContext';
 import { TipKey, usePrefs } from '../../context/PrefsContext';
 import { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
@@ -25,47 +24,95 @@ type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList>
 >;
 
-// Board 01: three tips. Each disappears once the member does the action (not
-// on tap) and never returns. "Confirm you met" is amber: an outcome state.
+// Each tip disappears once the member does the action (not on tap) and never
+// returns. "Confirm you met" is amber: an outcome state.
 const TIPS: { key: TipKey; title: string; body: string }[] = [
-  { key: 'wentLive', title: 'Go Live when you arrive', body: 'Check in, then press and hold Go Live. Only your matches in the room can see you.' },
-  { key: 'savedFilter', title: 'Set who you want to meet', body: 'Your filter decides who you see, and who can reach you.' },
-  { key: 'confirmedMeeting', title: 'Confirm you met', body: 'The morning after, two taps. Only meetings you both confirm count.' },
+  { key: 'wentLive', title: 'Go Live when you arrive.', body: 'Check in, then press and hold Go Live. Only your matches in the room can see you.' },
+  { key: 'savedFilter', title: 'Set who you want to meet.', body: 'Your filter decides who you see, and who can reach you.' },
+  { key: 'confirmedMeeting', title: 'Confirm you met.', body: 'The morning after, two taps. Only meetings you both confirm count.' },
 ];
 
+type Kind = 'network' | 'event' | 'tip';
+type Filter = 'all' | Kind;
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'network', label: 'Network' },
+  { key: 'event', label: 'Events' },
+  { key: 'tip', label: 'Tips' },
+];
+
+type Update = {
+  key: string;
+  kind: Kind;
+  meta: string;
+  title: string; // shown bold, then the body
+  body: string;
+  icon: React.ReactNode;
+  onPress?: () => void;
+};
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function initialsOf(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : '')).toUpperCase() || '?';
+}
+
+// "2h", "3d", then a short date.
+function ago(iso: string, now: number) {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '';
+  const minutes = Math.max(0, Math.round((now - then) / 60000));
+  if (minutes < 60) return `${Math.max(1, minutes)}m`;
+  if (minutes < 24 * 60) return `${Math.round(minutes / 60)}h`;
+  if (minutes < 7 * 24 * 60) return `${Math.round(minutes / (24 * 60))}d`;
+  const date = new Date(then);
+  return `${date.getDate()} ${MONTHS[date.getMonth()].slice(0, 3)}`;
+}
+
+function eventDay(iso: string, now: number) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  if (date.toDateString() === new Date(now).toDateString()) return 'Today';
+  return `${date.getDate()} ${MONTHS[date.getMonth()].slice(0, 3)}`;
+}
+
+// Home: the Social Capital card, then updates (network, events, tips). Every
+// number comes from Core; parts of the design with no API yet (monthly change,
+// last-event summary, the index itself) are left out rather than faked.
 export function HomeScreen({ navigation }: Props) {
   const { name } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { prefs } = usePrefs();
-  // Shared with Go Live: saved as the WANT intent when matching runs.
-  const { intentText: intent, setIntentText: setIntent } = useLive();
-  const [draft, setDraft] = useState(intent);
-  const [editing, setEditing] = useState(!intent.trim());
   // Shared, admin-managed list (soonest first): always the latest data.
-  const { events, refresh, refreshIfStale } = useEvents();
-  const nextEvent = events?.find((e) => new Date(e.ends_at).getTime() > Date.now()) ?? null;
+  const { events, refresh: refreshEvents, refreshIfStale } = useEvents();
+  // null until the first load finishes.
+  const [relationships, setRelationships] = useState<number | null>(null);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [filter, setFilter] = useState<Filter>('all');
+  const [indexSoon, setIndexSoon] = useState(false);
   const firstName = name?.trim().split(/\s+/)[0] ?? '';
-  const tipsLeft = TIPS.filter((t) => !prefs.tipsDone[t.key]);
+  const now = Date.now();
 
-  // The intent can also change from the Go Live filter.
-  useEffect(() => {
-    if (!editing) setDraft(intent);
-    if (intent.trim()) setEditing(false);
-    // Only follow outside changes to the intent.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [intent]);
+  const loadNetwork = useCallback(async () => {
+    const [connections, page] = await Promise.all([
+      coreApi.getConnections().catch(() => null),
+      coreApi.getMeetings().catch(() => null),
+    ]);
+    if (connections) setRelationships(connections.filter((c) => c.status === 'ACTIVE').length);
+    if (page) setMeetings(page.items);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
       refreshIfStale();
-    }, [refreshIfStale])
+      loadNetwork();
+    }, [refreshIfStale, loadNetwork])
   );
 
-  function handleSave() {
-    if (!draft.trim()) return;
-    setIntent(draft.trim());
-    setEditing(false);
+  async function refresh() {
+    await Promise.all([refreshEvents(), loadNetwork()]);
   }
 
   function tipIcon(key: TipKey) {
@@ -79,101 +126,147 @@ export function HomeScreen({ navigation }: Props) {
     if (key === 'savedFilter') navigation.navigate('GoLiveTab', { screen: 'Filters' });
   }
 
+  const today = new Date(now);
+  const changesThisMonth = meetings.filter((m) => {
+    const at = new Date(m.last_activity_at);
+    return at.getFullYear() === today.getFullYear() && at.getMonth() === today.getMonth();
+  }).length;
+
+  const updates: Update[] = [
+    ...[...meetings]
+      .sort((a, b) => new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime())
+      .map((m): Update => {
+        const who = m.display_name ?? 'A new contact';
+        return {
+          key: `network-${m.conversation_id}`,
+          kind: 'network',
+          meta: ['Network', ago(m.last_activity_at, now)].filter(Boolean).join(' · '),
+          title: who,
+          body: ` is in your network${m.headline ? `: ${m.headline}` : ''}.`,
+          icon: <Text style={styles.initials}>{m.display_name ? initialsOf(m.display_name) : '?'}</Text>,
+          onPress: () => navigation.navigate('ChatTab'),
+        };
+      }),
+    ...(events ?? [])
+      .filter((e) => new Date(e.ends_at).getTime() > now)
+      .map((e): Update => {
+        const started = new Date(e.starts_at).getTime() <= now;
+        const attending = typeof e.attendee_count === 'number' ? ` ${e.attendee_count.toLocaleString('en-US')} members attending.` : '';
+        return {
+          key: `event-${e.event_id}`,
+          kind: 'event',
+          meta: ['Event', eventDay(e.starts_at, now)].filter(Boolean).join(' · '),
+          title: e.name,
+          body: `${started ? ' is on now.' : isRegistered(e) ? ' is coming up.' : ''}${isRegistered(e) ? ' You are registered.' : started ? ' Registration is open.' : ' is open for registration.'}${attending}`,
+          icon: <CalendarDays size={20} color={colors.text} />,
+          onPress: () => navigation.navigate('EventsTab', { screen: 'EventDetail', params: { eventId: e.event_id } }),
+        };
+      }),
+    ...TIPS.filter((t) => !prefs.tipsDone[t.key]).map(
+      (t): Update => ({
+        key: `tip-${t.key}`,
+        kind: 'tip',
+        meta: 'Tip',
+        title: t.title,
+        body: ` ${t.body}`,
+        icon: tipIcon(t.key),
+        onPress: t.key === 'confirmedMeeting' ? undefined : () => openTip(t.key),
+      })
+    ),
+  ];
+  const shown = filter === 'all' ? updates : updates.filter((u) => u.kind === filter);
+
   return (
-    <Screen onRefresh={refresh}>
-      <View style={styles.topline}>
-        <View style={styles.flex}>
-          <Text style={styles.eyebrow}>Home</Text>
-          <Text style={styles.h2}>Welcome{firstName ? `, ${firstName}` : ''}</Text>
+    <Screen onRefresh={refresh} style={styles.page}>
+      <View style={styles.header}>
+        <Pressable onPress={() => navigation.navigate('Profile')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Your account">
+          <Avatar initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" dark />
+        </Pressable>
+        <Text style={styles.brand}>Ol-ga</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <View style={styles.capital}>
+        <View style={styles.capitalTop}>
+          <Text style={styles.capitalTitle} numberOfLines={1}>
+            {firstName ? `${firstName}'s Social Capital` : 'My Social Capital'}
+          </Text>
+          <View style={styles.month}>
+            <Text style={styles.monthText}>
+              {MONTHS[today.getMonth()]} {today.getFullYear()}
+            </Text>
+          </View>
         </View>
-        <Pressable onPress={() => navigation.navigate('Profile')} hitSlop={8} accessibilityLabel="Your account">
-          <Avatar initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" />
+        <Text style={styles.count}>{relationships === null ? '–' : relationships.toLocaleString('en-US')}</Text>
+        <Text style={styles.countLabel}>Confirmed professional relationships</Text>
+        <Pressable
+          style={({ pressed }) => [styles.indexButton, pressed && styles.pressed]}
+          onPress={() => setIndexSoon(true)}
+          accessibilityRole="button"
+        >
+          <Text style={styles.indexLabel}>View Social Capital Index</Text>
+          <ChevronRight size={18} color="#171310" />
         </Pressable>
       </View>
 
-      <Card soft>
-        <View style={styles.space}>
-          <Text style={styles.eyebrow}>Your intent</Text>
-          {!editing && (
-            <Button
-              label="Edit"
-              variant="secondary"
-              small
-              onPress={() => {
-                setDraft(intent);
-                setEditing(true);
-              }}
-            />
-          )}
-        </View>
-        {editing ? (
-          <View style={styles.editor}>
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              style={styles.input}
-              placeholder="What are you looking for at your next event?"
-              placeholderTextColor={colors.muted}
-              multiline
-            />
-            <Button label="Save intent" variant="secondary" small onPress={handleSave} disabled={!draft.trim()} />
-          </View>
-        ) : (
-          <Text style={styles.intent}>{intent}</Text>
-        )}
-        <Text style={styles.hint}>Used wherever an event doesn't set its own.</Text>
-      </Card>
-
-      {tipsLeft.length > 0 && (
-        <>
-          <Text style={styles.sectionTitle}>
-            Get started · {TIPS.length - tipsLeft.length} of {TIPS.length}
+      <View style={styles.updatesHead}>
+        <Text style={styles.h2}>Updates</Text>
+        {changesThisMonth > 0 && (
+          <Text style={styles.sub}>
+            {changesThisMonth} network {changesThisMonth === 1 ? 'change' : 'changes'} this month
           </Text>
-          <View style={styles.list}>
-            {tipsLeft.map((tip) => (
-              <Pressable
-                key={tip.key}
-                onPress={() => openTip(tip.key)}
-                disabled={tip.key === 'confirmedMeeting'}
-                accessibilityRole={tip.key === 'confirmedMeeting' ? undefined : 'button'}
-              >
-                <Card style={styles.row}>
-                  <View style={[styles.tipIcon, tip.key === 'confirmedMeeting' && styles.tipIconAmber]}>{tipIcon(tip.key)}</View>
-                  <View style={styles.flex}>
-                    <Text style={styles.h3}>{tip.title}</Text>
-                    <Text style={styles.sub}>{tip.body}</Text>
-                  </View>
-                </Card>
-              </Pressable>
-            ))}
-          </View>
-        </>
-      )}
+        )}
+      </View>
+      <View style={styles.chips}>
+        {FILTERS.map((f) => {
+          const active = f.key === filter;
+          return (
+            <Pressable
+              key={f.key}
+              onPress={() => setFilter(f.key)}
+              style={[styles.chip, active && styles.chipActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
-      {nextEvent && (
-        <>
-          <Text style={styles.sectionTitle}>Coming up</Text>
-          <Pressable
-            onPress={() => navigation.navigate('EventsTab', { screen: 'EventDetail', params: { eventId: nextEvent.event_id } })}
-            accessibilityRole="button"
-            accessibilityLabel={`${nextEvent.name}, open event`}
-          >
-            <Card style={styles.row}>
-              <DateBlock iso={nextEvent.starts_at} />
-              <View style={styles.flex}>
-                <Text style={styles.h3}>{nextEvent.name}</Text>
-                <Text style={styles.sub}>
-                  {[nextEvent.venue, isRegistered(nextEvent) ? "You're signed up" : null].filter(Boolean).join(' · ')}
-                </Text>
-                {typeof nextEvent.attendee_count === 'number' && (
-                  <Text style={styles.sub}>{nextEvent.attendee_count} signed up</Text>
-                )}
-              </View>
-              <ChevronRight size={20} color={colors.muted} />
-            </Card>
+      <View style={styles.list}>
+        {shown.map((u) => (
+          <Pressable key={u.key} onPress={u.onPress} disabled={!u.onPress} style={styles.row} accessibilityRole={u.onPress ? 'button' : undefined}>
+            <View style={[styles.icon, u.key === 'tip-confirmedMeeting' && styles.iconAmber]}>{u.icon}</View>
+            <View style={styles.flex}>
+              <Text style={styles.meta}>{u.meta}</Text>
+              <Text style={styles.body}>
+                <Text style={styles.bodyBold}>{u.title}</Text>
+                {u.body}
+              </Text>
+            </View>
           </Pressable>
-        </>
-      )}
+        ))}
+        {shown.length === 0 && (
+          <Text style={styles.empty}>
+            {filter === 'network'
+              ? 'People you meet through a Commit appear here.'
+              : filter === 'event'
+                ? 'No upcoming events right now.'
+                : filter === 'tip'
+                  ? "You're all set."
+                  : 'Nothing new yet.'}
+          </Text>
+        )}
+      </View>
+
+      <ComingSoonModal
+        visible={indexSoon}
+        onClose={() => setIndexSoon(false)}
+        title="Social Capital Index"
+        message="Your full index is on its way. For now, this card shows your confirmed relationships."
+        icon="◎"
+      />
     </Screen>
   );
 }
@@ -181,35 +274,62 @@ export function HomeScreen({ navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    space: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
-    h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
-    intent: { fontFamily: fonts.headingBold, fontSize: 18, lineHeight: 24, fontWeight: '700', color: colors.text, marginTop: 10 },
-    hint: { fontSize: 12, color: colors.muted, marginTop: 10 },
-    sub: { fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
-    sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
-    list: { gap: 10 },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    tipIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
-      backgroundColor: colors.accentSoft,
+    page: { backgroundColor: colors.surface },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    headerSpacer: { width: 34 },
+    brand: { fontSize: 17, color: colors.text },
+    // The one large dark element on the screen, the same in both themes.
+    capital: { backgroundColor: colors.charcoal, borderRadius: radius.xl, padding: 16, marginHorizontal: -6, marginTop: 2 },
+    capitalTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+    capitalTitle: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.amber },
+    month: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
+    monthText: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.white },
+    count: { fontFamily: fonts.headingBold, fontSize: 40, lineHeight: 44, fontWeight: '700', color: colors.white, marginTop: 6 },
+    countLabel: { fontSize: 14, color: 'rgba(255,255,255,0.86)' },
+    indexButton: {
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    tipIconAmber: { backgroundColor: colors.amberSoft },
-    editor: { marginTop: 12, gap: 8 },
-    input: {
-      borderWidth: 1,
-      borderColor: colors.line,
-      borderRadius: radius.sm,
-      padding: 12,
-      backgroundColor: colors.surface,
-      color: colors.text,
-      fontSize: 14,
+      gap: 6,
+      backgroundColor: colors.white,
+      borderRadius: 999,
       minHeight: 44,
+      marginTop: 14,
     },
+    indexLabel: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: '#171310' },
+    pressed: { opacity: 0.85 },
+    updatesHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginTop: 8 },
+    h2: { fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: '700', color: colors.text },
+    sub: { fontSize: 12, color: colors.muted },
+    chips: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+    chip: {
+      minHeight: 32,
+      justifyContent: 'center',
+      paddingHorizontal: 14,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.brand2,
+      backgroundColor: colors.surface,
+    },
+    chipActive: { backgroundColor: colors.selected, borderColor: colors.selected },
+    chipText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
+    chipTextActive: { color: colors.onSelected },
+    // Rows run edge to edge, split by hairlines.
+    list: { marginHorizontal: -20, borderTopWidth: 1, borderTopColor: colors.line, marginTop: 4 },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.line,
+    },
+    icon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+    iconAmber: { backgroundColor: colors.amberSoft },
+    initials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
+    meta: { fontSize: 12, color: colors.muted },
+    body: { fontSize: 14, lineHeight: 20, color: colors.text, marginTop: 2 },
+    bodyBold: { fontFamily: fonts.bodyBold, fontWeight: '700' },
+    empty: { fontSize: 13, color: colors.muted, paddingHorizontal: 20, paddingVertical: 18 },
   });

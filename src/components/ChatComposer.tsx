@@ -24,7 +24,7 @@ export function ChatComposer({ placeholder, onSubmit, keyboardType = 'default' }
           paddingVertical: 12,
           paddingHorizontal: 14,
           backgroundColor: colors.surface2,
-          fontSize: 15,
+          fontSize: 14,
           color: colors.text,
         },
         // A soft, deliberate near-black rather than the brand accent — a
@@ -37,7 +37,7 @@ export function ChatComposer({ placeholder, onSubmit, keyboardType = 'default' }
           alignItems: 'center',
           justifyContent: 'center',
         },
-        sendText: { color: colors.onInk, fontWeight: '800', fontSize: 17 },
+        sendText: { color: colors.onInk, fontWeight: '800', fontSize: 15 },
       }),
     [colors]
   );

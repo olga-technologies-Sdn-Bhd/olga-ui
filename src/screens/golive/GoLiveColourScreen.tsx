@@ -8,7 +8,7 @@ import { Screen } from '../../components/Screen';
 import { usePrefs } from '../../context/PrefsContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
-import { GO_LIVE_COLORS, goLiveColor } from '../../theme/goLiveColors';
+import { goLiveColor, goLiveColors } from '../../theme/goLiveColors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
 
@@ -23,7 +23,7 @@ export function GoLiveColourScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { prefs, setGoLiveColor } = usePrefs();
-  const selected = goLiveColor(prefs.goLiveColor);
+  const selected = goLiveColor(prefs.goLiveColor, colors.charcoal);
 
   return (
     <Screen>
@@ -39,7 +39,7 @@ export function GoLiveColourScreen({ navigation }: Props) {
 
       <Text style={styles.sectionTitle}>Pick one</Text>
       <View style={styles.row}>
-        {GO_LIVE_COLORS.map((c) => {
+        {goLiveColors(colors.charcoal).map((c) => {
           const on = c.key === selected.key;
           return (
             <Pressable
@@ -76,8 +76,8 @@ export function GoLiveColourScreen({ navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, flexShrink: 1 },
-    sub: { fontSize: 13, lineHeight: 19, color: colors.muted },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, flexShrink: 1 },
+    sub: { fontSize: 12, lineHeight: 18, color: colors.muted },
     sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 6 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
     ring: { padding: 3, borderRadius: 24, borderWidth: 2, borderColor: 'transparent' },

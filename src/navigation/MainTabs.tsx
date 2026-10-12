@@ -18,7 +18,7 @@ const ICONS: Record<keyof MainTabParamList, LucideIcon> = {
   ChatTab: MessageCircle,
 };
 
-const ICON_SIZE = 26;
+const ICON_SIZE = 24;
 
 const LABELS: Record<keyof MainTabParamList, string> = {
   HomeTab: 'Home',
@@ -42,11 +42,11 @@ export function MainTabs() {
           tabBarStyle: {
             backgroundColor: colors.surface,
             borderTopColor: colors.line,
-            height: 64 + bottom,
-            paddingTop: 8,
+            height: 58 + bottom,
+            paddingTop: 6,
             paddingBottom: Math.max(bottom, 8),
           },
-          tabBarLabelStyle: { fontSize: 12, fontWeight: '600', marginTop: 2 },
+          tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
           tabBarIcon: ({ color, focused }) => {
             const Icon = ICONS[route.name as keyof MainTabParamList];
             // Go Live turns green while the member is live.

@@ -16,7 +16,7 @@ import { ConsentPurpose, GoLiveBlocker, useLive } from '../../context/LiveContex
 import { usePrefs } from '../../context/PrefsContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
-import { GO_LIVE_COLORS, goLiveColor } from '../../theme/goLiveColors';
+import { goLiveColor, goLiveColors } from '../../theme/goLiveColors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
 import { topMatches } from './LiveMatchesScreen';
@@ -75,7 +75,7 @@ export function GoLiveScreen({ navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { events } = useEvents();
   const { prefs, setGoLiveColor } = usePrefs();
-  const disc = goLiveColor(prefs.goLiveColor);
+  const disc = goLiveColor(prefs.goLiveColor, colors.charcoal);
   const {
     activeEvent,
     setActiveEvent,
@@ -368,7 +368,7 @@ export function GoLiveScreen({ navigation }: Props) {
       {error && <Text style={styles.error}>{error}</Text>}
 
       <View style={styles.colors}>
-        {GO_LIVE_COLORS.map((c) => (
+        {goLiveColors(colors.charcoal).map((c) => (
           <Pressable
             key={c.key}
             onPress={() => setGoLiveColor(c.key)}
@@ -396,12 +396,12 @@ const makeStyles = (colors: ThemeColors) =>
     flex: { flex: 1, minWidth: 0 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
     eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 4 },
-    h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
-    lead: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: '700', color: colors.text, textAlign: 'center' },
-    center: { fontSize: 13, lineHeight: 19, color: colors.muted, textAlign: 'center', marginTop: -6, paddingHorizontal: 8 },
-    sub: { fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
-    error: { color: colors.danger, fontSize: 13, textAlign: 'center' },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    lead: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'center' },
+    center: { fontSize: 12, lineHeight: 18, color: colors.muted, textAlign: 'center', marginTop: -6, paddingHorizontal: 8 },
+    sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
+    error: { color: colors.danger, fontSize: 12, textAlign: 'center' },
     roomCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     cardButton: { alignSelf: 'flex-start', marginTop: 12 },
     colors: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' },
@@ -409,5 +409,5 @@ const makeStyles = (colors: ThemeColors) =>
     swatchRingOn: { borderColor: colors.text },
     swatch: { width: 24, height: 24, borderRadius: 12 },
     swatchPearl: { borderWidth: 1, borderColor: colors.brand2 },
-    link: { fontSize: 13, fontWeight: '700', color: colors.text, textDecorationLine: 'underline', marginLeft: 6 },
+    link: { fontSize: 12, fontWeight: '700', color: colors.text, textDecorationLine: 'underline', marginLeft: 6 },
   });

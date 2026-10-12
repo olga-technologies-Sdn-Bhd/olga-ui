@@ -174,13 +174,13 @@ const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     eyebrow: { flex: 1, fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text },
-    h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 4 },
-    sub: { fontSize: 13, lineHeight: 19, color: colors.muted, marginTop: 4 },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 4 },
+    sub: { fontSize: 12, lineHeight: 18, color: colors.muted, marginTop: 4 },
     sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 6 },
     tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     consequence: { backgroundColor: colors.accentSoft, borderRadius: radius.md, padding: 14, marginTop: 6 },
-    consequenceText: { fontSize: 13, lineHeight: 19, color: colors.text },
+    consequenceText: { fontSize: 12, lineHeight: 18, color: colors.text },
     bold: { fontWeight: '800' },
-    error: { fontSize: 13, color: colors.danger, textAlign: 'center' },
+    error: { fontSize: 12, color: colors.danger, textAlign: 'center' },
   });

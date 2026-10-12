@@ -321,6 +321,7 @@
 					"-ObjC",
 					"-lc++",
 				);
+				OLGA_AUTH_SCHEME = "olga-dev";
 				PRODUCT_BUNDLE_IDENTIFIER = com.olga.connect;
 				PRODUCT_NAME = OlgaMobile;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -360,6 +361,7 @@
 					"-ObjC",
 					"-lc++",
 				);
+				OLGA_AUTH_SCHEME = "olga-dev";
 				PRODUCT_BUNDLE_IDENTIFIER = com.olga.connect;
 				PRODUCT_NAME = OlgaMobile;
 				PROVISIONING_PROFILE_SPECIFIER = "";

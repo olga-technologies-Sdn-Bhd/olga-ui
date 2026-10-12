@@ -107,9 +107,9 @@ function roleLabel(code: string) {
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginBottom: 4 },
-  h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text },
-  sub: { fontSize: 13, color: colors.muted, marginTop: 7, lineHeight: 19 },
-  h3: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.text },
-  sub2: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text },
+  sub: { fontSize: 12, color: colors.muted, marginTop: 7, lineHeight: 18 },
+  h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+  sub2: { fontSize: 12, color: colors.muted, marginTop: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 });
