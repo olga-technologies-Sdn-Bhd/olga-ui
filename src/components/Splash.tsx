@@ -6,9 +6,9 @@ const LOGO = require('../assets/images/olga-logo.png');
 const LOGO_SIZE = 288;
 
 // The logo breathes: one second in, one second out, on a sine curve so it
-// never jolts. The splash holds for two full breaths.
+// never jolts. The splash holds for three full breaths, six seconds.
 const PHASE_MS = 1000;
-export const SPLASH_MIN_MS = 4 * PHASE_MS;
+export const SPLASH_MIN_MS = 6 * PHASE_MS;
 
 export function Splash() {
   const scale = useRef(new Animated.Value(1)).current;

@@ -27,6 +27,9 @@ export function useTopInset() {
 // the screen updates when the data arrives.
 const REFRESH_SPINNER_MAX_MS = 10000;
 
+// Room at the bottom of every screen so content clears the floating tab bar.
+export const FLOATING_TAB_SPACE = 100;
+
 export function usePullToRefresh(onRefresh?: () => Promise<void>) {
   const [refreshing, setRefreshing] = useState(false);
   const latest = useRef(0);
@@ -58,7 +61,7 @@ export function Screen({ children, scroll = true, style, background, onRefresh }
         flex: { flex: 1 },
         container: { flex: 1, backgroundColor: colors.bg },
         transparent: { backgroundColor: 'transparent' },
-        content: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
+        content: { paddingHorizontal: 20, paddingBottom: FLOATING_TAB_SPACE, gap: 12 },
       }),
     [colors]
   );
