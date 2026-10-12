@@ -36,6 +36,9 @@ export function MainTabs() {
   return (
     <>
       <Tab.Navigator
+        // The pill floats above the home indicator, so the library must not pad
+        // the tabs for it again (that pushed them off centre).
+        safeAreaInsets={{ bottom: 0 }}
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarActiveTintColor: colors.brand,
@@ -46,8 +49,8 @@ export function MainTabs() {
             marginHorizontal: 32,
             bottom: Math.max(bottom, 8) + 6,
             height: FLOATING_TAB_HEIGHT,
-            paddingTop: 5,
-            paddingBottom: 5,
+            paddingTop: 0,
+            paddingBottom: 0,
             borderRadius: FLOATING_TAB_HEIGHT / 2,
             backgroundColor: colors.glass,
             borderWidth: 1,
@@ -57,6 +60,7 @@ export function MainTabs() {
             elevation: 0,
             shadowOpacity: 0,
           },
+          tabBarItemStyle: { height: FLOATING_TAB_HEIGHT - 2, padding: 0, justifyContent: 'center' },
           tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginTop: 0 },
           tabBarIcon: ({ color, focused }) => {
             const Icon = ICONS[route.name as keyof MainTabParamList];
