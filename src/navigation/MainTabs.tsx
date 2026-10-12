@@ -1,5 +1,5 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { CalendarDays, House, LucideIcon, MessageCircle, Radio } from 'lucide-react-native';
+import { House, LucideIcon, MessageCircle, Radio, Ticket } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLive } from '../context/LiveContext';
 import { CommitsStack } from './CommitsStack';
@@ -14,7 +14,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const ICONS: Record<keyof MainTabParamList, LucideIcon> = {
   HomeTab: House,
   GoLiveTab: Radio,
-  EventsTab: CalendarDays,
+  EventsTab: Ticket,
   ChatTab: MessageCircle,
 };
 

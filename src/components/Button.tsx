@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react
 import { useTheme } from '../theme/ThemeContext';
 import { fonts } from '../theme/typography';
 
-// charcoal: Commit / Accept (soft charcoal #3A3531, white text in both themes).
+// charcoal: Commit / Accept (navy, white text in both themes).
 type Variant = 'primary' | 'secondary' | 'ghost' | 'charcoal';
 
 type Props = {

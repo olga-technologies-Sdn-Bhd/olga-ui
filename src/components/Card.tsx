@@ -18,10 +18,12 @@ export function Card({ children, soft, style }: Props) {
       StyleSheet.create({
         base: {
           backgroundColor: colors.surface,
-          borderWidth: 1,
-          borderColor: colors.line,
           borderRadius: radius.lg,
           padding: 16,
+          // A hairline, never an elevation shadow: on Android the shadow turns
+          // into a square-cornered box behind the card while screens animate.
+          borderWidth: 1,
+          borderColor: colors.line,
         },
         soft: { backgroundColor: colors.accentSoft, borderWidth: 0 },
       }),

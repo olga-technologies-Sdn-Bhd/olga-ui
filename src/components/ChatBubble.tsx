@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
+import { fonts } from '../theme/typography';
 
 type Props = {
   from: 'them' | 'me';
   text: string;
 };
 
-// Matches the prototype's `.chat.them` / `.chat.me` bubble styling.
+// Ol-ga's messages sit on the left with her avatar; the member's on the right.
 export function ChatBubble({ from, text }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(
@@ -15,6 +16,20 @@ export function ChatBubble({ from, text }: Props) {
       StyleSheet.create({
         wrap: { maxWidth: '82%', alignSelf: 'flex-start' },
         wrapMe: { alignSelf: 'flex-end' },
+        row: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, maxWidth: '92%' },
+        bubble: { flexShrink: 1 },
+        // Ol-ga's avatar is her wordmark: black on white, in both themes.
+        olga: {
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: '#FFFFFF',
+          borderWidth: 1,
+          borderColor: colors.line,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        olgaText: { fontFamily: fonts.bodyRegular, fontSize: 11, fontWeight: '400', color: '#000000' },
         text: {
           paddingVertical: 12,
           paddingHorizontal: 14,
@@ -30,9 +45,19 @@ export function ChatBubble({ from, text }: Props) {
     [colors]
   );
 
+  if (from === 'them') {
+    return (
+      <View style={styles.row}>
+        <View style={styles.olga}>
+          <Text style={styles.olgaText}>Ol-ga</Text>
+        </View>
+        <Text style={[styles.text, styles.textThem, styles.bubble]}>{text}</Text>
+      </View>
+    );
+  }
   return (
-    <View style={[styles.wrap, from === 'me' && styles.wrapMe]}>
-      <Text style={[styles.text, from === 'me' ? styles.textMe : styles.textThem]}>{text}</Text>
+    <View style={[styles.wrap, styles.wrapMe]}>
+      <Text style={[styles.text, styles.textMe]}>{text}</Text>
     </View>
   );
 }

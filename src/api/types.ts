@@ -188,6 +188,19 @@ export type PresenceRequest = {
 
 export type IntentType = 'WANT' | 'OFFER';
 
+// GET /v1/events/{eventId}/live-match-count: how many live members clear the
+// threshold for the member's own WANT intent. Private, never cached.
+export type LiveMatchCountResponse = {
+  event_id: string;
+  intent_id: string;
+  threshold: number;
+  require_reciprocal: boolean;
+  count: number;
+  candidates_evaluated: number;
+  candidate_limit_reached: boolean;
+  model_version?: string;
+};
+
 export type IntentStatus = 'MATCH_READY' | 'FAILED' | (string & {});
 
 export type UpsertIntentRequest = {

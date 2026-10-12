@@ -2,9 +2,10 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { CalendarDays, Check, ChevronRight, SlidersHorizontal } from 'lucide-react-native';
+import { Check, ChevronRight, SlidersHorizontal, Ticket } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { coreApi } from '../../api/core';
 import type { Meeting } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
@@ -50,6 +51,13 @@ type Update = {
   icon: React.ReactNode;
   onPress?: () => void;
 };
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function greeting(date: Date) {
+  const hour = date.getHours();
+  return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+}
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -158,7 +166,7 @@ export function HomeScreen({ navigation }: Props) {
           meta: ['Event', eventDay(e.starts_at, now)].filter(Boolean).join(' · '),
           title: e.name,
           body: `${started ? ' is on now.' : isRegistered(e) ? ' is coming up.' : ''}${isRegistered(e) ? ' You are registered.' : started ? ' Registration is open.' : ' is open for registration.'}${attending}`,
-          icon: <CalendarDays size={20} color={colors.text} />,
+          icon: <Ticket size={20} color={colors.text} />,
           onPress: () => navigation.navigate('EventsTab', { screen: 'EventDetail', params: { eventId: e.event_id } }),
         };
       }),
@@ -179,14 +187,44 @@ export function HomeScreen({ navigation }: Props) {
   return (
     <Screen onRefresh={refresh} style={styles.page}>
       <View style={styles.header}>
+        <Text style={styles.brand}>Ol-ga</Text>
         <Pressable onPress={() => navigation.navigate('Profile')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Your account">
           <Avatar initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" dark />
         </Pressable>
-        <Text style={styles.brand}>Ol-ga</Text>
-        <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.capital}>
+      <View>
+        <Text style={styles.date}>
+          {WEEKDAYS[today.getDay()]} {today.getDate()} {MONTHS[today.getMonth()]}
+        </Text>
+        <Text style={styles.greeting} numberOfLines={1}>
+          {greeting(today)}
+          {firstName ? `, ${firstName}` : ''}
+        </Text>
+      </View>
+
+      <Pressable
+        onPress={() => navigation.navigate('ProfileSetup')}
+        accessibilityRole="button"
+        hitSlop={8}
+        style={({ pressed }) => [styles.setup, pressed && styles.pressed]}
+      >
+        <Text style={styles.setupText}>Let me help you set up your profile</Text>
+        <ChevronRight size={15} color={colors.muted} />
+      </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [styles.capital, pressed && styles.pressed]}
+        onPress={() => setIndexSoon(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Your Social Capital Graph"
+      >
+        <LinearGradient
+          colors={[colors.cardFrom, colors.cardTo]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.capitalTop}>
           <Text style={styles.capitalTitle} numberOfLines={1}>
             {firstName ? `${firstName}'s Social Capital` : 'My Social Capital'}
@@ -198,16 +236,11 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         </View>
         <Text style={styles.count}>{relationships === null ? '–' : relationships.toLocaleString('en-US')}</Text>
-        <Text style={styles.countLabel}>Confirmed professional relationships</Text>
-        <Pressable
-          style={({ pressed }) => [styles.indexButton, pressed && styles.pressed]}
-          onPress={() => setIndexSoon(true)}
-          accessibilityRole="button"
-        >
-          <Text style={styles.indexLabel}>View Social Capital Index</Text>
-          <ChevronRight size={18} color="#171310" />
-        </Pressable>
-      </View>
+        <View style={styles.capitalFoot}>
+          <Text style={styles.countLabel}>Confirmed professional relationships</Text>
+          <ChevronRight size={22} color={colors.white} />
+        </View>
+      </Pressable>
 
       <View style={styles.updatesHead}>
         <Text style={styles.h2}>Updates</Text>
@@ -217,18 +250,19 @@ export function HomeScreen({ navigation }: Props) {
           </Text>
         )}
       </View>
-      <View style={styles.chips}>
+      <View style={styles.tabs}>
         {FILTERS.map((f) => {
           const active = f.key === filter;
           return (
             <Pressable
               key={f.key}
               onPress={() => setFilter(f.key)}
-              style={[styles.chip, active && styles.chipActive]}
-              accessibilityRole="button"
+              style={styles.tab}
+              accessibilityRole="tab"
               accessibilityState={{ selected: active }}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.label}</Text>
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>{f.label}</Text>
+              <View style={[styles.tabLine, active && styles.tabLineActive]} />
             </Pressable>
           );
         })}
@@ -252,10 +286,10 @@ export function HomeScreen({ navigation }: Props) {
             {filter === 'network'
               ? 'People you meet through a Commit appear here.'
               : filter === 'event'
-                ? 'No upcoming events right now.'
+                ? 'More events are on the way.'
                 : filter === 'tip'
                   ? "You're all set."
-                  : 'Nothing new yet.'}
+                  : 'New updates will appear here.'}
           </Text>
         )}
       </View>
@@ -263,8 +297,8 @@ export function HomeScreen({ navigation }: Props) {
       <ComingSoonModal
         visible={indexSoon}
         onClose={() => setIndexSoon(false)}
-        title="Social Capital Index"
-        message="Your full index is on its way. For now, this card shows your confirmed relationships."
+        title="Your Social Capital Graph"
+        message="Your graph is coming soon. For now, this card shows your confirmed relationships."
         icon="◎"
       />
     </Screen>
@@ -275,47 +309,44 @@ const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
     page: { backgroundColor: colors.surface },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    headerSpacer: { width: 34 },
-    brand: { fontSize: 17, color: colors.text },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+    brand: { fontSize: 21, color: colors.text },
+    date: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.muted },
+    greeting: { fontFamily: fonts.headingBold, fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.text },
+    // A quiet line, not a call to action: no box, small muted text.
+    setup: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 32, alignSelf: 'flex-start' },
+    setupText: { fontSize: 13, color: colors.muted },
     // The one large dark element on the screen, the same in both themes.
-    capital: { backgroundColor: colors.charcoal, borderRadius: radius.xl, padding: 16, marginHorizontal: -6, marginTop: 2 },
+    capital: {
+      backgroundColor: colors.charcoal,
+      borderRadius: radius.xl,
+      padding: 18,
+      marginHorizontal: 0,
+      marginTop: 2,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.08)',
+    },
     capitalTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    capitalTitle: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.amber },
+    capitalTitle: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.champagne },
     month: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
     monthText: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.white },
     count: { fontFamily: fonts.headingBold, fontSize: 40, lineHeight: 44, fontWeight: '700', color: colors.white, marginTop: 6 },
-    countLabel: { fontSize: 14, color: 'rgba(255,255,255,0.86)' },
-    indexButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      backgroundColor: colors.white,
-      borderRadius: 999,
-      minHeight: 44,
-      marginTop: 14,
-    },
-    indexLabel: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: '#171310' },
+    capitalFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 2 },
+    countLabel: { flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.78)' },
     pressed: { opacity: 0.85 },
     updatesHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginTop: 8 },
     h2: { fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: '700', color: colors.text },
     sub: { fontSize: 12, color: colors.muted },
-    chips: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-    chip: {
-      minHeight: 32,
-      justifyContent: 'center',
-      paddingHorizontal: 14,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: colors.brand2,
-      backgroundColor: colors.surface,
-    },
-    chipActive: { backgroundColor: colors.selected, borderColor: colors.selected },
-    chipText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
-    chipTextActive: { color: colors.onSelected },
+    // Filters as text tabs with an underline, edge to edge above the list.
+    tabs: { flexDirection: 'row', marginHorizontal: -20, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
+    tab: { flex: 1, alignItems: 'center', paddingTop: 8, minHeight: 44 },
+    tabText: { fontSize: 14, color: colors.muted, paddingBottom: 9 },
+    tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
+    tabLine: { height: 3, width: 44, borderRadius: 2, backgroundColor: 'transparent' },
+    tabLineActive: { backgroundColor: colors.selected },
     // Rows run edge to edge, split by hairlines.
-    list: { marginHorizontal: -20, borderTopWidth: 1, borderTopColor: colors.line, marginTop: 4 },
+    list: { marginHorizontal: -20 },
     row: {
       flexDirection: 'row',
       alignItems: 'flex-start',

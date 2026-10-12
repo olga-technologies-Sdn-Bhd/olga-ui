@@ -11,9 +11,9 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { fonts } from './src/theme/typography';
 
-// App-wide body font (Instrument Sans) so plain copy needs no explicit
+// App-wide body font (the system typeface) so plain copy needs no explicit
 // fontFamily — screens only set one explicitly for headings, scores and
-// small uppercase labels (Outfit / IBM Plex Mono).
+// small uppercase labels.
 (Text as any).defaultProps = { ...(Text as any).defaultProps, style: [{ fontFamily: fonts.bodyRegular }, (Text as any).defaultProps?.style] };
 (TextInput as any).defaultProps = { ...(TextInput as any).defaultProps, style: [{ fontFamily: fonts.bodyRegular }, (TextInput as any).defaultProps?.style] };
 
