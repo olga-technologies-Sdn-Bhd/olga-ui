@@ -71,6 +71,10 @@ export type ProfileBody = {
   completeness_score: number;
   e_tag?: string;
   updated_at: string;
+  // /v1/me/profile only: the member's own masked contact details. Omitted
+  // when the member has no value; the full values are never returned.
+  email_hint?: string;
+  phone_hint?: string;
 };
 export type Profile = WithEtag<ProfileBody>;
 

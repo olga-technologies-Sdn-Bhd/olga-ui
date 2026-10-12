@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
+import { coreApi } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
@@ -23,6 +24,23 @@ export function ProfileScreen({ navigation }: Props) {
   const { colors, scheme, setScheme } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [loggingOut, setLoggingOut] = useState(false);
+  // The server only ever returns the masked number, so that is what a
+  // reinstall, a new device or a fresh sign-in shows.
+  const [phoneHint, setPhoneHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!memberId) return;
+    let active = true;
+    coreApi
+      .getMyProfile()
+      .then((profile) => {
+        if (active) setPhoneHint(profile.phone_hint ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [memberId]);
 
   function confirmLogOut() {
     Alert.alert('Log out?', 'You can sign back in any time with the same email.', [
@@ -56,7 +74,7 @@ export function ProfileScreen({ navigation }: Props) {
       <Card style={styles.list}>
         <Row label="Email" value={email} styles={styles} />
         <View style={styles.divider} />
-        <Row label="Mobile" value={mobile} styles={styles} />
+        <Row label="Mobile" value={mobile ?? phoneHint} styles={styles} />
         <View style={styles.divider} />
         <Row label="Member ID" value={memberId} styles={styles} small />
         <View style={styles.divider} />
