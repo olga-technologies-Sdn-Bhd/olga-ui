@@ -78,8 +78,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 14,
   },
-  icon: { fontSize: 28 },
-  title: { fontFamily: fonts.headingExtraBold, fontSize: 19, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  message: { fontSize: 14, lineHeight: 20, color: colors.muted, textAlign: 'center', marginTop: 8 },
+  icon: { fontSize: 22 },
+  title: { fontFamily: fonts.headingExtraBold, fontSize: 16, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  message: { fontSize: 13, lineHeight: 19, color: colors.muted, textAlign: 'center', marginTop: 8 },
   button: { alignSelf: 'stretch', marginTop: 20 },
 });

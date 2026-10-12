@@ -101,15 +101,15 @@ function Row({
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   identity: { alignItems: 'center', gap: 6, marginTop: 4 },
-  h2: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 8 },
-  sub: { fontSize: 13, color: colors.muted },
+  h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 8 },
+  sub: { fontSize: 12, color: colors.muted },
   sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
   list: { paddingVertical: 4 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 10 },
   rowText: { flex: 1 },
-  label: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
-  value: { fontSize: 14, color: colors.muted, flexShrink: 1, textAlign: 'right' },
-  valueSmall: { fontSize: 12 },
+  label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
+  value: { fontSize: 13, color: colors.muted, flexShrink: 1, textAlign: 'right' },
+  valueSmall: { fontSize: 11 },
   divider: { height: 1, backgroundColor: colors.line },
   logout: { marginTop: 8 },
 });

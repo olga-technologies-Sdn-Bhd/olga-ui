@@ -62,7 +62,7 @@ export function Screen({ children, scroll = true, style, background, onRefresh }
       }),
     [colors]
   );
-  const content = [styles.content, { paddingTop: 20 + topInset }];
+  const content = [styles.content, { paddingTop: 12 + topInset }];
   const containerStyle = [styles.container, background ? styles.transparent : null, style];
 
   const body = scroll ? (

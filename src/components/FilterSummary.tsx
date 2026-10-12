@@ -58,8 +58,8 @@ const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
     eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    intent: { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 21, fontWeight: '700', color: colors.text, marginTop: 10 },
+    intent: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 20, fontWeight: '700', color: colors.text, marginTop: 10 },
     missing: { fontFamily: fonts.bodyRegular, color: colors.muted, fontWeight: '400' },
     tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-    detail: { fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 10 },
+    detail: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 10 },
   });
