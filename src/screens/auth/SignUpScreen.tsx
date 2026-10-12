@@ -177,28 +177,28 @@ export function SignUpScreen() {
         <Text style={styles.eyebrow}>Join the room</Text>
       </View>
 
-      <Pill label="Made for real-world connection" tone="active" />
-      <Text style={styles.h1}>Meet people who actually matter.</Text>
+      <Pill label="Made for real-world connections" tone="active" />
+      <Text style={styles.h1}>Meet people who matter most.</Text>
       <Text style={styles.sub}>
-        A faster way to find the right conversations at events — without awkward networking.
+        The right conversations at every event, with the people who matter to you.
       </Text>
 
       <View style={styles.chatStack}>
         <ChatBubble
           from="them"
-          text="Hi — I'm Ol-ga. What's your email? We'll send a one-time code there — already have an account? Same email signs you back in."
+          text="Hi, I'm Ol-ga. It's lovely to have you here. What's your email? I'll send a one-time code to it. Already with us? The same email brings you right back in."
         />
         {email !== '' && <ChatBubble from="me" text={email} />}
 
-        {step === 'verifying' && <ChatBubble from="them" text="One sec — verifying that…" />}
+        {step === 'verifying' && <ChatBubble from="them" text="One moment while I check that…" />}
         {step === 'verifying' && slowVerify && (
-          <ChatBubble from="them" text="Still connecting — our server is waking up. This can take up to a minute…" />
+          <ChatBubble from="them" text="Still with you. I'm just waking things up, which can take up to a minute…" />
         )}
-        {step === 'otp' && <ChatBubble from="them" text="Enter the verification code sent to your email." />}
+        {step === 'otp' && <ChatBubble from="them" text="I've sent a verification code to your email. Enter it here when it arrives." />}
 
         {(step === 'name' || step === 'mobile' || step === 'registering') && (
           <>
-            <ChatBubble from="them" text="Login or signup successful! Two quick things and you're in the room." />
+            <ChatBubble from="them" text="You're in. Two quick things and I'll take you to the room." />
             <ChatBubble from="them" text="What should I call you?" />
           </>
         )}
@@ -207,7 +207,7 @@ export function SignUpScreen() {
         {(step === 'mobile' || step === 'registering') && (
           <ChatBubble
             from="them"
-            text={`Good to meet you, ${name}. What's the best number to reach you on? We'll only use it for meetup coordination — never spam.`}
+            text={`Lovely to meet you, ${name}. What's the best number to reach you on? I'll only use it to coordinate your meetups.`}
           />
         )}
         {mobile !== '' && <ChatBubble from="me" text={mobile} />}

@@ -30,7 +30,7 @@ export function isEventLive(event: CoreEvent, now = Date.now()) {
   return new Date(event.starts_at).getTime() <= now && now < new Date(event.ends_at).getTime();
 }
 
-// Upcoming (Registered, then Open for registration) and Past, as flat rows.
+// Upcoming (Registered, then Open for registration) and Completed Events, as flat rows.
 // The location filter lists the venues of the published events. Built to take
 // other room types (venues) in Phase 2: a row only needs a name, times and a
 // venue.
@@ -173,7 +173,7 @@ export function EventsScreen({ navigation }: Props) {
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
               >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{key === 'upcoming' ? 'Upcoming' : 'Past'}</Text>
+                <Text style={[styles.tabText, active && styles.tabTextActive]}>{key === 'upcoming' ? 'Upcoming' : 'Completed Events'}</Text>
                 <View style={[styles.tabLine, active && styles.tabLineActive]} />
               </Pressable>
             );
@@ -198,8 +198,8 @@ export function EventsScreen({ navigation }: Props) {
               </>
             )}
             <Text style={styles.section}>Open for registration</Text>
-            {open.length > 0 ? open.map(renderEvent) : <Text style={styles.note}>No other upcoming events right now.</Text>}
-            <Text style={styles.footnote}>Completed events move to Past, along with the professionals you met.</Text>
+            {open.length > 0 ? open.map(renderEvent) : <Text style={styles.note}>More events are on the way.</Text>}
+            <Text style={styles.footnote}>Events you attend move to Completed Events, along with the professionals you met.</Text>
           </>
         )}
 

@@ -143,7 +143,7 @@ export function CommitsScreen({ navigation }: Props) {
       {notice && <Text style={styles.sub}>{notice}</Text>}
       {incoming?.length === 0 && (
         <Card>
-          <Text style={styles.sub}>No Commits right now. When someone in your room commits to meeting you, it shows here.</Text>
+          <Text style={styles.sub}>When someone in your room commits to meeting you, it shows here.</Text>
         </Card>
       )}
 

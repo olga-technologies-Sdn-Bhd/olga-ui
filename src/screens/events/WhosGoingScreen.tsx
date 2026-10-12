@@ -73,7 +73,7 @@ export function WhosGoingScreen({ route, navigation }: Props) {
           <Button label="Try again" variant="secondary" small onPress={load} />
         </View>
       )}
-      {data && attendees.length === 0 && <Text style={styles.sub}>Nobody else has signed up yet.</Text>}
+      {data && attendees.length === 0 && <Text style={styles.sub}>You're among the first to sign up.</Text>}
 
       <View style={{ gap: 10 }}>
         {shown.map((person) => (

@@ -2,7 +2,7 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { CalendarDays, Check, ChevronRight, SlidersHorizontal } from 'lucide-react-native';
+import { Check, ChevronRight, SlidersHorizontal, Ticket } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
@@ -158,7 +158,7 @@ export function HomeScreen({ navigation }: Props) {
           meta: ['Event', eventDay(e.starts_at, now)].filter(Boolean).join(' · '),
           title: e.name,
           body: `${started ? ' is on now.' : isRegistered(e) ? ' is coming up.' : ''}${isRegistered(e) ? ' You are registered.' : started ? ' Registration is open.' : ' is open for registration.'}${attending}`,
-          icon: <CalendarDays size={20} color={colors.text} />,
+          icon: <Ticket size={20} color={colors.text} />,
           onPress: () => navigation.navigate('EventsTab', { screen: 'EventDetail', params: { eventId: e.event_id } }),
         };
       }),
@@ -204,7 +204,7 @@ export function HomeScreen({ navigation }: Props) {
           onPress={() => setIndexSoon(true)}
           accessibilityRole="button"
         >
-          <Text style={styles.indexLabel}>View Social Capital Index</Text>
+          <Text style={styles.indexLabel}>Your Social Capital Graph</Text>
           <ChevronRight size={18} color="#171310" />
         </Pressable>
       </View>
@@ -252,10 +252,10 @@ export function HomeScreen({ navigation }: Props) {
             {filter === 'network'
               ? 'People you meet through a Commit appear here.'
               : filter === 'event'
-                ? 'No upcoming events right now.'
+                ? 'More events are on the way.'
                 : filter === 'tip'
                   ? "You're all set."
-                  : 'Nothing new yet.'}
+                  : 'New updates will appear here.'}
           </Text>
         )}
       </View>
@@ -263,8 +263,8 @@ export function HomeScreen({ navigation }: Props) {
       <ComingSoonModal
         visible={indexSoon}
         onClose={() => setIndexSoon(false)}
-        title="Social Capital Index"
-        message="Your full index is on its way. For now, this card shows your confirmed relationships."
+        title="Your Social Capital Graph"
+        message="Your graph is coming soon. For now, this card shows your confirmed relationships."
         icon="◎"
       />
     </Screen>
