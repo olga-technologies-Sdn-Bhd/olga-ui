@@ -67,7 +67,7 @@ export function FiltersScreen({ navigation }: Props) {
         <Button label="Done" variant="secondary" small onPress={handleDone} />
       </View>
 
-      <Text style={styles.sectionTitle}>What you're looking for</Text>
+      <Text style={styles.sectionTitle}>Your intent</Text>
       <TextInput
         value={intent}
         onChangeText={setIntent}
@@ -76,7 +76,7 @@ export function FiltersScreen({ navigation }: Props) {
         placeholderTextColor={colors.muted}
         multiline
         style={[styles.intent, !canEditIntent && styles.intentLocked]}
-        accessibilityLabel="What you're looking for"
+        accessibilityLabel="Your intent"
       />
       <Text style={styles.hint}>
         {canEditIntent

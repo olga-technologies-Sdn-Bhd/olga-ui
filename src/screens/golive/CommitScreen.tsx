@@ -22,11 +22,6 @@ type Props = NativeStackScreenProps<GoLiveStackParamList, 'Commit'>;
 const WHEN_ORDER: CommitWhen[] = ['NOW', 'IN_10_MIN', 'NEXT_BREAK', 'AFTER_SESSION'];
 const THEIR_CHOICE = 'THEIR_CHOICE';
 
-function formatTime(iso: string) {
-  const date = new Date(iso);
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
 // Board 16. A commitment to a short meeting here, while both are in the room.
 // Not a connection request. Five per person per room; expires when the room
 // closes; the receiver sees role, intent, score and plan, never the name.
@@ -120,7 +115,7 @@ export function CommitScreen({ route, navigation }: Props) {
           <Text style={styles.h3}>Commit sent</Text>
           <Text style={styles.consequenceText}>
             If they accept, you both see names at once. If not, nothing happens and you're never told.
-            {activeEvent ? ` It disappears at ${formatTime(activeEvent.endsAt)} with the room.` : ''}
+            {activeEvent ? ' It disappears when the room closes.' : ''}
           </Text>
         </View>
       ) : (
@@ -144,7 +139,7 @@ export function CommitScreen({ route, navigation }: Props) {
             <Text style={styles.consequenceText}>
               They see your role, intent and this plan. Not your name. If they <Text style={styles.bold}>accept</Text>, you
               both see names at once. If not, nothing happens and you're never told.
-              {activeEvent ? ` The request disappears at ${formatTime(activeEvent.endsAt)} with the room.` : ''}
+              {activeEvent ? ' The request disappears when the room closes.' : ''}
             </Text>
           </View>
         </>

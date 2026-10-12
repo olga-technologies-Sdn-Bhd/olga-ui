@@ -10,7 +10,6 @@ import { FilterSummary } from '../../components/FilterSummary';
 import { GoLiveDisc } from '../../components/GoLiveDisc';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
-import { LIVE_MODE_DURATION_MINUTES } from '../../config/env';
 import { isRegistered, useEvents } from '../../context/EventsContext';
 import { ConsentPurpose, GoLiveBlocker, useLive } from '../../context/LiveContext';
 import { usePrefs } from '../../context/PrefsContext';
@@ -64,10 +63,6 @@ const CONSENT_PROMPTS: Record<ConsentPurpose, { title: string; body: string }> =
 
 const CHECK_IN_NOTE = 'This event needs check-in: check in at the badge desk before you appear in matches.';
 
-function formatTime(date: Date) {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export function GoLiveScreen({ navigation }: Props) {
@@ -80,7 +75,6 @@ export function GoLiveScreen({ navigation }: Props) {
     activeEvent,
     setActiveEvent,
     isLive,
-    activeUntil,
     goLive,
     checkConsent,
     recordConsentDecision,
@@ -170,7 +164,7 @@ export function GoLiveScreen({ navigation }: Props) {
   async function handleGoLive() {
     if (!activeEvent) return;
     if (!intentText.trim()) {
-      setError("Add what you're looking for first, so we can find your matches.");
+      setError('Set your intent first, so I can find your matches.');
       return;
     }
     setError(null);
@@ -285,11 +279,6 @@ export function GoLiveScreen({ navigation }: Props) {
     );
   }
 
-  const until = activeUntil ? formatTime(activeUntil) : null;
-  const expectedEnd = formatTime(
-    new Date(Math.min(now + LIVE_MODE_DURATION_MINUTES * 60000, new Date(room.ends_at).getTime()))
-  );
-
   // Board 08: live.
   if (isLive) {
     const count = topMatches(matches, passedIds).length;
@@ -301,12 +290,11 @@ export function GoLiveScreen({ navigation }: Props) {
             <Text style={styles.eyebrow}>{room.name}</Text>
             <Text style={styles.h2}>You're live</Text>
           </View>
-          {until && <Pill label={`● UNTIL ${until}`} tone="positive" />}
+          <Pill label="● LIVE" tone="positive" />
         </View>
         <GoLiveDisc
           waves
           label={searching ? 'SEARCHING' : ready ? `LIVE · ${count} READY` : 'LIVE'}
-          caption={until ? `LIVE UNTIL ${until}` : undefined}
           fill={disc.fill}
           textColor={disc.text}
           onPress={ready ? () => navigation.navigate('LiveMatches') : undefined}
@@ -362,7 +350,7 @@ export function GoLiveScreen({ navigation }: Props) {
       />
       <Text style={styles.lead}>Press and hold to Go Live</Text>
       <Text style={styles.center}>
-        Your three best matches in this room appear, and only they can see you. Nobody else. It ends at {expectedEnd}.
+        Your three best matches in this room appear, and only they can see you. Nobody else.
       </Text>
       {awaitingCheckIn && <Text style={styles.center}>{CHECK_IN_NOTE}</Text>}
       {error && <Text style={styles.error}>{error}</Text>}

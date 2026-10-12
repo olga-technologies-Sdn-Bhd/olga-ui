@@ -4,7 +4,7 @@
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
-        <!-- Same bone as the splash and the app, so no grey flash between them. -->
+        <!-- Same white as the splash, so no grey flash before the app draws. -->
         <item name="android:windowBackground">@color/splash_background</item>
     </style>
 

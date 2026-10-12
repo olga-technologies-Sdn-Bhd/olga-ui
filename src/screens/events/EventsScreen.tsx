@@ -9,7 +9,7 @@ import { CoreEvent } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { DateBlock } from '../../components/DateBlock';
-import { usePullToRefresh, useTopInset } from '../../components/Screen';
+import { FLOATING_TAB_SPACE, usePullToRefresh, useTopInset } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
 import { EventsStackParamList, MainTabParamList } from '../../navigation/types';
@@ -266,7 +266,7 @@ const makeStyles = (colors: ThemeColors) =>
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
     tabLine: { height: 3, width: 76, borderRadius: 2, backgroundColor: 'transparent' },
     tabLineActive: { backgroundColor: colors.selected },
-    content: { paddingBottom: 40 },
+    content: { paddingBottom: FLOATING_TAB_SPACE },
     section: { fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: '700', color: colors.text, paddingHorizontal: 20, marginTop: 16 },
     // Rows run edge to edge, split by hairlines.
     row: {

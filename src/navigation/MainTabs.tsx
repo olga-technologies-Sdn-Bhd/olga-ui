@@ -18,7 +18,8 @@ const ICONS: Record<keyof MainTabParamList, LucideIcon> = {
   ChatTab: MessageCircle,
 };
 
-const ICON_SIZE = 24;
+const ICON_SIZE = 21;
+const FLOATING_TAB_HEIGHT = 54;
 
 const LABELS: Record<keyof MainTabParamList, string> = {
   HomeTab: 'Home',
@@ -35,18 +36,32 @@ export function MainTabs() {
   return (
     <>
       <Tab.Navigator
+        // The pill floats above the home indicator, so the library must not pad
+        // the tabs for it again (that pushed them off centre).
+        safeAreaInsets={{ bottom: 0 }}
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarActiveTintColor: colors.brand,
           tabBarInactiveTintColor: colors.muted,
+          // A floating glass pill above the content, not a bar docked to the edge.
           tabBarStyle: {
-            backgroundColor: colors.surface,
-            borderTopColor: colors.line,
-            height: 58 + bottom,
-            paddingTop: 6,
-            paddingBottom: Math.max(bottom, 8),
+            position: 'absolute',
+            marginHorizontal: 32,
+            bottom: Math.max(bottom, 8) + 6,
+            height: FLOATING_TAB_HEIGHT,
+            paddingTop: 0,
+            paddingBottom: 0,
+            borderRadius: FLOATING_TAB_HEIGHT / 2,
+            backgroundColor: colors.glass,
+            borderWidth: 1,
+            borderTopWidth: 1,
+            borderColor: colors.glassLine,
+            borderTopColor: colors.glassLine,
+            elevation: 0,
+            shadowOpacity: 0,
           },
-          tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
+          tabBarItemStyle: { height: FLOATING_TAB_HEIGHT - 2, padding: 0, justifyContent: 'center' },
+          tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginTop: 0 },
           tabBarIcon: ({ color, focused }) => {
             const Icon = ICONS[route.name as keyof MainTabParamList];
             // Go Live turns green while the member is live.

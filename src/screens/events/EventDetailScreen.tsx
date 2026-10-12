@@ -177,7 +177,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
 
       <View style={styles.section}>
         <View style={styles.space}>
-          <Text style={styles.sectionTitle}>What you're looking for</Text>
+          <Text style={styles.sectionTitle}>Your intent</Text>
           {!editing && !!intentText.trim() && (
             <Pressable onPress={startEditing} hitSlop={10} accessibilityRole="button">
               <Text style={styles.link}>Edit</Text>
@@ -214,8 +214,8 @@ export function EventDetailScreen({ route, navigation }: Props) {
               <Plus size={18} color={colors.onBrand} strokeWidth={2.4} />
             </View>
             <View style={styles.flex}>
-              <Text style={styles.intentPrompt}>Add what you're looking for</Text>
-              <Text style={styles.goingSub}>I use it to find your matches in the room.</Text>
+              <Text style={styles.intentPrompt}>Set your intent</Text>
+              <Text style={styles.goingSub}>Tell me who you'd like to meet, and I'll find them in the room.</Text>
             </View>
           </Pressable>
         )}

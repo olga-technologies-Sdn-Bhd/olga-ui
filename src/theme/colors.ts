@@ -44,6 +44,9 @@ export const lightColors = {
   cardTo: '#111C2E',
   // Champagne: the small title on the navy card.
   champagne: '#D8C8A8',
+  // The floating tab bar: a translucent sheet with a faint edge.
+  glass: 'rgba(255,255,255,0.96)',
+  glassLine: 'rgba(20,27,38,0.10)',
   // Selected chip / active tab underline, and the text on it.
   selected: '#1B2A41',
   onSelected: '#ffffff',
@@ -87,6 +90,8 @@ export const darkColors = {
   cardFrom: '#3A3D43',
   cardTo: '#24262A',
   champagne: '#D8C8A8',
+  glass: 'rgba(32,34,37,0.96)',
+  glassLine: 'rgba(255,255,255,0.12)',
   selected: '#F2F3F4',
   onSelected: '#121314',
   danger: '#ff7a86',

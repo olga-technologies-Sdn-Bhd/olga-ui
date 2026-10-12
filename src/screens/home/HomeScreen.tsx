@@ -187,6 +187,7 @@ export function HomeScreen({ navigation }: Props) {
   return (
     <Screen onRefresh={refresh} style={styles.page}>
       <View style={styles.header}>
+        <View style={styles.headerSpacer} />
         <Text style={styles.brand}>Ol-ga</Text>
         <Pressable onPress={() => navigation.navigate('Profile')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Your account">
           <Avatar initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" dark />
@@ -310,7 +311,9 @@ const makeStyles = (colors: ThemeColors) =>
     flex: { flex: 1 },
     page: { backgroundColor: colors.surface },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-    brand: { fontSize: 21, color: colors.text },
+    // Same width as the avatar, so the wordmark sits in the true centre.
+    headerSpacer: { width: 34 },
+    brand: { flex: 1, textAlign: 'center', fontSize: 21, color: colors.text },
     date: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.muted },
     greeting: { fontFamily: fonts.headingBold, fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.text },
     // A quiet line, not a call to action: no box, small muted text.
