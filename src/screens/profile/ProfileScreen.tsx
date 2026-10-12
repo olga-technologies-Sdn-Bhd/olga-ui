@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { ChevronRight } from 'lucide-react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
@@ -10,6 +11,7 @@ import { Screen } from '../../components/Screen';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { APP_ENV } from '../../config/env';
 import { useAuth } from '../../context/AuthContext';
+import { useLive } from '../../context/LiveContext';
 import { HomeStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
@@ -22,6 +24,7 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'Profile'>;
 export function ProfileScreen({ navigation }: Props) {
   const { name, email, mobile, memberId, logOut } = useAuth();
   const { colors, scheme, setScheme } = useTheme();
+  const { intentText } = useLive();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [loggingOut, setLoggingOut] = useState(false);
   // The server only ever returns the masked number, so that is what a
@@ -69,6 +72,36 @@ export function ProfileScreen({ navigation }: Props) {
         <Text style={styles.h2}>{name ?? 'Your profile'}</Text>
         {email && <Text style={styles.sub}>{email}</Text>}
       </View>
+
+      <Text style={styles.sectionTitle}>Your profile</Text>
+      <Card style={styles.list}>
+        <Pressable
+          onPress={() => navigation.navigate('ProfileSetup')}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+        >
+          <View style={styles.rowText}>
+            <Text style={styles.label}>Headline and summary</Text>
+            <Text style={styles.sub}>What your matches see first</Text>
+          </View>
+          <ChevronRight size={18} color={colors.muted} />
+        </Pressable>
+        <View style={styles.divider} />
+        {/* Intent is edited in the Go Live filter. */}
+        <Pressable
+          onPress={() => navigation.getParent()?.navigate('GoLiveTab', { screen: 'Filters' })}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+        >
+          <View style={styles.rowText}>
+            <Text style={styles.label}>What you're looking for</Text>
+            <Text style={styles.sub} numberOfLines={2}>
+              {intentText.trim() || 'Add your intent, so I can find your matches'}
+            </Text>
+          </View>
+          <ChevronRight size={18} color={colors.muted} />
+        </Pressable>
+      </Card>
 
       <Text style={styles.sectionTitle}>Account</Text>
       <Card style={styles.list}>
@@ -125,6 +158,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   list: { paddingVertical: 4 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 10 },
   rowText: { flex: 1 },
+  pressed: { opacity: 0.7 },
   label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
   value: { fontSize: 13, color: colors.muted, flexShrink: 1, textAlign: 'right' },
   valueSmall: { fontSize: 11 },
