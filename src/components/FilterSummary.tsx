@@ -40,7 +40,7 @@ export function FilterSummary({ title, intent, filters, onChange }: Props) {
         <Button label="Change" variant="secondary" small onPress={onChange} />
       </View>
       <Text style={[styles.intent, !intent.trim() && styles.missing]}>
-        {intent.trim() || 'Add what you’re looking for so we can find your matches.'}
+        {intent.trim() || 'Set your intent, so I can find your matches.'}
       </Text>
       {filters.lookingFor.length > 0 && (
         <View style={styles.tags}>

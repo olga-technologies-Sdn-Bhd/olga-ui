@@ -3,6 +3,7 @@ import { getMemberId, makeApiClient, RequestOptions, withEtag } from './client';
 import type {
   IntentBody,
   IntentType,
+  LiveMatchCountResponse,
   MatchRequest,
   MatchRequestResponse,
   MatchRequestStatusResponse,
@@ -72,6 +73,14 @@ export const nlpApi = {
   requestMatches: async (body: MatchRequest, options?: RequestOptions): Promise<MatchRequestResponse> => {
     return client.post<MatchRequestResponse>('/v1/match-requests', body, nlp(options));
   },
+  // threshold is a fraction (74% -> 0.74). 404 REQUESTER_INTENT_NOT_READY
+  // means the WANT intent doesn't exist yet or is still processing: show
+  // nothing, never 0.
+  getLiveMatchCount: (eventId: string, intentId: string, threshold: number) =>
+    client.get<LiveMatchCountResponse>(
+      `/v1/events/${encodeURIComponent(eventId)}/live-match-count?intent_id=${encodeURIComponent(intentId)}&threshold=${threshold}&require_reciprocal=false`,
+      nlp()
+    ),
   getMatchRequest: (requestId: string) =>
     client.get<MatchRequestStatusResponse>(`/v1/match-requests/${encodeURIComponent(requestId)}`, nlp()),
 };

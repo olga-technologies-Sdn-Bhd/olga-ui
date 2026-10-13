@@ -1,16 +1,17 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Check, ChevronRight, Plus, Users } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ApiError } from '../../api/client';
+import { intentIdFor, nlpApi } from '../../api/nlp';
 import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { DateBlock } from '../../components/DateBlock';
-import { GoLiveMark } from '../../components/GoLiveMark';
 import { Screen } from '../../components/Screen';
 import { isRegistered, useEvents } from '../../context/EventsContext';
 import { useLive } from '../../context/LiveContext';
+import { usePrefs } from '../../context/PrefsContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
@@ -43,6 +44,34 @@ export function EventDetailScreen({ route, navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(intentText);
+  const { prefs } = usePrefs();
+  const minMatch = prefs.filters.minMatch;
+  // People live in this room who match the member's saved intent at their
+  // minimum match. null until known: no intent yet, still processing, or the
+  // call failed.
+  const [matchCount, setMatchCount] = useState<number | null>(null);
+  const canCount = Boolean(event && isRegistered(event) && isEventLive(event));
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!canCount) {
+        setMatchCount(null);
+        return;
+      }
+      let active = true;
+      nlpApi
+        .getLiveMatchCount(eventId, intentIdFor(eventId, 'WANT'), minMatch / 100)
+        .then((result) => {
+          if (active) setMatchCount(result.count);
+        })
+        .catch(() => {
+          if (active) setMatchCount(null);
+        });
+      return () => {
+        active = false;
+      };
+    }, [canCount, eventId, minMatch])
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -93,13 +122,18 @@ export function EventDetailScreen({ route, navigation }: Props) {
     navigation.getParent()?.navigate('GoLiveTab', { screen: 'GoLive' });
   }
 
+  function startEditing() {
+    setDraft(intentText);
+    setEditing(true);
+  }
+
   function saveIntent() {
     if (draft.trim()) setIntentText(draft.trim());
     setEditing(false);
   }
 
   return (
-    <Screen onRefresh={refresh}>
+    <Screen onRefresh={refresh} style={styles.page}>
       <BackHeader onBack={() => navigation.goBack()} />
 
       <View style={styles.titleRow}>
@@ -110,86 +144,105 @@ export function EventDetailScreen({ route, navigation }: Props) {
         </View>
       </View>
 
-      <View style={styles.stats}>
-        <Card style={styles.stat}>
-          <Text style={styles.statValue}>{event.attendee_count ?? '—'}</Text>
-          <Text style={styles.statLabel}>signed up</Text>
-        </Card>
-        {open && typeof event.live_count === 'number' && event.live_count > 0 && (
-          <Card style={{ ...styles.stat, ...styles.statLive }}>
-            <Text style={[styles.statValue, styles.statValueLive]}>{event.live_count}</Text>
-            <Text style={styles.statLabel}>live now</Text>
-          </Card>
-        )}
-      </View>
-
-      <Button label="See who's going" variant="secondary" onPress={() => navigation.navigate('WhosGoing', { eventId })} />
+      {/* One row for attendance: the count, and the way in to who's going. */}
+      <Pressable
+        onPress={() => navigation.navigate('WhosGoing', { eventId })}
+        accessibilityRole="button"
+        style={({ pressed }) => [styles.going, pressed && styles.pressed]}
+      >
+        <View style={styles.goingIcon}>
+          <Users size={18} color={colors.text} />
+        </View>
+        <View style={styles.flex}>
+          <Text style={styles.goingTitle}>
+            {typeof event.attendee_count === 'number'
+              ? `${event.attendee_count.toLocaleString('en-US')} ${event.attendee_count === 1 ? 'professional' : 'professionals'} signed up`
+              : "See who's going"}
+          </Text>
+          {open && matchCount !== null && matchCount > 0 ? (
+            <Text style={styles.goingMatch}>{matchCount} matching your intent</Text>
+          ) : (
+            <Text style={styles.goingSub}>See who's going</Text>
+          )}
+        </View>
+        <ChevronRight size={18} color={colors.muted} />
+      </Pressable>
 
       {!!event.description && (
-        <>
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>About this event</Text>
-          <Card>
-            <Text style={styles.description}>{event.description}</Text>
-          </Card>
-        </>
+          <Text style={styles.description}>{event.description}</Text>
+        </View>
       )}
 
-      <View style={styles.space}>
-        <Text style={styles.sectionTitle}>Your intent for this event</Text>
-        {!editing && (
-          <Button
-            label="Edit"
-            variant="secondary"
-            small
-            onPress={() => {
-              setDraft(intentText);
-              setEditing(true);
-            }}
-          />
+      <View style={styles.section}>
+        <View style={styles.space}>
+          <Text style={styles.sectionTitle}>Your intent</Text>
+          {!editing && !!intentText.trim() && (
+            <Pressable onPress={startEditing} hitSlop={10} accessibilityRole="button">
+              <Text style={styles.link}>Edit</Text>
+            </Pressable>
+          )}
+        </View>
+        {editing ? (
+          <View style={styles.editor}>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              multiline
+              autoFocus
+              style={styles.intentInput}
+              placeholder="For example: distribution partners for our platform"
+              placeholderTextColor={colors.muted}
+            />
+            <View style={styles.editorActions}>
+              <Button label="Cancel" variant="ghost" small style={styles.flex} onPress={() => setEditing(false)} />
+              <Button label="Save" small style={styles.flex} onPress={saveIntent} disabled={!draft.trim()} />
+            </View>
+          </View>
+        ) : intentText.trim() ? (
+          <View style={styles.intentBox}>
+            <Text style={styles.intent}>{intentText.trim()}</Text>
+          </View>
+        ) : (
+          <Pressable
+            onPress={startEditing}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.intentEmpty, pressed && styles.pressed]}
+          >
+            <View style={styles.plus}>
+              <Plus size={18} color={colors.onBrand} strokeWidth={2.4} />
+            </View>
+            <View style={styles.flex}>
+              <Text style={styles.intentPrompt}>Set your intent</Text>
+              <Text style={styles.goingSub}>Tell me who you'd like to meet, and I'll find them in the room.</Text>
+            </View>
+          </Pressable>
         )}
+        <Text style={styles.hint}>Your general intent. Changing it here changes it everywhere for now.</Text>
       </View>
-      {editing ? (
-        <View style={styles.editor}>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            multiline
-            style={styles.intentBox}
-            placeholder="What are you looking for at this event?"
-            placeholderTextColor={colors.muted}
-          />
-          <Button label="Save intent" variant="secondary" small onPress={saveIntent} disabled={!draft.trim()} />
-        </View>
-      ) : (
-        <View style={styles.intentBox}>
-          <Text style={[styles.intent, !intentText.trim() && styles.intentMissing]}>
-            {intentText.trim() || 'Add what you’re looking for.'}
-          </Text>
-        </View>
-      )}
-      <Text style={styles.hint}>Your general intent. Changing it here changes it everywhere for now.</Text>
 
       {error && <Text style={styles.error}>{error}</Text>}
 
       {registered ? (
         <>
-          <Card style={styles.signedUp}>
-            <View style={styles.markWrap}>
-              <GoLiveMark size={20} color={colors.text} />
+          <View style={styles.signedUp}>
+            <View style={styles.check}>
+              <Check size={16} color={colors.positive} strokeWidth={3} />
             </View>
             <View style={styles.flex}>
               <Text style={styles.h3}>{checkedIn ? "You're checked in" : "You're signed up"}</Text>
               <Text style={styles.sub}>
                 {open
-                  ? "That doesn't make you visible. Go Live when you're in the room."
-                  : "That doesn't make you visible. Go Live opens on the day, once you check in at the badge desk."}
+                  ? "You stay private until you Go Live in the room."
+                  : "You stay private until you Go Live. It opens on the day, once you check in at the badge desk."}
               </Text>
               {awaitingCheckIn && (
                 <Text style={styles.sub}>This event needs check-in: check in at the badge desk before you appear in matches.</Text>
               )}
             </View>
-          </Card>
-          {open && event.live_mode_enabled && <Button label="Go Live in this room" variant="charcoal" onPress={handleGoLive} />}
+          </View>
+          {open && event.live_mode_enabled && <Button label="Go Live" variant="charcoal" onPress={handleGoLive} />}
         </>
       ) : (
         <Button label="Sign up for this event" onPress={handleRegister} loading={registering} />
@@ -201,39 +254,76 @@ export function EventDetailScreen({ route, navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
+    page: { backgroundColor: colors.surface },
+    pressed: { opacity: 0.7 },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-    space: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, lineHeight: 22, fontWeight: '800', color: colors.text },
+    space: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 21, lineHeight: 26, fontWeight: '800', color: colors.text },
     h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
-    sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    stats: { flexDirection: 'row', gap: 10 },
-    stat: { flex: 1 },
-    statLive: { backgroundColor: colors.positiveSoft, borderColor: colors.positiveSoft },
-    statValue: { fontFamily: fonts.headingExtraBold, fontSize: 20, fontWeight: '800', color: colors.text },
-    statValueLive: { color: colors.positive },
-    statLabel: { fontSize: 11, color: colors.muted, marginTop: 2 },
-    description: { lineHeight: 20, color: colors.text, fontSize: 13 },
-    editor: { gap: 8 },
-    intentBox: {
-      backgroundColor: colors.accentSoft,
-      borderRadius: radius.md,
-      padding: 14,
-      minHeight: 56,
-      color: colors.text,
-      fontSize: 14,
-      textAlignVertical: 'top',
+    section: { gap: 8, marginTop: 8 },
+    sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: '700', color: colors.text },
+    link: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text, textDecorationLine: 'underline' },
+    // Attendance: a full-width row between hairlines.
+    going: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginHorizontal: -20,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: colors.line,
     },
-    intent: { fontFamily: fonts.headingBold, fontSize: 14, lineHeight: 20, fontWeight: '700', color: colors.text },
-    intentMissing: { fontFamily: fonts.bodyRegular, fontWeight: '400', color: colors.muted },
-    hint: { fontSize: 11, color: colors.muted, marginTop: -4 },
-    error: { color: colors.danger, fontSize: 12 },
-    signedUp: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-    markWrap: {
+    goingIcon: {
       width: 38,
       height: 38,
       borderRadius: 19,
       backgroundColor: colors.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    goingTitle: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    goingSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
+    goingMatch: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.positive, marginTop: 2 },
+    description: { lineHeight: 20, color: colors.text, fontSize: 14 },
+    editor: { gap: 8 },
+    editorActions: { flexDirection: 'row', gap: 8 },
+    intentInput: {
+      backgroundColor: colors.surface,
+      borderWidth: 1.5,
+      borderColor: colors.brand,
+      borderRadius: radius.md,
+      padding: 14,
+      minHeight: 96,
+      color: colors.text,
+      fontSize: 14,
+      lineHeight: 20,
+      textAlignVertical: 'top',
+    },
+    intentBox: { backgroundColor: colors.accentSoft, borderRadius: radius.md, padding: 14 },
+    intent: { fontSize: 15, lineHeight: 21, color: colors.text },
+    // No intent yet: a clear, tappable invitation rather than faint text.
+    intentEmpty: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      borderWidth: 1.5,
+      borderColor: colors.brand2,
+      borderRadius: radius.md,
+      padding: 14,
+    },
+    plus: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center' },
+    intentPrompt: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: '700', color: colors.text },
+    hint: { fontSize: 11, color: colors.muted },
+    error: { color: colors.danger, fontSize: 12 },
+    signedUp: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 8 },
+    check: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: colors.positiveSoft,
       alignItems: 'center',
       justifyContent: 'center',
     },

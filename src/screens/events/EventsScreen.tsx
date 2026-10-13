@@ -9,7 +9,7 @@ import { CoreEvent } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { DateBlock } from '../../components/DateBlock';
-import { usePullToRefresh, useTopInset } from '../../components/Screen';
+import { FLOATING_TAB_SPACE, usePullToRefresh, useTopInset } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
 import { EventsStackParamList, MainTabParamList } from '../../navigation/types';
@@ -30,7 +30,7 @@ export function isEventLive(event: CoreEvent, now = Date.now()) {
   return new Date(event.starts_at).getTime() <= now && now < new Date(event.ends_at).getTime();
 }
 
-// Upcoming (Registered, then Open for registration) and Past, as flat rows.
+// Upcoming (Registered, then Open for registration) and Completed Events, as flat rows.
 // The location filter lists the venues of the published events. Built to take
 // other room types (venues) in Phase 2: a row only needs a name, times and a
 // venue.
@@ -140,14 +140,6 @@ export function EventsScreen({ navigation }: Props) {
     <View style={styles.container}>
       <View style={[styles.top, { paddingTop: 12 + topInset }]}>
         <View style={styles.header}>
-          <Pressable
-            onPress={() => navigation.navigate('HomeTab', { screen: 'Profile' })}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Your account"
-          >
-            <Avatar initials={initial} size="sm" dark />
-          </Pressable>
           <Text style={styles.title}>Events</Text>
           <Pressable
             style={styles.locationButton}
@@ -159,6 +151,14 @@ export function EventsScreen({ navigation }: Props) {
               {activeLocation ?? 'All locations'}
             </Text>
             <ChevronDown size={16} color={colors.text} />
+          </Pressable>
+          <Pressable
+            onPress={() => navigation.navigate('HomeTab', { screen: 'Profile' })}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Your account"
+          >
+            <Avatar initials={initial} size="sm" dark />
           </Pressable>
         </View>
 
@@ -173,7 +173,7 @@ export function EventsScreen({ navigation }: Props) {
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
               >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{key === 'upcoming' ? 'Upcoming' : 'Past'}</Text>
+                <Text style={[styles.tabText, active && styles.tabTextActive]}>{key === 'upcoming' ? 'Upcoming' : 'Completed Events'}</Text>
                 <View style={[styles.tabLine, active && styles.tabLineActive]} />
               </Pressable>
             );
@@ -198,8 +198,8 @@ export function EventsScreen({ navigation }: Props) {
               </>
             )}
             <Text style={styles.section}>Open for registration</Text>
-            {open.length > 0 ? open.map(renderEvent) : <Text style={styles.note}>No other upcoming events right now.</Text>}
-            <Text style={styles.footnote}>Completed events move to Past, along with the professionals you met.</Text>
+            {open.length > 0 ? open.map(renderEvent) : <Text style={styles.note}>More events are on the way.</Text>}
+            <Text style={styles.footnote}>Events you attend move to Completed Events, along with the professionals you met.</Text>
           </>
         )}
 
@@ -266,7 +266,7 @@ const makeStyles = (colors: ThemeColors) =>
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
     tabLine: { height: 3, width: 76, borderRadius: 2, backgroundColor: 'transparent' },
     tabLineActive: { backgroundColor: colors.selected },
-    content: { paddingBottom: 40 },
+    content: { paddingBottom: FLOATING_TAB_SPACE },
     section: { fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: '700', color: colors.text, paddingHorizontal: 20, marginTop: 16 },
     // Rows run edge to edge, split by hairlines.
     row: {
