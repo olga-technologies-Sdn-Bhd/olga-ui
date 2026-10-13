@@ -1,8 +1,19 @@
 import { useIsFocused } from '@react-navigation/native';
 import { Radio } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import {
+  AccessibilityInfo,
+  Animated,
+  Easing,
+  LayoutChangeEvent,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+} from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { fonts } from '../theme/typography';
@@ -22,28 +33,32 @@ type Props = {
   onOpenMatches?: () => void;
 };
 
-// Geometry, in dp. The button rests low in the stage and rises when live;
-// the headroom above the wordmark is what it rises into.
-const BUTTON = 216;
+// Geometry, in dp. The button rests a little low and rises when live, to the
+// centre of the radar.
+const BUTTON = 168;
 const RING_GAP = 7; // thin outer border / hold progress, just outside the button
-const LIFT = 70;
-const LIVE_SCALE = 0.8;
+const LIFT = 40;
+const LIVE_SCALE = 0.82;
 const BRAND_H = 34;
 const BRAND_GAP = 14;
-const BOTTOM = 28;
-const STAGE_H = LIFT + BRAND_H + BRAND_GAP + BUTTON + BOTTOM;
-const IDLE_CY = LIFT + BRAND_H + BRAND_GAP + BUTTON / 2;
-const LIVE_CY = IDLE_CY - LIFT;
+const STAGE_H = 330;
+const LIVE_CY = 160;
+const IDLE_CY = LIVE_CY + LIFT;
 const LIVE_R = (BUTTON / 2) * LIVE_SCALE;
-const RINGS = [LIVE_R + 30, LIVE_R + 58, LIVE_R + 86];
-const RADAR = RINGS[RINGS.length - 1] * 2;
+// How far the ripples travel from the button before they fade out. Nothing
+// in the radar stands still.
+const REACH = LIVE_R + 78;
+const RADAR = REACH * 2;
 
 const HOLD_MS = 1000;
 const AVATAR = 36;
 const HALO = 6; // soft ring of the same colour around each avatar
-const AVATAR_GAP = 14; // least space between two avatars, and to the button
+const SPOT = AVATAR + HALO * 2;
 const EDGE = 4;
+const WOBBLE = 6; // how far an avatar drifts in and out as it goes round
 const STAGGER_MS = 300;
+const ORBIT_MS = 46000; // one slow turn of the room
+const LANES = 3; // matches are spread a third of a turn apart
 
 // Soft pastels; the same person always gets the same one.
 const PASTELS = ['#DCE8F8', '#E6DFF5', '#DDF0E3', '#F8E3D4', '#F6DCE6', '#F5EDC9'];
@@ -57,58 +72,31 @@ function hash(text: string) {
   return h >>> 0;
 }
 
-// Small seeded generator, so a person's spot depends on who they are and not
-// on when the screen happened to render.
-function seeded(seed: number) {
-  let a = seed || 1;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-type Spot = { x: number; y: number };
-
-// A free spot for one avatar: inside the stage, clear of the live button, the
-// wordmark above it and every avatar already placed.
-function findSpot(id: string, width: number, taken: Spot[]): Spot {
-  const random = seeded(hash(id));
-  const half = AVATAR / 2 + HALO;
-  const cx = width / 2;
-  const clear = LIVE_R + half + AVATAR_GAP;
-  const brandBottom = LIVE_CY - LIVE_R - 4;
-  const fits = (spot: Spot) =>
-    Math.hypot(spot.x - cx, spot.y - LIVE_CY) >= clear &&
-    !(spot.y - half < brandBottom && Math.abs(spot.x - cx) < 64 + half) &&
-    taken.every((other) => Math.hypot(spot.x - other.x, spot.y - other.y) >= half * 2 + AVATAR_GAP);
-  for (let attempt = 0; attempt < 200; attempt++) {
-    const spot = {
-      x: half + EDGE + random() * (width - half * 2 - EDGE * 2),
-      y: half + EDGE + random() * (STAGE_H - half * 2 - EDGE * 2),
-    };
-    if (fits(spot)) return spot;
-  }
-  // Crowded: fall back to the corners, nearest free one first.
-  const corners = [
-    { x: half + EDGE, y: STAGE_H - half - EDGE },
-    { x: width - half - EDGE, y: STAGE_H - half - EDGE },
-    { x: half + EDGE, y: half + EDGE },
-    { x: width - half - EDGE, y: half + EDGE },
-  ];
-  return corners.find(fits) ?? corners[taken.length % corners.length];
-}
-
-function Avatar({ person, spot, index, moving }: { person: RadarPerson; spot: Spot; index: number; moving: boolean }) {
+// One match, roaming the radar. Every avatar rides the same slow turn, a
+// third of the way round from the next, so they travel the whole room and
+// never meet; each also drifts in and out on its own beat.
+function Avatar({
+  person,
+  lane,
+  radius,
+  orbit,
+  moving,
+}: {
+  person: RadarPerson;
+  lane: number;
+  radius: number;
+  orbit: Animated.Value;
+  moving: boolean;
+}) {
   const enter = useRef(new Animated.Value(0)).current;
-  const bob = useRef(new Animated.Value(0)).current;
-  const sway = useRef(new Animated.Value(0)).current;
+  const drift = useRef(new Animated.Value(0.5)).current;
   const tint = PASTELS[hash(person.id) % PASTELS.length];
+  const seed = hash(person.id);
+  const from = lane * (360 / LANES) - 150;
 
   useEffect(() => {
     const appear = Animated.sequence([
-      Animated.delay(index * STAGGER_MS),
+      Animated.delay(lane * STAGGER_MS),
       Animated.spring(enter, { toValue: 1, damping: 16, stiffness: 170, mass: 1, useNativeDriver: true }),
     ]);
     appear.start();
@@ -117,61 +105,57 @@ function Avatar({ person, spot, index, moving }: { person: RadarPerson; spot: Sp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enter]);
 
-  // A slow float: up and down, and a little side to side on a different
-  // beat, so no two avatars move together and none travels anywhere.
   useEffect(() => {
     if (!moving) return;
     const ease = Easing.inOut(Easing.sin);
-    const swing = (value: Animated.Value, duration: number) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(value, { toValue: 1, duration, easing: ease, useNativeDriver: true }),
-          Animated.timing(value, { toValue: 0, duration, easing: ease, useNativeDriver: true }),
-        ])
-      );
-    const offset = hash(person.id) % 5;
-    const up = swing(bob, 2200 + offset * 120);
-    const across = swing(sway, 3100 + offset * 150);
-    const start = setTimeout(() => {
-      up.start();
-      across.start();
-    }, offset * 300);
-    return () => {
-      clearTimeout(start);
-      up.stop();
-      across.stop();
-    };
-  }, [bob, sway, moving, person.id]);
+    const duration = 2600 + (seed % 5) * 260;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(drift, { toValue: 1, duration, easing: ease, useNativeDriver: true }),
+        Animated.timing(drift, { toValue: 0, duration, easing: ease, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [drift, moving, seed]);
 
-  const size = AVATAR + HALO * 2;
+  const turn = orbit.interpolate({ inputRange: [0, 1], outputRange: [`${from}deg`, `${from + 360}deg`] });
+  const upright = orbit.interpolate({ inputRange: [0, 1], outputRange: [`${-from}deg`, `${-from - 360}deg`] });
+
   return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        avatarStyles.halo,
-        {
-          left: spot.x - size / 2,
-          top: spot.y - size / 2,
-          opacity: enter,
-          transform: [
-            { scale: enter.interpolate({ inputRange: [0, 1], outputRange: [0.65, 1] }) },
-            { translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [-4, 4] }) },
-            { translateX: sway.interpolate({ inputRange: [0, 1], outputRange: [-2.5, 2.5] }) },
-          ],
-        },
-      ]}
-    >
-      <View style={[avatarStyles.haloFill, { backgroundColor: tint }]} />
-      <View style={[avatarStyles.face, { backgroundColor: tint }]}>
-        <Text style={avatarStyles.text}>{person.initials}</Text>
-      </View>
+    // A zero-size pivot at the radar's centre; the avatar sits out along its
+    // arm and is turned back so its letters stay level.
+    <Animated.View pointerEvents="none" style={[avatarStyles.pivot, { transform: [{ rotate: turn }] }]}>
+      <Animated.View
+        style={[
+          avatarStyles.arm,
+          { left: radius - SPOT / 2, transform: [{ translateX: drift.interpolate({ inputRange: [0, 1], outputRange: [-WOBBLE, WOBBLE] }) }] },
+        ]}
+      >
+        <Animated.View
+          style={[
+            avatarStyles.halo,
+            {
+              opacity: enter,
+              transform: [{ rotate: upright }, { scale: enter.interpolate({ inputRange: [0, 1], outputRange: [0.65, 1] }) }],
+            },
+          ]}
+        >
+          <View style={[avatarStyles.haloFill, { backgroundColor: tint }]} />
+          <View style={[avatarStyles.face, { backgroundColor: tint }]}>
+            <Text style={avatarStyles.text}>{person.initials}</Text>
+          </View>
+        </Animated.View>
+      </Animated.View>
     </Animated.View>
   );
 }
 
 const avatarStyles = StyleSheet.create({
-  halo: { position: 'absolute', width: AVATAR + HALO * 2, height: AVATAR + HALO * 2, alignItems: 'center', justifyContent: 'center' },
-  haloFill: { ...StyleSheet.absoluteFill, borderRadius: (AVATAR + HALO * 2) / 2, opacity: 0.4 },
+  pivot: { position: 'absolute', width: 0, height: 0 },
+  arm: { position: 'absolute', top: -SPOT / 2, width: SPOT, height: SPOT },
+  halo: { width: SPOT, height: SPOT, alignItems: 'center', justifyContent: 'center' },
+  haloFill: { ...StyleSheet.absoluteFill, borderRadius: SPOT / 2, opacity: 0.4 },
   face: {
     width: AVATAR,
     height: AVATAR,
@@ -184,10 +168,28 @@ const avatarStyles = StyleSheet.create({
   text: { fontFamily: fonts.bodyBold, fontSize: 12.5, fontWeight: '600', letterSpacing: 0.2, color: AVATAR_INK },
 });
 
+// A line of text that fades and lifts into place whenever it changes.
+function SwapText({ text, style }: { text: string; style: StyleProp<TextStyle> }) {
+  const shown = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    shown.setValue(0);
+    const arrive = Animated.timing(shown, { toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    arrive.start();
+    return () => arrive.stop();
+  }, [text, shown]);
+  return (
+    <Animated.Text
+      style={[style, { opacity: shown, transform: [{ translateY: shown.interpolate({ inputRange: [0, 1], outputRange: [7, 0] }) }] }]}
+    >
+      {text}
+    </Animated.Text>
+  );
+}
+
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-// The Go Live control: press and hold, then it rises, a quiet radar starts
-// around it, and matches appear as initials scattered about the room.
+// The Go Live control: press and hold, then it rises to the middle of a quiet
+// radar and breathes, and matches appear as initials travelling round it.
 export function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMatches }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -248,7 +250,7 @@ export function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMat
           ]),
           Animated.sequence([
             Animated.delay(800),
-            Animated.timing(radar, { toValue: 1, duration: 400, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+            Animated.timing(radar, { toValue: 1, duration: 500, easing: Easing.out(Easing.quad), useNativeDriver: true }),
           ]),
         ])
       : Animated.parallel([
@@ -259,61 +261,66 @@ export function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMat
     return () => move.stop();
   }, [live, lift, radar, reduceMotion]);
 
-  // ---- the radar itself: a slow sweep and two rings that widen and fade.
-  // Slower once matches are in. Stops when the screen is not in view.
-  const sweep = useRef(new Animated.Value(0)).current;
-  const pulseA = useRef(new Animated.Value(0)).current;
-  const pulseB = useRef(new Animated.Value(0)).current;
+  // ---- while live the button breathes: slowly in, slowly out
+  const breath = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!live || !moving) return;
+    const ease = Easing.inOut(Easing.sin);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(breath, { toValue: 1, duration: 1700, easing: ease, useNativeDriver: true }),
+        Animated.timing(breath, { toValue: 0, duration: 1700, easing: ease, useNativeDriver: true }),
+      ])
+    );
+    const start = setTimeout(() => loop.start(), 900);
+    return () => {
+      clearTimeout(start);
+      loop.stop();
+      breath.setValue(0);
+    };
+  }, [live, moving, breath]);
+
+  // ---- ripples: three soft rings leaving the button one after another
+  const ripples = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
   useEffect(() => {
     if (!scanning || !moving) return;
-    const calm = phase === 'found';
-    const turn = Animated.loop(
-      Animated.timing(sweep, { toValue: 1, duration: calm ? 9000 : 5500, easing: Easing.linear, useNativeDriver: true })
+    const duration = phase === 'found' ? 5400 : 3900;
+    const loops = ripples.map((value) =>
+      Animated.loop(Animated.timing(value, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }))
     );
-    const widen = (value: Animated.Value) =>
-      Animated.loop(
-        Animated.timing(value, { toValue: 1, duration: calm ? 5000 : 3500, easing: Easing.out(Easing.quad), useNativeDriver: true })
-      );
-    const a = widen(pulseA);
-    const b = widen(pulseB);
-    turn.start();
-    a.start();
-    const later = setTimeout(() => b.start(), calm ? 2500 : 1750);
+    const timers = loops.map((loop, i) => setTimeout(() => loop.start(), (duration / loops.length) * i));
     return () => {
-      clearTimeout(later);
-      turn.stop();
-      a.stop();
-      b.stop();
-      sweep.setValue(0);
-      pulseA.setValue(0);
-      pulseB.setValue(0);
+      timers.forEach(clearTimeout);
+      loops.forEach((loop) => loop.stop());
+      ripples.forEach((value) => value.setValue(0));
     };
-  }, [scanning, moving, phase, sweep, pulseA, pulseB]);
+  }, [scanning, moving, phase, ripples]);
 
-  // ---- where each match sits. Worked out once per person and kept.
-  const [spots] = useState(() => new Map<string, Spot>());
-  const shown = phase === 'found' && width > 0 ? people : [];
-  if (phase === 'idle') spots.clear();
-  for (const person of shown) {
-    if (!spots.has(person.id)) spots.set(person.id, findSpot(person.id, width, [...spots.values()]));
-  }
+  // ---- the slow turn every match rides
+  const orbit = useRef(new Animated.Value(0)).current;
+  const showPeople = phase === 'found' && width > 0;
+  useEffect(() => {
+    if (!showPeople || !moving) return;
+    const loop = Animated.loop(Animated.timing(orbit, { toValue: 1, duration: ORBIT_MS, easing: Easing.linear, useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [showPeople, moving, orbit]);
 
   const ringSize = BUTTON + RING_GAP * 2;
   const ringR = ringSize / 2 - 1.5;
   const ringC = 2 * Math.PI * ringR;
   const cx = width / 2;
-
-  const caption =
-    phase === 'idle'
-      ? 'PRESS & HOLD'
-      : phase === 'searching'
-        ? 'FINDING MATCHES…'
-        : phase === 'found'
-          ? `${people.length} READY`
-          : phase === 'empty'
-            ? 'STILL QUIET'
-            : null;
+  // As far out as the screen allows, but never past the outer ring.
+  const orbitR = Math.min(REACH - 6, cx - SPOT / 2 - EDGE - WOBBLE, LIVE_CY - SPOT / 2 - EDGE - WOBBLE);
   const canOpen = phase === 'found' && Boolean(onOpenMatches);
+  const caption =
+    phase === 'searching'
+      ? 'FINDING MATCHES…'
+      : phase === 'found'
+        ? `${people.length} ${people.length === 1 ? 'MATCH' : 'MATCHES'}`
+        : phase === 'empty'
+          ? 'STILL QUIET'
+          : null;
 
   return (
     <View style={styles.stage} onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}>
@@ -321,49 +328,36 @@ export function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMat
         <>
           {/* Radar, centred on where the button comes to rest when live. */}
           <Animated.View pointerEvents="none" style={[styles.radar, { left: cx - RADAR / 2, top: LIVE_CY - RADAR / 2, opacity: radar }]}>
-            {RINGS.map((r) => (
-              <View key={r} style={[styles.ring, { width: r * 2, height: r * 2, borderRadius: r }]} />
-            ))}
-            {[pulseA, pulseB].map((pulse, i) => (
+            {ripples.map((value, i) => (
               <Animated.View
                 key={i}
                 style={[
-                  styles.pulse,
+                  styles.ripple,
                   {
-                    opacity: pulse.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 0.5, 0] }),
-                    transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.52, 1] }) }],
+                    opacity: value.interpolate({ inputRange: [0, 0.12, 1], outputRange: [0, 0.34, 0] }),
+                    transform: [{ scale: value.interpolate({ inputRange: [0, 1], outputRange: [(LIVE_R * 2) / RADAR, 1] }) }],
                   },
                 ]}
               />
             ))}
-            {scanning && (
-              <Animated.View
-                style={[
-                  styles.sweep,
-                  { transform: [{ rotate: sweep.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] },
-                ]}
-              >
-                <Svg width={RADAR} height={RADAR}>
-                  <Path d={wedge(RADAR / 2, 0, 24)} fill={colors.charcoal} opacity={0.04} />
-                  <Path d={wedge(RADAR / 2, 24, 48)} fill={colors.charcoal} opacity={0.02} />
-                </Svg>
-              </Animated.View>
-            )}
           </Animated.View>
 
-          {shown.map((person, index) => (
-            <Avatar key={person.id} person={person} spot={spots.get(person.id)!} index={index} moving={moving} />
-          ))}
+          {showPeople && (
+            <View pointerEvents="none" style={[styles.centre, { left: cx, top: LIVE_CY }]}>
+              {people.slice(0, LANES).map((person, lane) => (
+                <Avatar key={person.id} person={person} lane={lane} radius={orbitR} orbit={orbit} moving={moving} />
+              ))}
+            </View>
+          )}
 
+          {/* The wordmark above the button; once live it moves inside it. */}
           <Animated.Text
             style={[
               styles.brand,
               {
-                top: LIFT,
-                transform: [
-                  { translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, -(LIFT - (BUTTON / 2 - LIVE_R))] }) },
-                  { scale: lift.interpolate({ inputRange: [0, 1], outputRange: [1, 0.9] }) },
-                ],
+                top: IDLE_CY - BUTTON / 2 - RING_GAP - BRAND_GAP - BRAND_H,
+                opacity: lift.interpolate({ inputRange: [0, 0.5], outputRange: [1, 0], extrapolate: 'clamp' }),
+                transform: [{ translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, -LIFT / 2] }) }],
               },
             ]}
           >
@@ -383,43 +377,55 @@ export function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMat
               },
             ]}
           >
-            <Svg width={ringSize} height={ringSize} style={styles.holdRing}>
-              <Circle cx={ringSize / 2} cy={ringSize / 2} r={ringR} stroke={colors.line} strokeWidth={1.5} fill="none" />
-              <AnimatedCircle
-                cx={ringSize / 2}
-                cy={ringSize / 2}
-                r={ringR}
-                stroke={colors.liveFill}
-                strokeWidth={3}
-                strokeLinecap="round"
-                fill="none"
-                strokeDasharray={`${ringC} ${ringC}`}
-                strokeDashoffset={hold.interpolate({ inputRange: [0, 1], outputRange: [ringC, 0] })}
-                opacity={hold.interpolate({ inputRange: [0, 0.02, 1], outputRange: [0, 1, 1] })}
-                rotation={-90}
-                origin={`${ringSize / 2}, ${ringSize / 2}`}
-              />
-            </Svg>
-            <Animated.View style={{ transform: [{ scale: press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.97] }) }] }}>
-              <Pressable
-                onPressIn={handlePressIn}
-                onPressOut={handlePressOut}
-                onPress={canOpen ? onOpenMatches : undefined}
-                disabled={disabled || (live && !canOpen)}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  phase === 'idle'
-                    ? 'Go Live. Press and hold'
-                    : canOpen
-                      ? `You're live, ${people.length} ready. Open your matches`
-                      : "You're live"
-                }
-                style={styles.button}
-              >
-                <Radio size={30} color={colors.white} strokeWidth={1.8} />
-                <Text style={[styles.label, live && styles.labelLive]}>{live ? "YOU'RE LIVE" : 'GO LIVE'}</Text>
-                {caption && <Text style={styles.caption}>{caption}</Text>}
-              </Pressable>
+            <Animated.View style={{ transform: [{ scale: breath.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }) }] }}>
+              <Svg width={ringSize} height={ringSize} style={styles.holdRing}>
+                <Circle cx={ringSize / 2} cy={ringSize / 2} r={ringR} stroke={colors.line} strokeWidth={1.5} fill="none" />
+                <AnimatedCircle
+                  cx={ringSize / 2}
+                  cy={ringSize / 2}
+                  r={ringR}
+                  stroke={colors.liveFill}
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  fill="none"
+                  strokeDasharray={`${ringC} ${ringC}`}
+                  strokeDashoffset={hold.interpolate({ inputRange: [0, 1], outputRange: [ringC, 0] })}
+                  opacity={hold.interpolate({ inputRange: [0, 0.02, 1], outputRange: [0, 1, 1] })}
+                  rotation={-90}
+                  origin={`${ringSize / 2}, ${ringSize / 2}`}
+                />
+              </Svg>
+              <Animated.View style={{ transform: [{ scale: press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.97] }) }] }}>
+                <Pressable
+                  onPressIn={handlePressIn}
+                  onPressOut={handlePressOut}
+                  onPress={canOpen ? onOpenMatches : undefined}
+                  disabled={disabled || (live && !canOpen)}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    phase === 'idle'
+                      ? 'Go Live. Press and hold'
+                      : canOpen
+                        ? `You're live, ${people.length} ready. Open your matches`
+                        : "You're live"
+                  }
+                  style={styles.button}
+                >
+                  {live ? (
+                    <>
+                      <Radio size={24} color={colors.white} strokeWidth={1.8} />
+                      <Text style={[styles.label, styles.labelLive]}>YOU'RE LIVE</Text>
+                      {caption && <SwapText text={caption} style={styles.caption} />}
+                    </>
+                  ) : (
+                    <>
+                      <Radio size={26} color={colors.white} strokeWidth={1.8} />
+                      <Text style={styles.label}>GO LIVE</Text>
+                      <Text style={styles.caption}>PRESS & HOLD</Text>
+                    </>
+                  )}
+                </Pressable>
+              </Animated.View>
             </Animated.View>
           </Animated.View>
         </>
@@ -428,30 +434,20 @@ export function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMat
   );
 }
 
-// A thin pie slice from the centre, between two angles measured clockwise
-// from straight up.
-function wedge(radius: number, fromDeg: number, toDeg: number) {
-  const point = (deg: number) => {
-    const rad = (deg * Math.PI) / 180;
-    return `${radius + radius * Math.sin(rad)} ${radius - radius * Math.cos(rad)}`;
-  };
-  return `M ${radius} ${radius} L ${point(fromDeg)} A ${radius} ${radius} 0 0 1 ${point(toDeg)} Z`;
-}
-
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     stage: { height: STAGE_H, alignSelf: 'stretch' },
     radar: { position: 'absolute', width: RADAR, height: RADAR, alignItems: 'center', justifyContent: 'center' },
-    ring: { position: 'absolute', borderWidth: 1, borderColor: colors.brand2, opacity: 0.55 },
-    pulse: {
+    ripple: {
       position: 'absolute',
       width: RADAR,
       height: RADAR,
       borderRadius: RADAR / 2,
       borderWidth: 1,
-      borderColor: colors.muted,
+      borderColor: colors.charcoal,
+      backgroundColor: colors.accentSoft,
     },
-    sweep: { position: 'absolute', width: RADAR, height: RADAR },
+    centre: { position: 'absolute', width: 0, height: 0 },
     brand: {
       position: 'absolute',
       left: 0,
@@ -474,9 +470,9 @@ const makeStyles = (colors: ThemeColors) =>
       backgroundColor: colors.charcoal,
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 6,
+      gap: 5,
     },
-    label: { fontFamily: fonts.headingBold, fontSize: 24, fontWeight: '800', letterSpacing: 1, color: colors.white, marginTop: 4 },
-    labelLive: { fontSize: 21 },
-    caption: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: '700', letterSpacing: 2, color: 'rgba(255,255,255,0.78)' },
+    label: { fontFamily: fonts.headingBold, fontSize: 21, fontWeight: '800', letterSpacing: 1, color: colors.white, marginTop: 3 },
+    caption: { fontFamily: fonts.bodyBold, fontSize: 10, fontWeight: '700', letterSpacing: 2, color: 'rgba(255,255,255,0.78)' },
+    labelLive: { fontSize: 19 },
   });
