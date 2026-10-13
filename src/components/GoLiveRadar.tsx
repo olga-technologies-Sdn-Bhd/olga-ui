@@ -39,7 +39,8 @@ const RINGS = [LIVE_R + 30, LIVE_R + 58, LIVE_R + 86];
 const RADAR = RINGS[RINGS.length - 1] * 2;
 
 const HOLD_MS = 1000;
-const AVATAR = 46;
+const AVATAR = 36;
+const HALO = 6; // soft ring of the same colour around each avatar
 const AVATAR_GAP = 14; // least space between two avatars, and to the button
 const EDGE = 4;
 const STAGGER_MS = 300;
@@ -74,18 +75,18 @@ type Spot = { x: number; y: number };
 // wordmark above it and every avatar already placed.
 function findSpot(id: string, width: number, taken: Spot[]): Spot {
   const random = seeded(hash(id));
-  const half = AVATAR / 2;
+  const half = AVATAR / 2 + HALO;
   const cx = width / 2;
   const clear = LIVE_R + half + AVATAR_GAP;
   const brandBottom = LIVE_CY - LIVE_R - 4;
   const fits = (spot: Spot) =>
     Math.hypot(spot.x - cx, spot.y - LIVE_CY) >= clear &&
     !(spot.y - half < brandBottom && Math.abs(spot.x - cx) < 64 + half) &&
-    taken.every((other) => Math.hypot(spot.x - other.x, spot.y - other.y) >= AVATAR + AVATAR_GAP);
+    taken.every((other) => Math.hypot(spot.x - other.x, spot.y - other.y) >= half * 2 + AVATAR_GAP);
   for (let attempt = 0; attempt < 200; attempt++) {
     const spot = {
-      x: half + EDGE + random() * (width - AVATAR - EDGE * 2),
-      y: half + EDGE + random() * (STAGE_H - AVATAR - EDGE * 2),
+      x: half + EDGE + random() * (width - half * 2 - EDGE * 2),
+      y: half + EDGE + random() * (STAGE_H - half * 2 - EDGE * 2),
     };
     if (fits(spot)) return spot;
   }
@@ -101,7 +102,9 @@ function findSpot(id: string, width: number, taken: Spot[]): Spot {
 
 function Avatar({ person, spot, index, moving }: { person: RadarPerson; spot: Spot; index: number; moving: boolean }) {
   const enter = useRef(new Animated.Value(0)).current;
-  const float = useRef(new Animated.Value(0)).current;
+  const bob = useRef(new Animated.Value(0)).current;
+  const sway = useRef(new Animated.Value(0)).current;
+  const tint = PASTELS[hash(person.id) % PASTELS.length];
 
   useEffect(() => {
     const appear = Animated.sequence([
@@ -114,55 +117,71 @@ function Avatar({ person, spot, index, moving }: { person: RadarPerson; spot: Sp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enter]);
 
+  // A slow float: up and down, and a little side to side on a different
+  // beat, so no two avatars move together and none travels anywhere.
   useEffect(() => {
     if (!moving) return;
-    const drift = Animated.loop(
-      Animated.sequence([
-        Animated.timing(float, { toValue: 1, duration: 2300, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(float, { toValue: 0, duration: 2300, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ])
-    );
-    const start = setTimeout(() => drift.start(), (hash(person.id) % 5) * 400);
+    const ease = Easing.inOut(Easing.sin);
+    const swing = (value: Animated.Value, duration: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(value, { toValue: 1, duration, easing: ease, useNativeDriver: true }),
+          Animated.timing(value, { toValue: 0, duration, easing: ease, useNativeDriver: true }),
+        ])
+      );
+    const offset = hash(person.id) % 5;
+    const up = swing(bob, 2200 + offset * 120);
+    const across = swing(sway, 3100 + offset * 150);
+    const start = setTimeout(() => {
+      up.start();
+      across.start();
+    }, offset * 300);
     return () => {
       clearTimeout(start);
-      drift.stop();
+      up.stop();
+      across.stop();
     };
-  }, [float, moving, person.id]);
+  }, [bob, sway, moving, person.id]);
 
+  const size = AVATAR + HALO * 2;
   return (
     <Animated.View
       pointerEvents="none"
       style={[
-        avatarStyles.wrap,
+        avatarStyles.halo,
         {
-          left: spot.x - AVATAR / 2,
-          top: spot.y - AVATAR / 2,
-          backgroundColor: PASTELS[hash(person.id) % PASTELS.length],
+          left: spot.x - size / 2,
+          top: spot.y - size / 2,
           opacity: enter,
           transform: [
             { scale: enter.interpolate({ inputRange: [0, 1], outputRange: [0.65, 1] }) },
-            { translateY: float.interpolate({ inputRange: [0, 1], outputRange: [-1.5, 1.5] }) },
+            { translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [-4, 4] }) },
+            { translateX: sway.interpolate({ inputRange: [0, 1], outputRange: [-2.5, 2.5] }) },
           ],
         },
       ]}
     >
-      <Text style={avatarStyles.text}>{person.initials}</Text>
+      <View style={[avatarStyles.haloFill, { backgroundColor: tint }]} />
+      <View style={[avatarStyles.face, { backgroundColor: tint }]}>
+        <Text style={avatarStyles.text}>{person.initials}</Text>
+      </View>
     </Animated.View>
   );
 }
 
 const avatarStyles = StyleSheet.create({
-  wrap: {
-    position: 'absolute',
+  halo: { position: 'absolute', width: AVATAR + HALO * 2, height: AVATAR + HALO * 2, alignItems: 'center', justifyContent: 'center' },
+  haloFill: { ...StyleSheet.absoluteFill, borderRadius: (AVATAR + HALO * 2) / 2, opacity: 0.4 },
+  face: {
     width: AVATAR,
     height: AVATAR,
     borderRadius: AVATAR / 2,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  text: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: '600', color: AVATAR_INK },
+  text: { fontFamily: fonts.bodyBold, fontSize: 12.5, fontWeight: '600', letterSpacing: 0.2, color: AVATAR_INK },
 });
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);

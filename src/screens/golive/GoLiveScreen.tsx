@@ -12,6 +12,7 @@ import { GoLiveDisc } from '../../components/GoLiveDisc';
 import { GoLiveRadar, RadarPerson, RadarPhase } from '../../components/GoLiveRadar';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
+import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { isRegistered, useEvents } from '../../context/EventsContext';
 import { ConsentPurpose, GoLiveBlocker, useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
@@ -30,7 +31,7 @@ const AUTO_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 2000;
 const RETRYABLE: MatchingFailure[] = ['MATCHING_FAILED', 'TIMED_OUT'];
 
-const LIVE_LINE = 'Only your matches in this room can see you: role and intent, never your name.';
+const LIVE_LINE = 'Role and intent only, never your name.';
 
 const BLOCKER_MESSAGES: Record<Exclude<GoLiveBlocker, 'CONSENT_REQUIRED'>, string> = {
   REGISTRATION_REQUIRED: 'Sign up for this event first, then you can go live.',
@@ -231,6 +232,7 @@ export function GoLiveScreen({ navigation }: Props) {
   }
 
   async function handleGoInvisible() {
+    if (stopping || searching) return;
     setStopping(true);
     setError(null);
     try {
@@ -352,7 +354,6 @@ export function GoLiveScreen({ navigation }: Props) {
           <Button label="Widen my filter" variant="secondary" small style={styles.widen} onPress={openFilter} />
         </>
       )}
-      {isLive && phase !== 'searching' && <Text style={styles.center}>{LIVE_LINE}</Text>}
       {awaitingCheckIn && <Text style={styles.center}>{CHECK_IN_NOTE}</Text>}
       {error && <Text style={styles.error}>{error}</Text>}
       {isLive && matchingFailed && !manualRetryUsed && (
@@ -365,7 +366,16 @@ export function GoLiveScreen({ navigation }: Props) {
           }}
         />
       )}
-      {isLive && <Button label="Go invisible" variant="secondary" loading={stopping} disabled={searching} onPress={handleGoInvisible} />}
+      {/* Switching this off is how you go invisible. */}
+      {isLive && (
+        <View style={[styles.visible, searching && styles.dimmed]}>
+          <View style={styles.flex}>
+            <Text style={styles.h3}>Visible to your matches</Text>
+            <Text style={styles.sub}>{LIVE_LINE}</Text>
+          </View>
+          <ToggleSwitch on={!stopping} onToggle={handleGoInvisible} label="Visible to your matches" />
+        </View>
+      )}
 
       <FilterSummary title={isLive ? 'Live for' : "You're going live for"} intent={intentText} filters={filters} onChange={openFilter} />
     </Screen>
@@ -401,6 +411,8 @@ const makeStyles = (colors: ThemeColors) =>
     roomCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     cardButton: { alignSelf: 'flex-start', marginTop: 12 },
     widen: { alignSelf: 'center' },
+    visible: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 4, paddingVertical: 4 },
+    dimmed: { opacity: 0.5 },
     found: {
       flexDirection: 'row',
       alignItems: 'center',
