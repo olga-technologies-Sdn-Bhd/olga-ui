@@ -110,9 +110,14 @@ export function ProfileScreen({ navigation }: Props) {
         <Row label="Mobile" value={mobile ?? phoneHint} styles={styles} />
         <View style={styles.divider} />
         <Row label="Member ID" value={memberId} styles={styles} small />
-        <View style={styles.divider} />
-        {/* Which backend this build talks to (APP_ENV in src/config/env.ts). */}
-        <Row label="Environment" value={APP_ENV} styles={styles} small />
+        {/* Which backend this build talks to. For the team only: production
+            builds never show it. */}
+        {APP_ENV !== 'prod' && (
+          <>
+            <View style={styles.divider} />
+            <Row label="Environment" value={APP_ENV} styles={styles} small />
+          </>
+        )}
       </Card>
 
       <Text style={styles.sectionTitle}>Appearance</Text>

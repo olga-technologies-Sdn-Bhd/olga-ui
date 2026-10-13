@@ -6,14 +6,23 @@ import { useTheme } from '../theme/ThemeContext';
 type Props = {
   on: boolean;
   onToggle: () => void;
+  // What the switch controls, for screen readers.
+  label?: string;
 };
 
 // Matches the prototype's `.switch` / `.switch.on` toggle.
-export function ToggleSwitch({ on, onToggle }: Props) {
+export function ToggleSwitch({ on, onToggle, label }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <Pressable onPress={onToggle} style={[styles.track, on && styles.trackOn]}>
+    <Pressable
+      onPress={onToggle}
+      hitSlop={10}
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: on }}
+      style={[styles.track, on && styles.trackOn]}
+    >
       <View style={[styles.knob, on && styles.knobOn]} />
     </Pressable>
   );

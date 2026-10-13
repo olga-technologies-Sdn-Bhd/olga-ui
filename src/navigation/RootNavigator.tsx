@@ -6,7 +6,7 @@ import { MainTabs } from './MainTabs';
 
 export function RootNavigator() {
   const { isAuthenticated, isRestoring, needsOnboarding } = useAuth();
-  // The splash stays until the name has appeared and zoomed, even when the session restores
+  // The splash stays until the name and its line have appeared and zoomed, even when the session restores
   // faster, so the app never opens on a flicker.
   const [beatDone, setBeatDone] = useState(false);
 
