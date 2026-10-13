@@ -43,8 +43,8 @@ const BLOCKER_MESSAGES: Record<Exclude<GoLiveBlocker, 'CONSENT_REQUIRED'>, strin
 };
 
 const MATCHING_MESSAGES: Record<MatchingFailure, string> = {
-  INTENT_HAS_PII: 'Your intent includes personal details. Edit it in your filter, then try again.',
-  INTENT_FAILED: "We couldn't read your intent. Try rephrasing it in your filter.",
+  INTENT_HAS_PII: 'What you’re looking for includes personal details. Edit it in your filter, then try again.',
+  INTENT_FAILED: "We couldn't read what you're looking for. Try rephrasing it in your filter.",
   MATCHING_FAILED: "You're live, but matching failed.",
   TIMED_OUT: "You're live, but matching is taking longer than usual.",
   CONSENT_DENIED: "Matching is off, so we can't find your matches. Go Live again and allow matching to turn it on.",
@@ -173,7 +173,7 @@ export function GoLiveScreen({ navigation }: Props) {
   async function handleGoLive() {
     if (!activeEvent) return;
     if (!intentText.trim()) {
-      setError('Set your intent first, so I can find your matches.');
+      setError('Add what you’re looking for first, so I can find relevant people.');
       return;
     }
     setError(null);
@@ -335,15 +335,15 @@ export function GoLiveScreen({ navigation }: Props) {
       {phase === 'idle' && (
         <>
           <Text style={styles.lead}>Press and hold to Go Live</Text>
-          <Text style={styles.center}>Your best matches in this room appear, and only they can see you. Nobody else.</Text>
+          <Text style={styles.center}>The most relevant people in this room appear, and only they can see you. Nobody else.</Text>
         </>
       )}
-      {phase === 'searching' && <Text style={styles.searching}>Finding your strongest matches…</Text>}
+      {phase === 'searching' && <Text style={styles.searching}>Finding the most relevant people…</Text>}
       {phase === 'found' && (
         <Pressable
           onPress={openMatches}
           accessibilityRole="button"
-          accessibilityLabel={`Matches found. ${count} great ${count === 1 ? 'connection' : 'connections'}. Open your matches`}
+          accessibilityLabel={`Relevant people found. ${count} great ${count === 1 ? 'connection' : 'connections'}. Open the list`}
           style={({ pressed }) => [styles.found, pressed && styles.pressed]}
         >
           <View style={styles.foundAvatars}>
@@ -354,7 +354,7 @@ export function GoLiveScreen({ navigation }: Props) {
             ))}
           </View>
           <View style={styles.flex}>
-            <Text style={styles.h3}>Matches found!</Text>
+            <Text style={styles.h3}>Relevant people found</Text>
             <Text style={styles.sub}>
               {Math.max(1, counted)} great {counted <= 1 ? 'connection' : 'connections'}
             </Text>
@@ -364,7 +364,7 @@ export function GoLiveScreen({ navigation }: Props) {
       )}
       {phase === 'empty' && (
         <>
-          <Text style={styles.lead}>No matches yet</Text>
+          <Text style={styles.lead}>Relevant people will appear here</Text>
           <Text style={styles.center}>Widen your filter to meet more of the room.</Text>
           <Button label="Widen my filter" variant="secondary" small style={styles.widen} onPress={openFilter} />
         </>

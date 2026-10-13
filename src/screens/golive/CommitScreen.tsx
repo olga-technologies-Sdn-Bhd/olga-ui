@@ -107,7 +107,7 @@ export function CommitScreen({ route, navigation }: Props) {
           <MatchSummary card={card} />
         </Card>
       ) : (
-        <Text style={styles.sub}>This match is no longer available.</Text>
+        <Text style={styles.sub}>This person is no longer available.</Text>
       )}
 
       {sent ? (
@@ -151,7 +151,7 @@ export function CommitScreen({ route, navigation }: Props) {
       )}
 
       {sent ? (
-        <Button label="Back to your matches" variant="secondary" onPress={() => navigation.goBack()} />
+        <Button label="Back to relevant people" variant="secondary" onPress={() => navigation.goBack()} />
       ) : (
         <Button
           label={sendLabel}

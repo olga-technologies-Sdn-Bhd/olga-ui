@@ -69,7 +69,7 @@ export function LiveMatchesScreen({ navigation }: Props) {
             ? 'Still matching. Try again in a moment.'
             : e.reason === 'CONSENT_DENIED'
               ? "Matching is off, so we can't find your matches."
-              : "Couldn't find matches right now."
+              : "Couldn't find relevant people right now."
         );
       else setError(e instanceof ApiError && e.status > 0 ? `Couldn't load matches (${e.status})` : "Couldn't reach the server");
     }
@@ -90,14 +90,14 @@ export function LiveMatchesScreen({ navigation }: Props) {
       />
       <View>
         <Text style={styles.eyebrow}>{activeEvent?.name ?? 'Event'}</Text>
-        <Text style={styles.h2}>Your matches</Text>
+        <Text style={styles.h2}>Relevant people</Text>
       </View>
 
       {matches === null && !error && <Text style={styles.sub}>Finding people worth meeting…</Text>}
       {error && <Text style={[styles.sub, { color: colors.danger }]}>{error}</Text>}
       {matches !== null && matches.length > 0 && shown.length === 0 && (
         <Card>
-          <Text style={styles.sub}>You've passed on everyone for now. New matches appear when someone new goes live.</Text>
+          <Text style={styles.sub}>You've passed on everyone for now. More relevant people appear when someone new goes live.</Text>
         </Card>
       )}
 

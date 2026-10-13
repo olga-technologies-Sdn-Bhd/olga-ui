@@ -94,7 +94,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
 
   return (
     <Screen scroll={false}>
-      <BackHeader onBack={() => navigation.goBack()} title="Profile" />
+      <BackHeader onBack={() => navigation.goBack()} title="Your introduction" />
 
       <ScrollView
         ref={scroller}
@@ -106,11 +106,11 @@ export function ProfileSetupScreen({ navigation }: Props) {
       >
         <ChatBubble
           from="them"
-          text={`${firstName ? `${firstName}, let` : 'Let'} me help you set up your profile. Two quick questions, and your matches will know who they're meeting.`}
+          text={`${firstName ? `${firstName}, let` : 'Let'} me help you with your introduction. Two quick questions, and relevant people will know who they're meeting.`}
         />
         {step === 'loading' && <ChatBubble from="them" text="One moment while I find what you've told me so far…" />}
         {step === 'unavailable' && (
-          <ChatBubble from="them" text="I'm having trouble reaching your profile right now. Please come back to this in a moment." />
+          <ChatBubble from="them" text="I'm having trouble reaching your introduction right now. Please come back to this in a moment." />
         )}
 
         {profile && (
@@ -118,8 +118,8 @@ export function ProfileSetupScreen({ navigation }: Props) {
             from="them"
             text={
               currentHeadline
-                ? `First, your headline. Right now it says “${currentHeadline}”. Send me a new one, or keep it as it is.`
-                : 'First, your headline. What is your role, and what do you work on?'
+                ? `First, your work. Right now it says “${currentHeadline}”. Send me a new line, or keep it as it is.`
+                : 'First, your work. What is your role, and what do you work on?'
             }
           />
         )}
@@ -130,8 +130,8 @@ export function ProfileSetupScreen({ navigation }: Props) {
             from="them"
             text={
               currentSummary
-                ? `Lovely. Now a little about your work. I have “${currentSummary.replace(/[.!?]+$/, "")}”. Send me a new version, or keep it.`
-                : 'Lovely. Now tell me a little about your work: what you do, and who you help.'
+                ? `Lovely. Now a little about you. I have “${currentSummary.replace(/[.!?]+$/, "")}”. Send me a new version, or keep it.`
+                : 'Lovely. Now tell me a little about you: what you do, and who you help.'
             }
           />
         )}
@@ -140,23 +140,23 @@ export function ProfileSetupScreen({ navigation }: Props) {
         {failed && <ChatBubble from="them" text="That needs another try. Please check your connection and send it again." />}
         {step === 'saving' && <ChatBubble from="them" text="Saving that for you…" />}
         {step === 'done' && (
-          <ChatBubble from="them" text="All set. That is what your matches will see. Your name stays private until you both accept a Commit." />
+          <ChatBubble from="them" text="All set. That is what relevant people will see. Your name stays private until you both accept a Commit." />
         )}
       </ScrollView>
 
       {step === 'headline' && (
         <>
           <ChatComposer placeholder="Your role and what you work on" onSubmit={answerHeadline} />
-          {currentHeadline && <Button label="Keep my headline" variant="ghost" small onPress={() => answerHeadline(currentHeadline)} />}
+          {currentHeadline && <Button label="Keep my work" variant="ghost" small onPress={() => answerHeadline(currentHeadline)} />}
         </>
       )}
       {step === 'summary' && (
         <>
           <ChatComposer placeholder="What you do and who you help" onSubmit={answerSummary} />
-          {currentSummary && <Button label="Keep my summary" variant="ghost" small onPress={() => answerSummary(currentSummary)} />}
+          {currentSummary && <Button label="Keep About you" variant="ghost" small onPress={() => answerSummary(currentSummary)} />}
         </>
       )}
-      {step === 'saving' && <Text style={styles.sub}>Updating your profile…</Text>}
+      {step === 'saving' && <Text style={styles.sub}>Updating your introduction…</Text>}
       {step === 'done' && <Button label="Done" onPress={() => navigation.goBack()} />}
     </Screen>
   );

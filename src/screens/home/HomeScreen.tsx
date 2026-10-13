@@ -210,7 +210,7 @@ export function HomeScreen({ navigation }: Props) {
         hitSlop={8}
         style={({ pressed }) => [styles.setup, pressed && styles.pressed]}
       >
-        <Text style={styles.setupText}>Let me help you set up your profile</Text>
+        <Text style={styles.setupText}>Let me help you with your introduction</Text>
         <ChevronRight size={15} color={colors.muted} />
       </Pressable>
 
