@@ -9,7 +9,8 @@ import { Card } from '../../components/Card';
 import { DateBlock } from '../../components/DateBlock';
 import { FilterSummary } from '../../components/FilterSummary';
 import { GoLiveDisc } from '../../components/GoLiveDisc';
-import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase } from '../../components/GoLiveRadar';
+import { Marquee } from '../../components/Marquee';
+import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase, useCountUp } from '../../components/GoLiveRadar';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
@@ -253,6 +254,8 @@ export function GoLiveScreen({ navigation }: Props) {
     () => topMatches(matches, passedIds).map((card) => ({ id: card.match.member_id, initials: initialsFor(card) })),
     [matches, passedIds]
   );
+  // The count on the card climbs with the avatars as they arrive.
+  const counted = useCountUp(people.length, isLive && !searching && people.length > 0);
   const goLiveRef = useRef(handleGoLive);
   useEffect(() => {
     goLiveRef.current = handleGoLive;
@@ -311,9 +314,9 @@ export function GoLiveScreen({ navigation }: Props) {
   return (
     <Screen>
       <View style={styles.header}>
-        <Text style={styles.eventName} numberOfLines={1}>
-          {room.name}
-        </Text>
+        <View style={styles.eventNameBox}>
+          <Marquee text={room.name} style={styles.eventName} />
+        </View>
         {isLive ? (
           <View style={styles.status}>
             <Pill label="● LIVE" tone="positive" />
@@ -344,7 +347,7 @@ export function GoLiveScreen({ navigation }: Props) {
           style={({ pressed }) => [styles.found, pressed && styles.pressed]}
         >
           <View style={styles.foundAvatars}>
-            {people.slice(0, 3).map((person, i) => (
+            {people.slice(0, Math.min(3, counted)).map((person, i) => (
               <View key={person.id} style={[styles.foundAvatar, { backgroundColor: pastelFor(person.id) }, i > 0 && styles.foundAvatarNext]}>
                 <Text style={styles.foundInitials}>{person.initials}</Text>
               </View>
@@ -353,7 +356,7 @@ export function GoLiveScreen({ navigation }: Props) {
           <View style={styles.flex}>
             <Text style={styles.h3}>Matches found!</Text>
             <Text style={styles.sub}>
-              {count} great {count === 1 ? 'connection' : 'connections'}
+              {Math.max(1, counted)} great {counted <= 1 ? 'connection' : 'connections'}
             </Text>
           </View>
           <ChevronRight size={20} color={colors.muted} />
@@ -407,10 +410,10 @@ const makeStyles = (colors: ThemeColors) =>
       fontWeight: '700',
       letterSpacing: 1.2,
       textTransform: 'uppercase',
-      textAlign: 'center',
       color: colors.muted,
-      paddingHorizontal: 70,
     },
+    // Room on both sides for the live pill, so the name stays centred.
+    eventNameBox: { marginHorizontal: 74 },
     status: { position: 'absolute', right: 0 },
     eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
     h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
