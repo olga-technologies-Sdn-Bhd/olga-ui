@@ -49,7 +49,7 @@ export function FiltersScreen({ navigation }: Props) {
     const intentChanged = Boolean(nextIntent) && nextIntent !== intentText.trim();
     if (intentChanged) {
       setIntentText(nextIntent);
-      // "This will find you a new three": once per live session.
+      // "This will find you new matches": once per live session.
       if (isLive) markIntentEdited();
     }
     // Minimum match is the only filter matching uses; a new one (e.g. from
@@ -80,7 +80,7 @@ export function FiltersScreen({ navigation }: Props) {
       />
       <Text style={styles.hint}>
         {canEditIntent
-          ? 'You can change this once while live. This will find you a new three.'
+          ? 'You can change this once while live. This will find you new matches.'
           : "You've changed this once in this session. It opens again next time you go live."}
       </Text>
 

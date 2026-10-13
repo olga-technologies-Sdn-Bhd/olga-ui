@@ -9,7 +9,7 @@ import { Card } from '../../components/Card';
 import { DateBlock } from '../../components/DateBlock';
 import { FilterSummary } from '../../components/FilterSummary';
 import { GoLiveDisc } from '../../components/GoLiveDisc';
-import { GoLiveRadar, RadarPerson, RadarPhase } from '../../components/GoLiveRadar';
+import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase } from '../../components/GoLiveRadar';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
@@ -247,6 +247,21 @@ export function GoLiveScreen({ navigation }: Props) {
 
   const openFilter = () => navigation.navigate('Filters');
 
+  // Stable inputs for the radar, so this screen re-rendering (it does every
+  // 30 s) never rebuilds it mid-animation.
+  const people = useMemo<RadarPerson[]>(
+    () => topMatches(matches, passedIds).map((card) => ({ id: card.match.member_id, initials: initialsFor(card) })),
+    [matches, passedIds]
+  );
+  const goLiveRef = useRef(handleGoLive);
+  useEffect(() => {
+    goLiveRef.current = handleGoLive;
+  });
+  const onHoldComplete = useCallback(() => {
+    goLiveRef.current();
+  }, []);
+  const openMatches = useCallback(() => navigation.navigate('LiveMatches'), [navigation]);
+
   // No upcoming room: nothing to go live in.
   if (!room) {
     return (
@@ -290,11 +305,8 @@ export function GoLiveScreen({ navigation }: Props) {
 
   // Boards 06 and 08: ready, then live. One tree for both, so the button can
   // rise and the radar can start without the screen being rebuilt.
-  const top = topMatches(matches, passedIds);
-  const count = top.length;
-  const people: RadarPerson[] = top.map((card) => ({ id: card.match.member_id, initials: initialsFor(card) }));
+  const count = people.length;
   const phase: RadarPhase = searching ? 'searching' : !isLive ? 'idle' : count > 0 ? 'found' : matches && !matchingFailed ? 'empty' : 'live';
-  const openMatches = () => navigation.navigate('LiveMatches');
 
   return (
     <Screen>
@@ -315,12 +327,12 @@ export function GoLiveScreen({ navigation }: Props) {
         )}
       </View>
 
-      <GoLiveRadar phase={phase} people={people} disabled={searching} onHoldComplete={handleGoLive} onOpenMatches={openMatches} />
+      <GoLiveRadar phase={phase} people={people} disabled={searching} onHoldComplete={onHoldComplete} onOpenMatches={openMatches} />
 
       {phase === 'idle' && (
         <>
           <Text style={styles.lead}>Press and hold to Go Live</Text>
-          <Text style={styles.center}>Your three best matches in this room appear, and only they can see you. Nobody else.</Text>
+          <Text style={styles.center}>Your best matches in this room appear, and only they can see you. Nobody else.</Text>
         </>
       )}
       {phase === 'searching' && <Text style={styles.searching}>Finding your strongest matches…</Text>}
@@ -333,7 +345,7 @@ export function GoLiveScreen({ navigation }: Props) {
         >
           <View style={styles.foundAvatars}>
             {people.slice(0, 3).map((person, i) => (
-              <View key={person.id} style={[styles.foundAvatar, i > 0 && styles.foundAvatarNext]}>
+              <View key={person.id} style={[styles.foundAvatar, { backgroundColor: pastelFor(person.id) }, i > 0 && styles.foundAvatarNext]}>
                 <Text style={styles.foundInitials}>{person.initials}</Text>
               </View>
             ))}
@@ -431,10 +443,9 @@ const makeStyles = (colors: ThemeColors) =>
       borderRadius: 19,
       borderWidth: 2,
       borderColor: colors.surface,
-      backgroundColor: colors.accentSoft,
       alignItems: 'center',
       justifyContent: 'center',
     },
     foundAvatarNext: { marginLeft: -10 },
-    foundInitials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '600', color: colors.text },
+    foundInitials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '600', color: AVATAR_INK },
   });

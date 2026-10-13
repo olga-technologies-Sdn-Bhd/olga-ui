@@ -1,6 +1,6 @@
 import { useIsFocused } from '@react-navigation/native';
 import { Radio } from 'lucide-react-native';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -58,11 +58,10 @@ const EDGE = 4;
 const WOBBLE = 6; // how far an avatar drifts in and out as it goes round
 const STAGGER_MS = 300;
 const ORBIT_MS = 46000; // one slow turn of the room
-const LANES = 3; // matches are spread a third of a turn apart
 
 // Soft pastels; the same person always gets the same one.
 const PASTELS = ['#DCE8F8', '#E6DFF5', '#DDF0E3', '#F8E3D4', '#F6DCE6', '#F5EDC9'];
-const AVATAR_INK = '#1B2A41';
+export const AVATAR_INK = '#1B2A41';
 
 function hash(text: string) {
   let h = 2166136261;
@@ -72,27 +71,35 @@ function hash(text: string) {
   return h >>> 0;
 }
 
-// One match, roaming the radar. Every avatar rides the same slow turn, a
-// third of the way round from the next, so they travel the whole room and
-// never meet; each also drifts in and out on its own beat.
-function Avatar({
+export function pastelFor(id: string) {
+  return PASTELS[hash(id) % PASTELS.length];
+}
+
+// One match, roaming the radar. Every avatar rides the same slow turn, evenly
+// spaced round it and alternating between a nearer and a farther path, so
+// they travel the whole room and never meet; each also drifts in and out on
+// its own beat.
+const Avatar = memo(function Avatar({
   person,
   lane,
+  lanes,
   radius,
   orbit,
   moving,
 }: {
   person: RadarPerson;
   lane: number;
+  lanes: number;
   radius: number;
   orbit: Animated.Value;
   moving: boolean;
 }) {
   const enter = useRef(new Animated.Value(0)).current;
-  const drift = useRef(new Animated.Value(0.5)).current;
-  const tint = PASTELS[hash(person.id) % PASTELS.length];
+  const drift = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
+  const tint = pastelFor(person.id);
   const seed = hash(person.id);
-  const from = lane * (360 / LANES) - 150;
+  const from = lane * (360 / lanes) - 150;
 
   useEffect(() => {
     const appear = Animated.sequence([
@@ -113,11 +120,25 @@ function Avatar({
       Animated.sequence([
         Animated.timing(drift, { toValue: 1, duration, easing: ease, useNativeDriver: true }),
         Animated.timing(drift, { toValue: 0, duration, easing: ease, useNativeDriver: true }),
-      ])
+      ]),
+      { iterations: -1, resetBeforeIteration: false }
+    );
+    // And each one swells and settles, slowly, on its own beat.
+    const swell = 1900 + (seed % 7) * 170;
+    const breathe = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: swell, easing: ease, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: swell, easing: ease, useNativeDriver: true }),
+      ]),
+      { iterations: -1, resetBeforeIteration: false }
     );
     loop.start();
-    return () => loop.stop();
-  }, [drift, moving, seed]);
+    breathe.start();
+    return () => {
+      loop.stop();
+      breathe.stop();
+    };
+  }, [drift, pulse, moving, seed]);
 
   const turn = orbit.interpolate({ inputRange: [0, 1], outputRange: [`${from}deg`, `${from + 360}deg`] });
   const upright = orbit.interpolate({ inputRange: [0, 1], outputRange: [`${-from}deg`, `${-from - 360}deg`] });
@@ -141,15 +162,19 @@ function Avatar({
             },
           ]}
         >
-          <View style={[avatarStyles.haloFill, { backgroundColor: tint }]} />
-          <View style={[avatarStyles.face, { backgroundColor: tint }]}>
-            <Text style={avatarStyles.text}>{person.initials}</Text>
-          </View>
+          <Animated.View
+            style={[avatarStyles.halo, { transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1.1] }) }] }]}
+          >
+            <View style={[avatarStyles.haloFill, { backgroundColor: tint }]} />
+            <View style={[avatarStyles.face, { backgroundColor: tint }]}>
+              <Text style={avatarStyles.text}>{person.initials}</Text>
+            </View>
+          </Animated.View>
         </Animated.View>
       </Animated.View>
     </Animated.View>
   );
-}
+});
 
 const avatarStyles = StyleSheet.create({
   pivot: { position: 'absolute', width: 0, height: 0 },
@@ -190,7 +215,7 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // The Go Live control: press and hold, then it rises to the middle of a quiet
 // radar and breathes, and matches appear as initials travelling round it.
-export function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMatches }: Props) {
+export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMatches }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const focused = useIsFocused();
@@ -270,7 +295,8 @@ export function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMat
       Animated.sequence([
         Animated.timing(breath, { toValue: 1, duration: 1700, easing: ease, useNativeDriver: true }),
         Animated.timing(breath, { toValue: 0, duration: 1700, easing: ease, useNativeDriver: true }),
-      ])
+      ]),
+      { iterations: -1, resetBeforeIteration: false }
     );
     const start = setTimeout(() => loop.start(), 900);
     return () => {
@@ -312,6 +338,8 @@ export function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMat
   const cx = width / 2;
   // As far out as the screen allows, but never past the outer ring.
   const orbitR = Math.min(REACH - 6, cx - SPOT / 2 - EDGE - WOBBLE, LIVE_CY - SPOT / 2 - EDGE - WOBBLE);
+  // With more than three matches, every other one takes a nearer path.
+  const innerR = Math.max(LIVE_R * 1.08 + SPOT / 2 + WOBBLE + 4, orbitR - 30);
   const canOpen = phase === 'found' && Boolean(onOpenMatches);
   const caption =
     phase === 'searching'
@@ -344,8 +372,16 @@ export function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMat
 
           {showPeople && (
             <View pointerEvents="none" style={[styles.centre, { left: cx, top: LIVE_CY }]}>
-              {people.slice(0, LANES).map((person, lane) => (
-                <Avatar key={person.id} person={person} lane={lane} radius={orbitR} orbit={orbit} moving={moving} />
+              {people.map((person, lane) => (
+                <Avatar
+                  key={person.id}
+                  person={person}
+                  lane={lane}
+                  lanes={people.length}
+                  radius={people.length > 3 && lane % 2 === 1 ? innerR : orbitR}
+                  orbit={orbit}
+                  moving={moving}
+                />
               ))}
             </View>
           )}
@@ -432,7 +468,7 @@ export function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMat
       )}
     </View>
   );
-}
+});
 
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
