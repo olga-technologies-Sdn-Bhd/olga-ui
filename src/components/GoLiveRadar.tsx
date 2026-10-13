@@ -431,9 +431,9 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
   const counted = useCountUp(people.length, phase === 'found');
   const caption =
     phase === 'searching'
-      ? 'FINDING MATCHES…'
+      ? 'FINDING PEOPLE…'
       : phase === 'found'
-        ? `${Math.max(1, counted)} ${Math.max(1, counted) === 1 ? 'MATCH' : 'MATCHES'}`
+        ? `${Math.max(1, counted)} RELEVANT ${Math.max(1, counted) === 1 ? 'PERSON' : 'PEOPLE'}`
         : phase === 'empty'
           ? 'STILL QUIET'
           : null;
@@ -547,7 +547,7 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
                     phase === 'idle'
                       ? 'Go Live. Press and hold'
                       : canOpen
-                        ? `You're live, ${people.length} ready. Open your matches`
+                        ? `You're live, ${people.length} relevant people. Open the list`
                         : "You're live"
                   }
                   style={styles.button}
