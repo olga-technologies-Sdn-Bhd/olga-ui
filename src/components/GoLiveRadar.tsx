@@ -31,6 +31,9 @@ type Props = {
   onHoldComplete: () => void;
   // Tapping the live button once matches are in.
   onOpenMatches?: () => void;
+  // How far above this component the centre of the screen's header row sits.
+  // On going live the wordmark flies up there, to the right-hand end.
+  headerAbove?: number;
 };
 
 // Geometry, in dp. The button rests a little low and rises when live, to the
@@ -41,10 +44,13 @@ const LIFT = 40;
 const LIVE_SCALE = 0.82;
 const BRAND_H = 34;
 const BRAND_GAP = 14;
+const BRAND_SMALL = 0.62; // the wordmark's size once it is in the header
+const BRAND_SMALL_HALF = 24; // half its width at that size
 const STAGE_H = 372;
 const LIVE_CY = 184;
 const IDLE_CY = LIVE_CY + LIFT;
 const LIVE_R = (BUTTON / 2) * LIVE_SCALE;
+const BRAND_TOP = IDLE_CY - BUTTON / 2 - RING_GAP - BRAND_GAP - BRAND_H;
 // How far the ripples travel from the button before they fade out. Nothing
 // in the radar stands still.
 const REACH = LIVE_R + 114;
@@ -273,7 +279,7 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // The Go Live control: press and hold, then it rises to the middle of a quiet
 // radar and breathes, and matches appear as initials travelling round it.
-export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMatches }: Props) {
+export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, onHoldComplete, onOpenMatches, headerAbove = 27 }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const focused = useIsFocused();
@@ -343,6 +349,21 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
     move.start();
     return () => move.stop();
   }, [live, lift, radar, reduceMotion]);
+
+  // ---- the wordmark leaves its place above the button for the header
+  const fly = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (reduceMotion) {
+      fly.setValue(live ? 1 : 0);
+      return;
+    }
+    const move = Animated.sequence([
+      Animated.delay(live ? 200 : 0),
+      Animated.timing(fly, { toValue: live ? 1 : 0, duration: live ? 850 : 500, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+    ]);
+    move.start();
+    return () => move.stop();
+  }, [live, fly, reduceMotion]);
 
   // ---- while live the button breathes: slowly in, slowly out
   const breath = useRef(new Animated.Value(0)).current;
@@ -456,14 +477,28 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
             </View>
           )}
 
-          {/* The wordmark above the button; once live it moves inside it. */}
+          {/* The wordmark above the button. On going live it rises first and
+              then sweeps across, settling small at the right of the header. */}
           <Animated.Text
             style={[
               styles.brand,
               {
-                top: IDLE_CY - BUTTON / 2 - RING_GAP - BRAND_GAP - BRAND_H,
-                opacity: lift.interpolate({ inputRange: [0, 0.5], outputRange: [1, 0], extrapolate: 'clamp' }),
-                transform: [{ translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, -LIFT / 2] }) }],
+                top: BRAND_TOP,
+                transform: [
+                  {
+                    translateX: fly.interpolate({
+                      inputRange: [0, 0.45, 1],
+                      outputRange: [0, (cx - BRAND_SMALL_HALF) * 0.22, cx - BRAND_SMALL_HALF],
+                    }),
+                  },
+                  {
+                    translateY: fly.interpolate({
+                      inputRange: [0, 0.55, 1],
+                      outputRange: [0, -(BRAND_TOP + BRAND_H / 2 + headerAbove) * 0.82, -(BRAND_TOP + BRAND_H / 2 + headerAbove)],
+                    }),
+                  },
+                  { scale: fly.interpolate({ inputRange: [0, 1], outputRange: [1, BRAND_SMALL] }) },
+                ],
               },
             ]}
           >

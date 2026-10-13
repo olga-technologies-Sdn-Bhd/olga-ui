@@ -401,7 +401,7 @@ const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1, minWidth: 0 },
     pressed: { opacity: 0.7 },
-    // The event name sits in the centre; the live pill floats at the right
+    // The event name sits in the centre; the live pill floats at the left
     // without pushing it off centre.
     header: { minHeight: 30, justifyContent: 'center' },
     eventName: {
@@ -414,7 +414,8 @@ const makeStyles = (colors: ThemeColors) =>
     },
     // Room on both sides for the live pill, so the name stays centred.
     eventNameBox: { marginHorizontal: 74 },
-    status: { position: 'absolute', right: 0 },
+    // On the left, leaving the right-hand end for the wordmark when live.
+    status: { position: 'absolute', left: 0 },
     eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
     h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
     h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
