@@ -7,7 +7,7 @@ The app talks to Olga.Core, olga-nlp-api and Microsoft Entra External ID (sign-i
 | `OLGA_ENV` | Backend and sign-in | Who uses it |
 | --- | --- | --- |
 | `dev` (default) | Shared Azure dev APIs and the dev Entra tenant. Redirect `olga-dev://auth` | **Everyone, for all development** |
-| `prod` | Production APIs and the "OLGA Connect Production" Entra tenant. Redirect `olga://auth` | Release builds and production checks only |
+| `prod` | Production APIs and the "OLGA Connect Production" Entra tenant. Redirect `olga://auth` | iOS Release builds (always), Android release via `OLGA_ENV=prod`, and production checks |
 | `local` | Olga.Core and olga-nlp-api on your own machine, dev Entra tenant | Backend developers only |
 
 How it works:
@@ -52,9 +52,9 @@ The release build is still signed with the debug keystore. A store upload needs 
 
 **iOS**
 
-1. Set the build setting `OLGA_AUTH_SCHEME` to `olga` (it defaults to `olga-dev`). From the command line: `xcodebuild … OLGA_AUTH_SCHEME=olga`.
-2. Make the bundle step use production: add `export OLGA_ENV=prod` to `ios/.xcode.env.local` (not committed). For a debug build, also start Metro with `npm run start:prod`.
-3. Remove both again before going back to dev.
+- **Release builds (TestFlight, App Store) are always production.** The Release `OLGA_AUTH_SCHEME` is `olga` in the Xcode project, and `ios/.xcode.env` sets `OLGA_ENV=prod` for the Release bundle. There is nothing to set by hand.
+- **Debug builds stay on dev**, with the `olga-dev` scheme, unless you start Metro on production. For a production debug build on a phone, run `npm run start:prod`, set the Debug `OLGA_AUTH_SCHEME` to `olga` in Xcode, and revert both afterwards.
+- Signing: Release uses manual signing with the Apple Distribution certificate and the `Olga-Prod` App Store profile (team `Y3X4KPFWM9`). Import the shared `.p12` and install the profile first.
 
 **Sign-in in production**
 
