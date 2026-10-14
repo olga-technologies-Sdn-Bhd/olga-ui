@@ -84,6 +84,30 @@ gradle.taskGraph.whenReady { graph ->
 def olgaAuthRedirectScheme = olgaEnv == "prod" ? "olga" : "olga-dev"
 
 /**
+ * Release signing with the Play upload key. The keystore and its passwords
+ * live outside the repository; OLGA_UPLOAD_KEY_PROPERTIES points at a
+ * properties file with storeFile, storePassword, keyAlias and keyPassword.
+ * A production release must be signed with it. Dev release builds without it
+ * fall back to the debug key, as before.
+ */
+def uploadKeyPath = System.getenv("OLGA_UPLOAD_KEY_PROPERTIES")
+def uploadKey = new Properties()
+if (uploadKeyPath) {
+    def uploadKeyFile = file(uploadKeyPath)
+    if (!uploadKeyFile.exists()) {
+        throw new GradleException("OLGA_UPLOAD_KEY_PROPERTIES points at a file that doesn't exist: ${uploadKeyPath}")
+    }
+    uploadKeyFile.withInputStream { uploadKey.load(it) }
+}
+def hasUploadKey = ["storeFile", "storePassword", "keyAlias", "keyPassword"].every { uploadKey.getProperty(it) }
+gradle.taskGraph.whenReady { graph ->
+    def buildsRelease = graph.allTasks.any { it.name.toLowerCase().contains("release") }
+    if (buildsRelease && olgaEnv == "prod" && !hasUploadKey) {
+        throw new GradleException("A production release must be signed with the upload key: set OLGA_UPLOAD_KEY_PROPERTIES to the upload-key.properties file (see deploy/README).")
+    }
+}
+
+/**
  * The preferred build flavor of JavaScriptCore (JSC)
  *
  * For example, to use the international variant, you can use:
@@ -119,15 +143,23 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (hasUploadKey) {
+            upload {
+                storeFile file(uploadKey.getProperty("storeFile"))
+                storePassword uploadKey.getProperty("storePassword")
+                keyAlias uploadKey.getProperty("keyAlias")
+                keyPassword uploadKey.getProperty("keyPassword")
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // The Play upload key when it's configured (always, for prod); the
+            // debug key otherwise, for dev builds installed on test phones.
+            signingConfig hasUploadKey ? signingConfigs.upload : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }

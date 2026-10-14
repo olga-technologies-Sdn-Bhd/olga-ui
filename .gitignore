@@ -73,3 +73,7 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Play upload key: never commit the keystore or its passwords
+*.jks
+upload-key.properties
