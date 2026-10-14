@@ -1,5 +1,6 @@
 import { CORE_API_URL } from '../config/env';
 import { makeApiClient, RequestOptions, withEtag } from './client';
+import { cached } from './offlineCache';
 import type {
   AcceptCommitResponse,
   CommitQuota,
@@ -10,9 +11,12 @@ import type {
   OutgoingCommit,
   SendCommitRequest,
   SendCommitResponse,
+  SyncPage,
   EventAttendeesResponse,
   ConsentPolicy,
   ConsentRequest,
+  ConnectionRequestCreate,
+  ConnectionRequestResponse,
   ConsentResponse,
   EventRegistration,
   EventSummary,
@@ -44,8 +48,10 @@ export const coreApi = {
       await client.send<MemberLookupBody>('POST', '/v1/members/lookup', { email } satisfies MemberLookupRequest, options)
     ),
 
-  getMyProfile: async (options?: RequestOptions) =>
-    withEtag(await client.send<ProfileBody>('GET', '/v1/me/profile', undefined, options)),
+  // Reads marked cached() are kept on the phone (encrypted) and answered from
+  // there when there's no network: see offlineCache.ts.
+  getMyProfile: (options?: RequestOptions) =>
+    cached('profile', async () => withEtag(await client.send<ProfileBody>('GET', '/v1/me/profile', undefined, options))),
 
   // Full replace: send every field. ifMatch is the etag from the last
   // register/read/update, quotes included (e.g. "\"1\"").
@@ -58,7 +64,7 @@ export const coreApi = {
     ),
 
   getEventAttendees: (eventId: string) =>
-    client.get<EventAttendeesResponse>(`/v1/events/${encodeURIComponent(eventId)}/attendees`),
+    cached('attendees', () => client.get<EventAttendeesResponse>(`/v1/events/${encodeURIComponent(eventId)}/attendees`), eventId),
 
   getActiveConsentPolicy: (purposeCode: string) =>
     client.get<ConsentPolicy>(`/v1/consent-policies/${encodeURIComponent(purposeCode)}`),
@@ -70,9 +76,7 @@ export const coreApi = {
     return withEtag(await client.send<ProfileBody>('GET', `/v1/members/${encodeURIComponent(memberId)}`));
   },
 
-  getEvents: async (): Promise<CoreEvent[]> => {
-    return client.get<EventSummary[]>('/v1/events');
-  },
+  getEvents: (): Promise<CoreEvent[]> => cached('events', () => client.get<EventSummary[]>('/v1/events')),
   // Idempotent server-side: registering twice returns the same registration.
   registerForEvent: async (eventId: string, options?: RequestOptions) => {
     return client.post<EventRegistration>(`/v1/events/${eventId}/register`, undefined, options);
@@ -96,8 +100,8 @@ export const coreApi = {
     client.get<CommitQuota>(`/v1/events/${encodeURIComponent(eventId)}/commits/quota`),
   getMeetingSpots: (eventId: string) =>
     client.get<MeetingSpot[]>(`/v1/events/${encodeURIComponent(eventId)}/meeting-spots`),
-  getIncomingCommits: () => client.get<IncomingCommit[]>('/v1/me/commits/incoming'),
-  getOutgoingCommits: () => client.get<OutgoingCommit[]>('/v1/me/commits/outgoing'),
+  getIncomingCommits: () => cached('commits-in', () => client.get<IncomingCommit[]>('/v1/me/commits/incoming')),
+  getOutgoingCommits: () => cached('commits-out', () => client.get<OutgoingCommit[]>('/v1/me/commits/outgoing')),
   acceptCommit: (requestId: string, options?: RequestOptions) =>
     client.patch<AcceptCommitResponse>(`/v1/connection-requests/${encodeURIComponent(requestId)}`, { decision: 'ACCEPT' }, options),
   // 204, nothing changes for the sender.
@@ -105,6 +109,16 @@ export const coreApi = {
     client.patch<void>(`/v1/connection-requests/${encodeURIComponent(requestId)}`, { decision: 'DECLINE' }, options),
   // Accepted Commits become conversations; meetings read their plan and names.
   // Confirmed relationships (an accepted Commit creates one).
-  getConnections: () => client.get<Connection[]>('/v1/connections'),
-  getMeetings: () => client.get<MeetingPage>('/v1/conversations?limit=50'),
+  getConnections: () => cached('connections', () => client.get<Connection[]>('/v1/connections')),
+  // Straight from Ol-ga, never the saved copy: for checks that must know it answered.
+  getConnectionsFresh: () => client.get<Connection[]>('/v1/connections'),
+  getMeetings: () => cached('meetings', () => client.get<MeetingPage>('/v1/conversations?limit=50')),
+
+  // Nearby: a plain connection request (no event). A pending request between
+  // the same two members is returned rather than duplicated.
+  sendConnectionRequest: (body: ConnectionRequestCreate, options?: RequestOptions) =>
+    client.post<ConnectionRequestResponse>('/v1/connection-requests', body, options),
+  // This member's change feed (requests sent to them, new connections).
+  getChanges: (cursor?: string) =>
+    client.get<SyncPage>(`/v1/sync/changes?limit=200${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`),
 };

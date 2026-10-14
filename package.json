@@ -51,5 +51,18 @@
   },
   "engines": {
     "node": ">= 22.11.0"
+  },
+  "codegenConfig": {
+    "name": "OlgaAppSpec",
+    "type": "modules",
+    "jsSrcsDir": "src/bluetooth/specs",
+    "android": {
+      "javaPackageName": "com.olgamobile.ble"
+    },
+    "ios": {
+      "modulesProvider": {
+        "OlgaBle": "RCTOlgaBle"
+      }
+    }
   }
 }

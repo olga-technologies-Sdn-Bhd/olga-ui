@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
+import { BLE_DISCOVERY_ENABLED } from '../../bluetooth/bleDiscovery';
 import { MatchCard, MatchingError, MatchingFailure } from '../../api/matching';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -14,6 +15,7 @@ import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase, useCountUp
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
+import { useNearby } from '../../context/NearbyContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
 import { ConsentPurpose, GoLiveBlocker, useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
@@ -21,6 +23,7 @@ import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
 import { topMatches } from './LiveMatchesScreen';
+import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH, NearbyView } from './NearbyView';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'GoLive'>;
 
@@ -80,6 +83,7 @@ export function GoLiveScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { events } = useEvents();
+  const { mode, setMode, available: nearbyAvailable } = useNearby();
   const disc = { fill: colors.charcoal, text: colors.white };
   const {
     activeEvent,
@@ -198,7 +202,15 @@ export function GoLiveScreen({ navigation }: Props) {
       }
     } catch (e) {
       setSearching(false);
-      setError(e instanceof ApiError && e.status > 0 ? `Couldn't go live (${e.status})` : "Couldn't reach the server");
+      const unreachable = !(e instanceof ApiError && e.status > 0);
+      // No internet: Nearby still finds people close by, over Bluetooth.
+      setError(
+        unreachable
+          ? BLE_DISCOVERY_ENABLED
+            ? 'No internet. Switch to Nearby to find people around you over Bluetooth.'
+            : "Couldn't reach the server"
+          : `Couldn't go live (${e instanceof ApiError ? e.status : 0})`
+      );
       return;
     }
     match();
@@ -265,6 +277,13 @@ export function GoLiveScreen({ navigation }: Props) {
   }, []);
   const openMatches = useCallback(() => navigation.navigate('LiveMatches'), [navigation]);
 
+  // Nearby (no event): when there's no room, or the member picked it.
+  const nearby = BLE_DISCOVERY_ENABLED && !isLive && (!room || mode === 'nearby' || (mode === null && nearbyAvailable));
+  if (nearby) {
+    return <NearbyView navigation={navigation} onSwitchToEvent={room ? () => setMode('event') : undefined} />;
+  }
+  const modeSwitch = BLE_DISCOVERY_ENABLED && !isLive && <GoLiveModeSwitch mode="event" onChange={setMode} />;
+
   // No upcoming room: nothing to go live in.
   if (!room) {
     return (
@@ -292,6 +311,7 @@ export function GoLiveScreen({ navigation }: Props) {
           <Text style={styles.eyebrow}>Go Live</Text>
           <Text style={styles.h2}>Not in a room yet</Text>
         </View>
+        {modeSwitch}
         <GoLiveDisc locked label="GO LIVE" caption="OPENS AT CHECK-IN" fill={disc.fill} textColor={disc.text} />
         <Text style={styles.lead}>Nobody can see you.</Text>
         <Card style={styles.roomCard}>
@@ -329,8 +349,16 @@ export function GoLiveScreen({ navigation }: Props) {
           )
         )}
       </View>
+      {modeSwitch}
 
-      <GoLiveRadar phase={phase} people={people} disabled={searching} onHoldComplete={onHoldComplete} onOpenMatches={openMatches} />
+      <GoLiveRadar
+        phase={phase}
+        people={people}
+        disabled={searching}
+        onHoldComplete={onHoldComplete}
+        onOpenMatches={openMatches}
+        headerAbove={modeSwitch ? HEADER_ABOVE_WITH_SWITCH : undefined}
+      />
 
       {phase === 'idle' && (
         <>
