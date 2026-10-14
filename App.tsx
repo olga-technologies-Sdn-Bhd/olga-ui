@@ -6,7 +6,9 @@ import { warmUpApis } from './src/api/warmup';
 import { AuthProvider } from './src/context/AuthContext';
 import { EventsProvider } from './src/context/EventsContext';
 import { LiveProvider } from './src/context/LiveContext';
+import { NearbyProvider } from './src/context/NearbyContext';
 import { PrefsProvider } from './src/context/PrefsContext';
+import { navigationRef } from './src/navigation/navigationRef';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { fonts } from './src/theme/typography';
@@ -40,9 +42,11 @@ function ThemedApp() {
         <PrefsProvider>
           <EventsProvider>
             <LiveProvider>
-              <NavigationContainer theme={navTheme}>
-                <RootNavigator />
-              </NavigationContainer>
+              <NearbyProvider>
+                <NavigationContainer ref={navigationRef} theme={navTheme}>
+                  <RootNavigator />
+                </NavigationContainer>
+              </NearbyProvider>
             </LiveProvider>
           </EventsProvider>
         </PrefsProvider>

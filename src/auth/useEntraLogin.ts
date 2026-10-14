@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { authorize, refresh, AuthConfiguration, AuthorizeResult, RefreshResult } from 'react-native-app-auth';
 import * as Keychain from 'react-native-keychain';
 import { keychainService } from '../config/env';
@@ -128,6 +129,36 @@ const PROVIDER_DOMAIN_HINT: Record<EntraProvider, string> = {
   apple: 'apple',
 };
 
+// A refresh Microsoft refused (revoked or expired grant, consent or sign-in
+// needed) ends the session. One that couldn't reach Microsoft (no internet)
+// doesn't: the member stays signed in offline and the refresh is retried.
+function refusedByMicrosoft(error: unknown) {
+  const e = error as { code?: unknown; message?: unknown } | null;
+  const text = `${String(e?.code ?? '')} ${String(e?.message ?? '')}`.toLowerCase();
+  return /invalid_grant|invalid_client|unauthorized_client|interaction_required|consent_required|login_required|aadsts/.test(text);
+}
+
+// How often to retry an expired session's refresh while offline.
+const REFRESH_RETRY_MS = 60000;
+
+async function refreshStored(stored: StoredSession): Promise<StoredSession> {
+  const refreshed: RefreshResult = await refresh(authConfig, { refreshToken: stored.refreshToken! });
+  // Microsoft can rotate the refresh token; always replace the stored value.
+  const next: StoredSession = {
+    accessToken: refreshed.accessToken,
+    accessTokenExpirationDate: refreshed.accessTokenExpirationDate,
+    refreshToken: refreshed.refreshToken ?? stored.refreshToken,
+    idToken: refreshed.idToken,
+    tokenType: refreshed.tokenType,
+    scopes: stored.scopes,
+  };
+  // §10: confirm a rotated refresh token replaces the stored one.
+  console.info(`[auth] session refreshed, refresh token rotated=${Boolean(refreshed.refreshToken) && refreshed.refreshToken !== stored.refreshToken}`);
+  logTokenTarget(next.accessToken);
+  await saveSession(next);
+  return next;
+}
+
 export function useEntraLogin() {
   // undefined = still restoring from Keychain on app start.
   const [session, setSession] = useState<StoredSession | null | undefined>(undefined);
@@ -153,28 +184,53 @@ export function useEntraLogin() {
         return;
       }
       try {
-        const refreshed: RefreshResult = await refresh(authConfig, { refreshToken: stored.refreshToken });
-        // Microsoft can rotate the refresh token; always replace the stored value.
-        const next: StoredSession = {
-          accessToken: refreshed.accessToken,
-          accessTokenExpirationDate: refreshed.accessTokenExpirationDate,
-          refreshToken: refreshed.refreshToken ?? stored.refreshToken,
-          idToken: refreshed.idToken,
-          tokenType: refreshed.tokenType,
-          scopes: stored.scopes,
-        };
-        // §10: confirm a rotated refresh token replaces the stored one.
-        console.info(`[auth] session refreshed, refresh token rotated=${Boolean(refreshed.refreshToken) && refreshed.refreshToken !== stored.refreshToken}`);
-        logTokenTarget(next.accessToken);
-        await saveSession(next);
-        setSession(next);
-      } catch {
-        // Refresh failed (revoked/expired) — require an interactive login again.
-        await clearSession();
-        setSession(null);
+        setSession(await refreshStored(stored));
+      } catch (error) {
+        if (refusedByMicrosoft(error)) {
+          // Revoked or expired: require an interactive login again.
+          await clearSession();
+          setSession(null);
+        } else {
+          // Offline: stay signed in with what the phone has (offline first);
+          // the effect below refreshes once Microsoft can be reached.
+          setSession(stored);
+        }
       }
     })();
   }, []);
+
+  // An expired session kept while offline: refresh it when the app comes back
+  // to the foreground, and every minute, until Microsoft answers.
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const expired = Boolean(session && new Date(session.accessTokenExpirationDate).getTime() <= Date.now() && session.refreshToken);
+  useEffect(() => {
+    if (!expired) return;
+    let busy = false;
+    const retry = async () => {
+      const current = sessionRef.current;
+      if (busy || !current?.refreshToken || new Date(current.accessTokenExpirationDate).getTime() > Date.now()) return;
+      busy = true;
+      try {
+        setSession(await refreshStored(current));
+      } catch (error) {
+        if (refusedByMicrosoft(error)) {
+          await clearSession();
+          setSession(null);
+        }
+      } finally {
+        busy = false;
+      }
+    };
+    const timer = setInterval(retry, REFRESH_RETRY_MS);
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next === 'active') retry();
+    });
+    return () => {
+      clearInterval(timer);
+      subscription.remove();
+    };
+  }, [expired]);
 
   // Resolves with the email Microsoft verified (from the ID token), falling
   // back to the hint the user typed if the token carries no email claim.

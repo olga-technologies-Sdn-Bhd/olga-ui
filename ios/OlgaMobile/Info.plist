@@ -42,6 +42,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Ol-ga uses Bluetooth while you are live to find other Ol-ga members nearby. It shares a random code that changes each time, never your name or details.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string/>
 	<key>RCTNewArchEnabled</key>

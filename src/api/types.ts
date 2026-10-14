@@ -376,6 +376,28 @@ export type AcceptCommitResponse = {
   display_name?: string;
 };
 
+// POST /v1/connection-requests with no context_id: a plain connection request
+// (Nearby). Accepting it creates the connection and conversation, as a Commit does.
+export type ConnectionRequestCreate = { recipient_member_id: string; note?: string; expires_in_days?: number };
+export type ConnectionRequestResponse = {
+  request_id: string;
+  sender_member_id: string;
+  recipient_member_id: string;
+  status: string;
+  expires_at: string;
+};
+
+// GET /v1/sync/changes: what changed for this member, oldest first.
+export type SyncItem = {
+  sequence: number;
+  resource_type: string; // CONNECTION_REQUEST, CONNECTION, ...
+  resource_id: string;
+  change_type: string; // UPSERT | DELETE
+  payload?: Record<string, unknown> | null;
+  occurred_at: string;
+};
+export type SyncPage = { items: SyncItem[]; next_cursor?: string | null; has_more: boolean };
+
 // GET /v1/connections: the member's confirmed relationships.
 export type Connection = {
   connection_id: string;

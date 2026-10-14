@@ -18,6 +18,10 @@ export type GoLiveStackParamList = {
   LiveMatches: undefined;
   EmptyRoom: undefined;
   Commit: { memberId: string };
+  // Nearby: Go Live without an event (src/context/NearbyContext.tsx).
+  NearbyPeople: undefined;
+  NearbyCommit: { memberId: string };
+  NearbyRequest: { requestId: string };
 };
 
 export type EventsStackParamList = {

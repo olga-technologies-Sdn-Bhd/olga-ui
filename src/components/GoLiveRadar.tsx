@@ -598,7 +598,7 @@ const makeStyles = (colors: ThemeColors) =>
       fontFamily: fonts.headingBold,
       fontSize: 26,
       lineHeight: BRAND_H,
-      fontWeight: '600',
+      fontWeight: '700',
       color: colors.text,
     },
     core: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
