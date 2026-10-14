@@ -1,24 +1,29 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronRight } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
-import { MatchingError, MatchingFailure } from '../../api/matching';
+import { BLE_DISCOVERY_ENABLED } from '../../bluetooth/bleDiscovery';
+import { MatchCard, MatchingError, MatchingFailure } from '../../api/matching';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { DateBlock } from '../../components/DateBlock';
 import { FilterSummary } from '../../components/FilterSummary';
 import { GoLiveDisc } from '../../components/GoLiveDisc';
+import { Marquee } from '../../components/Marquee';
+import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase, useCountUp } from '../../components/GoLiveRadar';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
+import { ToggleSwitch } from '../../components/ToggleSwitch';
+import { useNearby } from '../../context/NearbyContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
 import { ConsentPurpose, GoLiveBlocker, useLive } from '../../context/LiveContext';
-import { usePrefs } from '../../context/PrefsContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
-import { goLiveColor, goLiveColors } from '../../theme/goLiveColors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
 import { topMatches } from './LiveMatchesScreen';
+import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH, NearbyView } from './NearbyView';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'GoLive'>;
 
@@ -30,7 +35,7 @@ const AUTO_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 2000;
 const RETRYABLE: MatchingFailure[] = ['MATCHING_FAILED', 'TIMED_OUT'];
 
-const LIVE_LINE = 'Only your matches in this room can see you: role and intent, never your name.';
+const LIVE_LINE = 'Role and intent only, never your name.';
 
 const BLOCKER_MESSAGES: Record<Exclude<GoLiveBlocker, 'CONSENT_REQUIRED'>, string> = {
   REGISTRATION_REQUIRED: 'Sign up for this event first, then you can go live.',
@@ -41,8 +46,8 @@ const BLOCKER_MESSAGES: Record<Exclude<GoLiveBlocker, 'CONSENT_REQUIRED'>, strin
 };
 
 const MATCHING_MESSAGES: Record<MatchingFailure, string> = {
-  INTENT_HAS_PII: 'Your intent includes personal details. Edit it in your filter, then try again.',
-  INTENT_FAILED: "We couldn't read your intent. Try rephrasing it in your filter.",
+  INTENT_HAS_PII: 'What you’re looking for includes personal details. Edit it in your filter, then try again.',
+  INTENT_FAILED: "We couldn't read what you're looking for. Try rephrasing it in your filter.",
   MATCHING_FAILED: "You're live, but matching failed.",
   TIMED_OUT: "You're live, but matching is taking longer than usual.",
   CONSENT_DENIED: "Matching is off, so we can't find your matches. Go Live again and allow matching to turn it on.",
@@ -65,12 +70,21 @@ const CHECK_IN_NOTE = 'This event needs check-in: check in at the badge desk bef
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+// Names stay hidden until a Commit is accepted, so a match is shown by the
+// first two letters of their first name when we have it, and of their
+// headline when we don't.
+function initialsFor(card: MatchCard) {
+  const source = (card.profile?.display_name || card.profile?.headline || '').trim().split(/\s+/)[0] ?? '';
+  const letters = source.replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2);
+  return letters ? letters.charAt(0).toUpperCase() + letters.slice(1).toLowerCase() : '··';
+}
+
 export function GoLiveScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { events } = useEvents();
-  const { prefs, setGoLiveColor } = usePrefs();
-  const disc = goLiveColor(prefs.goLiveColor, colors.charcoal);
+  const { mode, setMode, available: nearbyAvailable } = useNearby();
+  const disc = { fill: colors.charcoal, text: colors.white };
   const {
     activeEvent,
     setActiveEvent,
@@ -136,11 +150,10 @@ export function GoLiveScreen({ navigation }: Props) {
     let lastError: unknown;
     for (let attempt = 1; attempt <= AUTO_ATTEMPTS; attempt++) {
       try {
-        const result = await runMatching();
+        await runMatching();
         await wait(Math.max(0, MIN_SEARCH_MS - (Date.now() - started)));
         if (!mounted.current) return;
         setSearching(false);
-        if (result.length === 0) navigation.navigate('EmptyRoom');
         return;
       } catch (e) {
         lastError = e;
@@ -159,12 +172,12 @@ export function GoLiveScreen({ navigation }: Props) {
           ? `You're live, but matching failed (${lastError.status}).`
           : "You're live, but we couldn't reach matching."
     );
-  }, [runMatching, navigation]);
+  }, [runMatching]);
 
   async function handleGoLive() {
     if (!activeEvent) return;
     if (!intentText.trim()) {
-      setError('Set your intent first, so I can find your matches.');
+      setError('Add what you’re looking for first, so I can find relevant people.');
       return;
     }
     setError(null);
@@ -189,7 +202,15 @@ export function GoLiveScreen({ navigation }: Props) {
       }
     } catch (e) {
       setSearching(false);
-      setError(e instanceof ApiError && e.status > 0 ? `Couldn't go live (${e.status})` : "Couldn't reach the server");
+      const unreachable = !(e instanceof ApiError && e.status > 0);
+      // No internet: Nearby still finds people close by, over Bluetooth.
+      setError(
+        unreachable
+          ? BLE_DISCOVERY_ENABLED
+            ? 'No internet. Switch to Nearby to find people around you over Bluetooth.'
+            : "Couldn't reach the server"
+          : `Couldn't go live (${e instanceof ApiError ? e.status : 0})`
+      );
       return;
     }
     match();
@@ -224,6 +245,7 @@ export function GoLiveScreen({ navigation }: Props) {
   }
 
   async function handleGoInvisible() {
+    if (stopping || searching) return;
     setStopping(true);
     setError(null);
     try {
@@ -237,6 +259,30 @@ export function GoLiveScreen({ navigation }: Props) {
   }
 
   const openFilter = () => navigation.navigate('Filters');
+
+  // Stable inputs for the radar, so this screen re-rendering (it does every
+  // 30 s) never rebuilds it mid-animation.
+  const people = useMemo<RadarPerson[]>(
+    () => topMatches(matches, passedIds).map((card) => ({ id: card.match.member_id, initials: initialsFor(card) })),
+    [matches, passedIds]
+  );
+  // The count on the card climbs with the avatars as they arrive.
+  const counted = useCountUp(people.length, isLive && !searching && people.length > 0);
+  const goLiveRef = useRef(handleGoLive);
+  useEffect(() => {
+    goLiveRef.current = handleGoLive;
+  });
+  const onHoldComplete = useCallback(() => {
+    goLiveRef.current();
+  }, []);
+  const openMatches = useCallback(() => navigation.navigate('LiveMatches'), [navigation]);
+
+  // Nearby (no event): when there's no room, or the member picked it.
+  const nearby = BLE_DISCOVERY_ENABLED && !isLive && (!room || mode === 'nearby' || (mode === null && nearbyAvailable));
+  if (nearby) {
+    return <NearbyView navigation={navigation} onSwitchToEvent={room ? () => setMode('event') : undefined} />;
+  }
+  const modeSwitch = BLE_DISCOVERY_ENABLED && !isLive && <GoLiveModeSwitch mode="event" onChange={setMode} />;
 
   // No upcoming room: nothing to go live in.
   if (!room) {
@@ -265,6 +311,7 @@ export function GoLiveScreen({ navigation }: Props) {
           <Text style={styles.eyebrow}>Go Live</Text>
           <Text style={styles.h2}>Not in a room yet</Text>
         </View>
+        {modeSwitch}
         <GoLiveDisc locked label="GO LIVE" caption="OPENS AT CHECK-IN" fill={disc.fill} textColor={disc.text} />
         <Text style={styles.lead}>Nobody can see you.</Text>
         <Card style={styles.roomCard}>
@@ -279,102 +326,101 @@ export function GoLiveScreen({ navigation }: Props) {
     );
   }
 
-  // Board 08: live.
-  if (isLive) {
-    const count = topMatches(matches, passedIds).length;
-    const ready = !searching && count > 0;
-    return (
-      <Screen>
-        <View style={styles.header}>
-          <View style={styles.flex}>
-            <Text style={styles.eyebrow}>{room.name}</Text>
-            <Text style={styles.h2}>You're live</Text>
-          </View>
-          <Pill label="● LIVE" tone="positive" />
-        </View>
-        <GoLiveDisc
-          waves
-          label={searching ? 'SEARCHING' : ready ? `LIVE · ${count} READY` : 'LIVE'}
-          fill={disc.fill}
-          textColor={disc.text}
-          onPress={ready ? () => navigation.navigate('LiveMatches') : undefined}
-          accessibilityLabel={ready ? `Live, ${count} ready. Open your matches` : undefined}
-        />
-        <Text style={styles.lead}>
-          {searching
-            ? 'Finding your three strongest matches'
-            : ready
-              ? `Your ${count === 1 ? 'match is' : `${count} strongest matches are`} ready`
-              : matches && matches.length === 0
-                ? 'Nobody here clears your filter yet'
-                : "You're live"}
-        </Text>
-        <Text style={styles.center}>{LIVE_LINE}</Text>
-        {awaitingCheckIn && <Text style={styles.center}>{CHECK_IN_NOTE}</Text>}
-        {error && <Text style={styles.error}>{error}</Text>}
-        {matchingFailed && !manualRetryUsed && (
-          <Button
-            label="Try matching again"
-            variant="secondary"
-            onPress={() => {
-              setManualRetryUsed(true);
-              match();
-            }}
-          />
-        )}
-        {ready && <Button label="See your matches" onPress={() => navigation.navigate('LiveMatches')} />}
-        <Button label="Go invisible" variant="secondary" loading={stopping} disabled={searching} onPress={handleGoInvisible} />
-        <FilterSummary title="Live for" intent={intentText} filters={filters} onChange={openFilter} />
-      </Screen>
-    );
-  }
+  // Boards 06 and 08: ready, then live. One tree for both, so the button can
+  // rise and the radar can start without the screen being rebuilt.
+  const count = people.length;
+  const phase: RadarPhase = searching ? 'searching' : !isLive ? 'idle' : count > 0 ? 'found' : matches && !matchingFailed ? 'empty' : 'live';
 
-  // Board 06: ready. Press and hold.
   return (
     <Screen>
       <View style={styles.header}>
-        <View style={styles.flex}>
-          <Text style={styles.eyebrow}>{room.name}</Text>
-          <Text style={styles.h2}>Ready when you are</Text>
+        <View style={styles.eventNameBox}>
+          <Marquee text={room.name} style={styles.eventName} />
         </View>
-        {typeof liveCount === 'number' && <Pill label={`● ${liveCount} LIVE`} tone="positive" />}
+        {isLive ? (
+          <View style={styles.status}>
+            <Pill label="● LIVE" tone="positive" />
+          </View>
+        ) : (
+          typeof liveCount === 'number' && (
+            <View style={styles.status}>
+              <Pill label={`● ${liveCount} LIVE`} tone="positive" />
+            </View>
+          )
+        )}
       </View>
-      <GoLiveDisc
-        label={searching ? 'SEARCHING' : 'GO LIVE'}
-        caption={searching ? undefined : 'PRESS & HOLD'}
-        waves={searching}
-        fill={disc.fill}
-        textColor={disc.text}
+      {modeSwitch}
+
+      <GoLiveRadar
+        phase={phase}
+        people={people}
         disabled={searching}
-        onHoldComplete={handleGoLive}
+        onHoldComplete={onHoldComplete}
+        onOpenMatches={openMatches}
+        headerAbove={modeSwitch ? HEADER_ABOVE_WITH_SWITCH : undefined}
       />
-      <Text style={styles.lead}>Press and hold to Go Live</Text>
-      <Text style={styles.center}>
-        Your three best matches in this room appear, and only they can see you. Nobody else.
-      </Text>
+
+      {phase === 'idle' && (
+        <>
+          <Text style={styles.lead}>Press and hold to Go Live</Text>
+          <Text style={styles.center}>The most relevant people in this room appear, and only they can see you. Nobody else.</Text>
+        </>
+      )}
+      {phase === 'searching' && <Text style={styles.searching}>Finding the most relevant people…</Text>}
+      {phase === 'found' && (
+        <Pressable
+          onPress={openMatches}
+          accessibilityRole="button"
+          accessibilityLabel={`Relevant people found. ${count} great ${count === 1 ? 'connection' : 'connections'}. Open the list`}
+          style={({ pressed }) => [styles.found, pressed && styles.pressed]}
+        >
+          <View style={styles.foundAvatars}>
+            {people.slice(0, Math.min(3, counted)).map((person, i) => (
+              <View key={person.id} style={[styles.foundAvatar, { backgroundColor: pastelFor(person.id) }, i > 0 && styles.foundAvatarNext]}>
+                <Text style={styles.foundInitials}>{person.initials}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.flex}>
+            <Text style={styles.h3}>Relevant people found</Text>
+            <Text style={styles.sub}>
+              {Math.max(1, counted)} great {counted <= 1 ? 'connection' : 'connections'}
+            </Text>
+          </View>
+          <ChevronRight size={20} color={colors.muted} />
+        </Pressable>
+      )}
+      {phase === 'empty' && (
+        <>
+          <Text style={styles.lead}>Relevant people will appear here</Text>
+          <Text style={styles.center}>Widen your filter to meet more of the room.</Text>
+          <Button label="Widen my filter" variant="secondary" small style={styles.widen} onPress={openFilter} />
+        </>
+      )}
       {awaitingCheckIn && <Text style={styles.center}>{CHECK_IN_NOTE}</Text>}
       {error && <Text style={styles.error}>{error}</Text>}
+      {isLive && matchingFailed && !manualRetryUsed && (
+        <Button
+          label="Try matching again"
+          variant="secondary"
+          onPress={() => {
+            setManualRetryUsed(true);
+            match();
+          }}
+        />
+      )}
+      {/* Switching this off is how you go invisible. */}
+      {isLive && (
+        <View style={[styles.visible, searching && styles.dimmed]}>
+          <View style={styles.flex}>
+            <Text style={styles.h3}>Visible to your matches</Text>
+            <Text style={styles.sub}>{LIVE_LINE}</Text>
+          </View>
+          <ToggleSwitch on={!stopping} onToggle={handleGoInvisible} label="Visible to your matches" />
+        </View>
+      )}
 
-      <View style={styles.colors}>
-        {goLiveColors(colors.charcoal).map((c) => (
-          <Pressable
-            key={c.key}
-            onPress={() => setGoLiveColor(c.key)}
-            hitSlop={6}
-            accessibilityRole="button"
-            accessibilityLabel={`${c.label} button colour`}
-            accessibilityState={{ selected: prefs.goLiveColor === c.key }}
-            style={[styles.swatchRing, prefs.goLiveColor === c.key && styles.swatchRingOn]}
-          >
-            <View style={[styles.swatch, { backgroundColor: c.fill }, c.key === 'pearl' && styles.swatchPearl]} />
-          </Pressable>
-        ))}
-        <Pressable onPress={() => navigation.navigate('GoLiveColour')} hitSlop={8} accessibilityRole="link">
-          <Text style={styles.link}>Your colour</Text>
-        </Pressable>
-      </View>
-
-      <FilterSummary title="You're going live for" intent={intentText} filters={filters} onChange={openFilter} />
+      <FilterSummary title={isLive ? 'Live for' : "You're going live for"} intent={intentText} filters={filters} onChange={openFilter} />
     </Screen>
   );
 }
@@ -382,20 +428,56 @@ export function GoLiveScreen({ navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1, minWidth: 0 },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+    pressed: { opacity: 0.7 },
+    // The event name sits in the centre; the live pill floats at the left
+    // without pushing it off centre.
+    header: { minHeight: 30, justifyContent: 'center' },
+    eventName: {
+      fontFamily: fonts.monoBold,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+      color: colors.muted,
+    },
+    // Room on both sides for the live pill, so the name stays centred.
+    eventNameBox: { marginHorizontal: 74 },
+    // On the left, leaving the right-hand end for the wordmark when live.
+    status: { position: 'absolute', left: 0 },
     eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
     h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
     h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
     lead: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'center' },
     center: { fontSize: 12, lineHeight: 18, color: colors.muted, textAlign: 'center', marginTop: -6, paddingHorizontal: 8 },
+    searching: { fontSize: 13, color: colors.muted, textAlign: 'center' },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
     error: { color: colors.danger, fontSize: 12, textAlign: 'center' },
     roomCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     cardButton: { alignSelf: 'flex-start', marginTop: 12 },
-    colors: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' },
-    swatchRing: { padding: 3, borderRadius: 18, borderWidth: 2, borderColor: 'transparent' },
-    swatchRingOn: { borderColor: colors.text },
-    swatch: { width: 24, height: 24, borderRadius: 12 },
-    swatchPearl: { borderWidth: 1, borderColor: colors.brand2 },
-    link: { fontSize: 12, fontWeight: '700', color: colors.text, textDecorationLine: 'underline', marginLeft: 6 },
+    widen: { alignSelf: 'center' },
+    visible: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 4, paddingVertical: 4 },
+    dimmed: { opacity: 0.5 },
+    found: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: colors.surface,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: colors.line,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+    },
+    foundAvatars: { flexDirection: 'row' },
+    foundAvatar: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      borderWidth: 2,
+      borderColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    foundAvatarNext: { marginLeft: -10 },
+    foundInitials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '600', color: AVATAR_INK },
   });

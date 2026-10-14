@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, newIdempotencyKey, setAccessTokenProvider, setMemberIdProvider } from '../api/client';
+import { clearCache } from '../api/offlineCache';
 import { coreApi } from '../api/core';
 import {
   activateMember,
@@ -205,13 +206,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logOut = useCallback(async () => {
+    // What was kept on the phone for offline use goes with the session.
+    if (member?.member_id) await clearCache(member.member_id);
     await entraLogOut();
     // Keep the member records so the same email signs straight back in.
     const latest = await loadMemberStore();
     await persist({ ...latest, current: null });
     registrationKey.current = null;
     applyMember(null);
-  }, [entraLogOut, applyMember, persist]);
+  }, [entraLogOut, applyMember, persist, member?.member_id]);
 
   const value = useMemo<AuthState>(
     () => ({

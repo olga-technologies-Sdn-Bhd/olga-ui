@@ -52,6 +52,9 @@ function hash128(str: string) {
 // Longer timeout for every NLP call (cold starts), unless the caller sets one.
 const nlp = (options?: RequestOptions): RequestOptions => ({ timeoutMs: NLP_TIMEOUT_MS, ...options });
 
+export type ScorePairRequest = { requester_offer: string; requester_want: string; candidate_offer: string; candidate_want: string };
+export type ScorePairResponse = { forward: number; reverse: number; reciprocal: number; semantic: number };
+
 export const nlpApi = {
   // 200 = processed; 202 = still processing, poll getIntent until MATCH_READY.
   // ifMatch: etag from a previous save, for edits.
@@ -81,6 +84,9 @@ export const nlpApi = {
       `/v1/events/${encodeURIComponent(eventId)}/live-match-count?intent_id=${encodeURIComponent(intentId)}&threshold=${threshold}&require_reciprocal=false`,
       nlp()
     ),
+  // Scores two people from their texts alone (no event, no stored intent).
+  // Nearby uses reciprocal (0-1) as the match score.
+  scorePair: (body: ScorePairRequest) => client.post<ScorePairResponse>('/v1/matches/score-pair', body, nlp()),
   getMatchRequest: (requestId: string) =>
     client.get<MatchRequestStatusResponse>(`/v1/match-requests/${encodeURIComponent(requestId)}`, nlp()),
 };

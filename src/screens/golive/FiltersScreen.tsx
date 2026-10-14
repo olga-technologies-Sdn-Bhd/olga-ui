@@ -49,7 +49,7 @@ export function FiltersScreen({ navigation }: Props) {
     const intentChanged = Boolean(nextIntent) && nextIntent !== intentText.trim();
     if (intentChanged) {
       setIntentText(nextIntent);
-      // "This will find you a new three": once per live session.
+      // "This will find you new matches": once per live session.
       if (isLive) markIntentEdited();
     }
     // Minimum match is the only filter matching uses; a new one (e.g. from
@@ -67,7 +67,7 @@ export function FiltersScreen({ navigation }: Props) {
         <Button label="Done" variant="secondary" small onPress={handleDone} />
       </View>
 
-      <Text style={styles.sectionTitle}>Your intent</Text>
+      <Text style={styles.sectionTitle}>What you're looking for</Text>
       <TextInput
         value={intent}
         onChangeText={setIntent}
@@ -76,11 +76,11 @@ export function FiltersScreen({ navigation }: Props) {
         placeholderTextColor={colors.muted}
         multiline
         style={[styles.intent, !canEditIntent && styles.intentLocked]}
-        accessibilityLabel="Your intent"
+        accessibilityLabel="What you're looking for"
       />
       <Text style={styles.hint}>
         {canEditIntent
-          ? 'You can change this once while live. This will find you a new three.'
+          ? 'You can change this once while live. This will find you new relevant people.'
           : "You've changed this once in this session. It opens again next time you go live."}
       </Text>
 
@@ -135,7 +135,7 @@ export function FiltersScreen({ navigation }: Props) {
         <View style={styles.cardDivider} />
         <View style={styles.toggleRow}>
           <View style={styles.flex}>
-            <Text style={styles.h3}>Share intent changes</Text>
+            <Text style={styles.h3}>Share changes to what you're looking for</Text>
             <Text style={styles.hint}>Off: edits stay private to your matching.</Text>
           </View>
           <ToggleSwitch on={shareIntentChanges} onToggle={() => setShareIntentChanges((v) => !v)} />

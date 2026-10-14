@@ -1,7 +1,7 @@
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps, useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Check, ChevronDown, ChevronRight } from 'lucide-react-native';
+import { Check, ChevronDown } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
@@ -30,7 +30,7 @@ export function isEventLive(event: CoreEvent, now = Date.now()) {
   return new Date(event.starts_at).getTime() <= now && now < new Date(event.ends_at).getTime();
 }
 
-// Upcoming (Registered, then Open for registration) and Completed Events, as flat rows.
+// Upcoming (Registered, then Open for registration) and Past, as flat rows.
 // The location filter lists the venues of the published events. Built to take
 // other room types (venues) in Phase 2: a row only needs a name, times and a
 // venue.
@@ -103,7 +103,6 @@ export function EventsScreen({ navigation }: Props) {
         accessibilityRole="button"
         accessibilityLabel={event.name}
       >
-        <DateBlock iso={event.starts_at} outlined />
         <View style={styles.flex}>
           <Text style={styles.h3} numberOfLines={2}>
             {event.name}
@@ -120,18 +119,19 @@ export function EventsScreen({ navigation }: Props) {
             {live && attending ? ' · ' : ''}
             {attending}
           </Text>
+          {!mine && !isPast && (
+            <Button
+              label="Register"
+              variant="ghost"
+              small
+              style={styles.register}
+              loading={registering === event.event_id}
+              onPress={() => handleRegister(event.event_id)}
+            />
+          )}
         </View>
-        {mine || isPast ? (
-          <ChevronRight size={20} color={colors.muted} />
-        ) : (
-          <Button
-            label="Register"
-            variant="ghost"
-            small
-            loading={registering === event.event_id}
-            onPress={() => handleRegister(event.event_id)}
-          />
-        )}
+        {/* The date sits on the right; the whole row opens the event. */}
+        <DateBlock iso={event.starts_at} outlined />
       </Pressable>
     );
   }
@@ -173,7 +173,7 @@ export function EventsScreen({ navigation }: Props) {
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
               >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{key === 'upcoming' ? 'Upcoming' : 'Completed Events'}</Text>
+                <Text style={[styles.tabText, active && styles.tabTextActive]}>{key === 'upcoming' ? 'Upcoming' : 'Past'}</Text>
                 <View style={[styles.tabLine, active && styles.tabLineActive]} />
               </Pressable>
             );
@@ -199,7 +199,7 @@ export function EventsScreen({ navigation }: Props) {
             )}
             <Text style={styles.section}>Open for registration</Text>
             {open.length > 0 ? open.map(renderEvent) : <Text style={styles.note}>More events are on the way.</Text>}
-            <Text style={styles.footnote}>Events you attend move to Completed Events, along with the professionals you met.</Text>
+            <Text style={styles.footnote}>Events you attend move to Past, along with the professionals you met.</Text>
           </>
         )}
 
@@ -278,6 +278,7 @@ const makeStyles = (colors: ThemeColors) =>
       borderBottomWidth: 1,
       borderBottomColor: colors.line,
     },
+    register: { alignSelf: 'flex-start', marginTop: 8 },
     h3: { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20, fontWeight: '700', color: colors.text },
     where: { fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
     stat: { fontSize: 12, lineHeight: 18, color: colors.muted, marginTop: 2 },

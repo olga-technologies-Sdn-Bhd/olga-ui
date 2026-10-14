@@ -160,7 +160,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
               : "See who's going"}
           </Text>
           {open && matchCount !== null && matchCount > 0 ? (
-            <Text style={styles.goingMatch}>{matchCount} matching your intent</Text>
+            <Text style={styles.goingMatch}>{matchCount} relevant to what you're looking for</Text>
           ) : (
             <Text style={styles.goingSub}>See who's going</Text>
           )}
@@ -177,7 +177,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
 
       <View style={styles.section}>
         <View style={styles.space}>
-          <Text style={styles.sectionTitle}>Your intent</Text>
+          <Text style={styles.sectionTitle}>What you're looking for</Text>
           {!editing && !!intentText.trim() && (
             <Pressable onPress={startEditing} hitSlop={10} accessibilityRole="button">
               <Text style={styles.link}>Edit</Text>
@@ -214,12 +214,12 @@ export function EventDetailScreen({ route, navigation }: Props) {
               <Plus size={18} color={colors.onBrand} strokeWidth={2.4} />
             </View>
             <View style={styles.flex}>
-              <Text style={styles.intentPrompt}>Set your intent</Text>
+              <Text style={styles.intentPrompt}>Add what you're looking for</Text>
               <Text style={styles.goingSub}>Tell me who you'd like to meet, and I'll find them in the room.</Text>
             </View>
           </Pressable>
         )}
-        <Text style={styles.hint}>Your general intent. Changing it here changes it everywhere for now.</Text>
+        <Text style={styles.hint}>This applies to every event for now. Changing it here changes it everywhere.</Text>
       </View>
 
       {error && <Text style={styles.error}>{error}</Text>}

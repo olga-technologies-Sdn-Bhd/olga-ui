@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0C80B921A6F3F58F76C31292 /* libPods-OlgaMobile.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-OlgaMobile.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		0B1E00000000000000000003 /* RCTOlgaBle.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0B1E00000000000000000002 /* RCTOlgaBle.mm */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		776FF07D1DBC40899C2913EA /* IBMPlexMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D7C7D6553EE349EE95F7C10B /* IBMPlexMono-Regular.ttf */; };
 		7A9A88D9700D4D6FA5C66BB2 /* IBMPlexMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5747569A56A44739A1D822BC /* IBMPlexMono-Medium.ttf */; };
@@ -33,6 +34,8 @@
 		5709B34CF0A7D63546082F79 /* Pods-OlgaMobile.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OlgaMobile.release.xcconfig"; path = "Target Support Files/Pods-OlgaMobile/Pods-OlgaMobile.release.xcconfig"; sourceTree = "<group>"; };
 		5747569A56A44739A1D822BC /* IBMPlexMono-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "IBMPlexMono-Medium.ttf"; path = "../src/assets/fonts/IBMPlexMono-Medium.ttf"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-OlgaMobile.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OlgaMobile.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0B1E00000000000000000001 /* RCTOlgaBle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RCTOlgaBle.h; path = OlgaMobile/RCTOlgaBle.h; sourceTree = "<group>"; };
+		0B1E00000000000000000002 /* RCTOlgaBle.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RCTOlgaBle.mm; path = OlgaMobile/RCTOlgaBle.mm; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = OlgaMobile/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = OlgaMobile/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		BDA9C9DF1DE546F0BBBAC803 /* Outfit-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Outfit-ExtraBold.ttf"; path = "../src/assets/fonts/Outfit-ExtraBold.ttf"; sourceTree = "<group>"; };
@@ -58,6 +61,8 @@
 			children = (
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
+				0B1E00000000000000000001 /* RCTOlgaBle.h */,
+				0B1E00000000000000000002 /* RCTOlgaBle.mm */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
@@ -291,6 +296,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				0B1E00000000000000000003 /* RCTOlgaBle.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

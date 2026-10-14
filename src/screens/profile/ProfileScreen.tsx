@@ -73,7 +73,7 @@ export function ProfileScreen({ navigation }: Props) {
         {email && <Text style={styles.sub}>{email}</Text>}
       </View>
 
-      <Text style={styles.sectionTitle}>Your profile</Text>
+      <Text style={styles.sectionTitle}>Your introduction</Text>
       <Card style={styles.list}>
         <Pressable
           onPress={() => navigation.navigate('ProfileSetup')}
@@ -81,8 +81,8 @@ export function ProfileScreen({ navigation }: Props) {
           style={({ pressed }) => [styles.row, pressed && styles.pressed]}
         >
           <View style={styles.rowText}>
-            <Text style={styles.label}>Headline and summary</Text>
-            <Text style={styles.sub}>What your matches see first</Text>
+            <Text style={styles.label}>Your work and About you</Text>
+            <Text style={styles.sub}>What relevant people see first</Text>
           </View>
           <ChevronRight size={18} color={colors.muted} />
         </Pressable>
@@ -94,9 +94,9 @@ export function ProfileScreen({ navigation }: Props) {
           style={({ pressed }) => [styles.row, pressed && styles.pressed]}
         >
           <View style={styles.rowText}>
-            <Text style={styles.label}>Your intent</Text>
+            <Text style={styles.label}>What you're looking for</Text>
             <Text style={styles.sub} numberOfLines={2}>
-              {intentText.trim() || 'Set your intent, so I can find your matches'}
+              {intentText.trim() || 'Add what you’re looking for, so I can find relevant people'}
             </Text>
           </View>
           <ChevronRight size={18} color={colors.muted} />
@@ -110,9 +110,14 @@ export function ProfileScreen({ navigation }: Props) {
         <Row label="Mobile" value={mobile ?? phoneHint} styles={styles} />
         <View style={styles.divider} />
         <Row label="Member ID" value={memberId} styles={styles} small />
-        <View style={styles.divider} />
-        {/* Which backend this build talks to (APP_ENV in src/config/env.ts). */}
-        <Row label="Environment" value={APP_ENV} styles={styles} small />
+        {/* Which backend this build talks to. For the team only: production
+            builds never show it. */}
+        {APP_ENV !== 'prod' && (
+          <>
+            <View style={styles.divider} />
+            <Row label="Environment" value={APP_ENV} styles={styles} small />
+          </>
+        )}
       </Card>
 
       <Text style={styles.sectionTitle}>Appearance</Text>

@@ -14,6 +14,7 @@ import { GoLiveMark } from '../../components/GoLiveMark';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
+import { useNearby } from '../../context/NearbyContext';
 import { TipKey, usePrefs } from '../../context/PrefsContext';
 import { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
@@ -102,6 +103,7 @@ export function HomeScreen({ navigation }: Props) {
   const [indexSoon, setIndexSoon] = useState(false);
   const firstName = name?.trim().split(/\s+/)[0] ?? '';
   const now = Date.now();
+  const { requests: nearbyRequests } = useNearby();
 
   const loadNetwork = useCallback(async () => {
     const [connections, page] = await Promise.all([
@@ -140,7 +142,28 @@ export function HomeScreen({ navigation }: Props) {
     return at.getFullYear() === today.getFullYear() && at.getMonth() === today.getMonth();
   }).length;
 
+  // Commits made over Bluetooth with people nearby, newest first.
+  const nearbyUpdates = nearbyRequests
+    .filter((r) => (r.direction === 'in' && r.status !== 'declined') || (r.direction === 'out' && r.status === 'accepted'))
+    .map((r) => {
+      const at = r.respondedAt ?? r.createdAt;
+      const connected = r.status === 'accepted';
+      const update: Update = {
+        key: `nearby-${r.id}`,
+        kind: 'network',
+        meta: ['Nearby', ago(new Date(at).toISOString(), now)].filter(Boolean).join(' · '),
+        title: connected ? r.peerName || r.peer.h : r.peer.h,
+        body: connected ? ' is in your network. You met nearby.' : ' wants to meet you nearby.',
+        icon: <Text style={styles.initials}>{r.peer.i}</Text>,
+        onPress: () => navigation.navigate('GoLiveTab', { screen: 'NearbyRequest', params: { requestId: r.id } }),
+      };
+      return { at, update };
+    })
+    .sort((a, b) => b.at - a.at)
+    .map((x) => x.update);
+
   const updates: Update[] = [
+    ...nearbyUpdates,
     ...[...meetings]
       .sort((a, b) => new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime())
       .map((m): Update => {
@@ -210,7 +233,7 @@ export function HomeScreen({ navigation }: Props) {
         hitSlop={8}
         style={({ pressed }) => [styles.setup, pressed && styles.pressed]}
       >
-        <Text style={styles.setupText}>Let me help you set up your profile</Text>
+        <Text style={styles.setupText}>Let me help you with your introduction</Text>
         <ChevronRight size={15} color={colors.muted} />
       </Pressable>
 

@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { MatchCard, MatchingError } from '../../api/matching';
 import { BackHeader } from '../../components/BackHeader';
+import { MATCH_LIMIT } from '../../config/env';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
@@ -17,8 +18,9 @@ import { fonts } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'LiveMatches'>;
 
-// Board 09: at most three, strongest first. Never padded with weak matches.
-const MAX_SHOWN = 3;
+// Every match the server returns (up to MATCH_LIMIT), strongest first. Never
+// padded with weak matches.
+const MAX_SHOWN = MATCH_LIMIT;
 
 export function topMatches(matches: MatchCard[] | null, passedIds: string[]) {
   return (matches ?? [])
@@ -67,7 +69,7 @@ export function LiveMatchesScreen({ navigation }: Props) {
             ? 'Still matching. Try again in a moment.'
             : e.reason === 'CONSENT_DENIED'
               ? "Matching is off, so we can't find your matches."
-              : "Couldn't find matches right now."
+              : "Couldn't find relevant people right now."
         );
       else setError(e instanceof ApiError && e.status > 0 ? `Couldn't load matches (${e.status})` : "Couldn't reach the server");
     }
@@ -88,14 +90,14 @@ export function LiveMatchesScreen({ navigation }: Props) {
       />
       <View>
         <Text style={styles.eyebrow}>{activeEvent?.name ?? 'Event'}</Text>
-        <Text style={styles.h2}>{shown.length === 3 ? 'Your three' : 'Your matches'}</Text>
+        <Text style={styles.h2}>Relevant people</Text>
       </View>
 
       {matches === null && !error && <Text style={styles.sub}>Finding people worth meeting…</Text>}
       {error && <Text style={[styles.sub, { color: colors.danger }]}>{error}</Text>}
       {matches !== null && matches.length > 0 && shown.length === 0 && (
         <Card>
-          <Text style={styles.sub}>You've passed on everyone for now. New matches appear when someone new goes live.</Text>
+          <Text style={styles.sub}>You've passed on everyone for now. More relevant people appear when someone new goes live.</Text>
         </Card>
       )}
 
