@@ -327,6 +327,8 @@
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
+					"-framework",
+					CoreBluetooth,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.olga.connect;
 				PRODUCT_NAME = OlgaMobile;
@@ -367,6 +369,8 @@
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
+					"-framework",
+					CoreBluetooth,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.olga.connect;
 				PRODUCT_NAME = OlgaMobile;
