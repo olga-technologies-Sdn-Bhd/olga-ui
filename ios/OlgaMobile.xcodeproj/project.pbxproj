@@ -305,7 +305,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y3X4KPFWM9;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = OlgaMobile/Info.plist;
@@ -316,12 +316,12 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OLGA_AUTH_SCHEME = "olga-dev";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
 				);
-				OLGA_AUTH_SCHEME = "olga-dev";
 				PRODUCT_BUNDLE_IDENTIFIER = com.olga.connect;
 				PRODUCT_NAME = OlgaMobile;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -345,7 +345,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = Y3X4KPFWM9;
 				INFOPLIST_FILE = OlgaMobile/Info.plist;
@@ -356,12 +356,12 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OLGA_AUTH_SCHEME = olga;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
 				);
-				OLGA_AUTH_SCHEME = olga;
 				PRODUCT_BUNDLE_IDENTIFIER = com.olga.connect;
 				PRODUCT_NAME = OlgaMobile;
 				PROVISIONING_PROFILE_SPECIFIER = "";
