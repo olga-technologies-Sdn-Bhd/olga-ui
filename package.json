@@ -4,11 +4,17 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
-    "android:prod": "node scripts/with-env.js prod react-native run-android",
+    "android:dev": "node scripts/run-app.js android dev",
+    "android:prod": "node scripts/run-app.js android prod",
     "build:android:prod": "node scripts/with-env.js prod react-native build-android --mode=release",
     "ios": "react-native run-ios",
+    "ios:archive:dev": "node scripts/archive-ios.js dev",
+    "ios:archive:prod": "node scripts/archive-ios.js prod",
+    "ios:dev": "node scripts/run-app.js ios dev",
+    "ios:prod": "node scripts/run-app.js ios prod",
     "lint": "eslint .",
     "start": "react-native start",
+    "start:dev": "node scripts/with-env.js dev react-native start",
     "start:prod": "node scripts/with-env.js prod react-native start",
     "test": "jest"
   },
