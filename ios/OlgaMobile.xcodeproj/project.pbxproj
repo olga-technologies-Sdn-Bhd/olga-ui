@@ -367,8 +367,10 @@
 				);
 				MARKETING_VERSION = 1.0;
 				OLGA_AUTH_SCHEME = olga;
+				OLGA_BUNDLE_ENV = prod;
 				OLGA_BUNDLE_ID = com.olga.connect;
 				OLGA_NAME_SUFFIX = "";
+				OLGA_PROFILE = "Olga-Prod";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -379,7 +381,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(OLGA_BUNDLE_ID)";
 				PRODUCT_NAME = OlgaMobile;
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Olga-Prod";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "$(OLGA_PROFILE)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;

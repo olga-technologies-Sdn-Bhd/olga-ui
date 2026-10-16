@@ -62,7 +62,15 @@ The release build is signed with the Play upload key when `OLGA_UPLOAD_KEY_PROPE
 
 **iOS**
 
-- **Release builds (TestFlight, App Store) are always production** (`com.olga.connect`). The Release `OLGA_AUTH_SCHEME` is `olga` in the Xcode project, and `ios/.xcode.env` sets `OLGA_ENV=prod` for the Release bundle. Archive in Xcode as usual.
+- **Release builds (TestFlight, App Store)** are production (`com.olga.connect`) when you use Product > Archive in Xcode. The Release `OLGA_AUTH_SCHEME` is `olga` in the Xcode project, and `ios/.xcode.env` sets `OLGA_ENV` from the `OLGA_BUNDLE_ENV` build setting (default `prod`).
+- **Archive commands** (they also open the archive in the Organizer and print what to do next):
+
+  | Command | App | Profile |
+  | --- | --- | --- |
+  | `npm run ios:archive:prod` | `com.olga.connect`, prod servers | `Olga-Prod` |
+  | `npm run ios:archive:dev` | `com.olga.dev.connect` ("Ol-ga Dev"), dev servers | `Olga-Dev-AppStore` |
+
+  Then in the Organizer: **Distribute App, App Store Connect, Upload**. Raise the build number first (`CURRENT_PROJECT_VERSION`); every upload needs a new one. The command stops with a clear message if the profile or the Apple Distribution certificate is missing.
 - **Debug builds** (`ios:dev`, `ios:prod`) run from Metro. The commands pass the bundle ID and sign-in scheme to Xcode (`OLGA_BUNDLE_ID`, `OLGA_AUTH_SCHEME`), so Debug can be either environment without editing the project.
 - **Apple setup:** `com.olga.dev.connect` must be registered as an App ID under the Olga team (developer.apple.com, Identifiers) before it can be signed for a device. It needs no App Store Connect record unless you want dev builds in TestFlight.
 - **Signing with another team** (for example your own Apple ID on a personal phone): set `OLGA_IOS_TEAM=<team id>` and, if the project's bundle ID is not available to that team, `OLGA_IOS_BUNDLE_ID=<id>`, for example `OLGA_IOS_TEAM=ABCDE12345 OLGA_IOS_BUNDLE_ID=com.example.olga npm run ios:dev`. Nothing is committed.
