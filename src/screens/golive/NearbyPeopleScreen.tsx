@@ -22,7 +22,14 @@ export function scoreLabel(person: Pick<NearbyPerson, 'score' | 'scoreSource'>) 
   return `${person.scoreSource === 'estimate' ? '~' : ''}${Math.round(person.score * 100)}%`;
 }
 
-export function NearbyPersonSummary({ person }: { person: Pick<NearbyPerson, 'card' | 'score' | 'scoreSource'> }) {
+// percent replaces the score in a preview (How you appear), where it differs per viewer.
+export function NearbyPersonSummary({
+  person,
+  percent,
+}: {
+  person: Pick<NearbyPerson, 'card' | 'score' | 'scoreSource'>;
+  percent?: string;
+}) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { card } = person;
@@ -34,7 +41,7 @@ export function NearbyPersonSummary({ person }: { person: Pick<NearbyPerson, 'ca
           <Text style={styles.h3}>{card.h}</Text>
           {!!card.r && <Text style={styles.sub}>{card.r}</Text>}
         </View>
-        <Pill label={scoreLabel(person)} tone="positive" />
+        <Pill label={percent ?? scoreLabel(person)} tone="positive" />
       </View>
       <Text style={styles.label}>Looking for</Text>
       <Text style={styles.want}>{card.w}</Text>

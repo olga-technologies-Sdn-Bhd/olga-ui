@@ -29,7 +29,8 @@ export function topMatches(matches: MatchCard[] | null, passedIds: string[]) {
     .slice(0, MAX_SHOWN);
 }
 
-export function MatchSummary({ card }: { card: MatchCard }) {
+// percent replaces the score in a preview (How you appear), where it differs per viewer.
+export function MatchSummary({ card, percent }: { card: MatchCard; percent?: string }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { match, profile } = card;
@@ -41,7 +42,7 @@ export function MatchSummary({ card }: { card: MatchCard }) {
           <Text style={styles.h3}>{profile?.headline || 'Attendee'}</Text>
           {profile?.role_category && <Text style={styles.sub}>{profile.role_category}</Text>}
         </View>
-        <Pill label={`${Math.round(match.score * 100)}%`} tone="positive" />
+        <Pill label={percent ?? `${Math.round(match.score * 100)}%`} tone="positive" />
       </View>
       {!!match.reason_text && <Text style={styles.reason}>{match.reason_text}</Text>}
     </>

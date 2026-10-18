@@ -87,6 +87,18 @@ export function ProfileScreen({ navigation }: Props) {
           <ChevronRight size={18} color={colors.muted} />
         </Pressable>
         <View style={styles.divider} />
+        <Pressable
+          onPress={() => navigation.navigate('HowYouAppear')}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+        >
+          <View style={styles.rowText}>
+            <Text style={styles.label}>How you appear</Text>
+            <Text style={styles.sub}>What people see before you both accept</Text>
+          </View>
+          <ChevronRight size={18} color={colors.muted} />
+        </Pressable>
+        <View style={styles.divider} />
         {/* Intent is edited in the Go Live filter. */}
         <Pressable
           onPress={() => navigation.getParent()?.navigate('GoLiveTab', { screen: 'Filters' })}
