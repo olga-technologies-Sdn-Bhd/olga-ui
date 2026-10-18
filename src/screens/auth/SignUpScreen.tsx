@@ -179,7 +179,8 @@ export function SignUpScreen() {
   }
 
   return (
-    <Screen>
+    // No tab bar before sign-in: no room reserved for it under the input.
+    <Screen contentStyle={styles.noTabBar}>
       <View style={styles.topline}>
         <Text style={styles.logo}>Ol-ga</Text>
         <Text style={styles.eyebrow}>Join the room</Text>
@@ -254,6 +255,7 @@ export function SignUpScreen() {
 
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
+    noTabBar: { paddingBottom: 24 },
     topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     logo: { fontFamily: fonts.headingExtraBold, fontWeight: semibold, letterSpacing: 3, fontSize: 13, color: colors.text },
     eyebrow: {
