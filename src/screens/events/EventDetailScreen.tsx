@@ -15,7 +15,7 @@ import { usePrefs } from '../../context/PrefsContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { isEventLive } from './EventsScreen';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'EventDetail'>;
@@ -258,12 +258,12 @@ const makeStyles = (colors: ThemeColors) =>
     pressed: { opacity: 0.7 },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     space: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 21, lineHeight: 26, fontWeight: '800', color: colors.text },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 21, lineHeight: 26, fontWeight: semibold, color: colors.text },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
     section: { gap: 8, marginTop: 8 },
-    sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: '700', color: colors.text },
-    link: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text, textDecorationLine: 'underline' },
+    sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: semibold, color: colors.text },
+    link: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text, textDecorationLine: 'underline' },
     // Attendance: a full-width row between hairlines.
     going: {
       flexDirection: 'row',
@@ -284,9 +284,9 @@ const makeStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    goingTitle: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    goingTitle: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: semibold, color: colors.text },
     goingSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
-    goingMatch: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.positive, marginTop: 2 },
+    goingMatch: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: semibold, color: colors.positive, marginTop: 2 },
     description: { lineHeight: 20, color: colors.text, fontSize: 14 },
     editor: { gap: 8 },
     editorActions: { flexDirection: 'row', gap: 8 },
@@ -315,7 +315,7 @@ const makeStyles = (colors: ThemeColors) =>
       padding: 14,
     },
     plus: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center' },
-    intentPrompt: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: '700', color: colors.text },
+    intentPrompt: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: semibold, color: colors.text },
     hint: { fontSize: 11, color: colors.muted },
     error: { color: colors.danger, fontSize: 12 },
     signedUp: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 8 },

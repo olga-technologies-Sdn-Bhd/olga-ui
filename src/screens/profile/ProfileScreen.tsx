@@ -15,7 +15,7 @@ import { useLive } from '../../context/LiveContext';
 import { HomeStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { showDialog } from '../../components/DialogHost';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Profile'>;
@@ -196,20 +196,20 @@ function RowIcon({ icon: Icon, styles, colors }: { icon: LucideIcon; styles: Ret
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   identity: { alignItems: 'center', gap: 6, marginTop: 4 },
-  h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 8 },
+  h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, marginTop: 8 },
   sub: { fontSize: 12, color: colors.muted },
-  sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
+  sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold, marginTop: 10 },
   list: { paddingVertical: 4 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 10 },
   rowText: { flex: 1 },
   rowIcon: { width: 22, alignItems: 'center' },
   pressed: { opacity: 0.7 },
-  label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
+  label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text },
   // Takes the rest of the row, so the label stays beside its icon.
   value: { flex: 1, fontSize: 13, color: colors.muted, textAlign: 'right' },
   valueSmall: { fontSize: 11 },
   divider: { height: 1, backgroundColor: colors.line, marginLeft: 34 },
   logout: { marginTop: 8 },
   delete: { alignSelf: 'center', paddingVertical: 10 },
-  deleteLabel: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.danger },
+  deleteLabel: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.danger },
 });

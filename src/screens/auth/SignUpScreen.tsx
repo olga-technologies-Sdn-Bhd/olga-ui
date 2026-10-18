@@ -14,7 +14,7 @@ import { EntraProvider, isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { showDialog } from '../../components/DialogHost';
 
 type Step = 'email' | 'verifying' | 'otp' | 'name' | 'mobile' | 'registering';
@@ -255,16 +255,16 @@ export function SignUpScreen() {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    logo: { fontFamily: fonts.headingExtraBold, fontWeight: '800', letterSpacing: 3, fontSize: 13, color: colors.text },
+    logo: { fontFamily: fonts.headingExtraBold, fontWeight: semibold, letterSpacing: 3, fontSize: 13, color: colors.text },
     eyebrow: {
       fontFamily: fonts.monoBold,
       fontSize: 11,
       letterSpacing: 1.5,
       textTransform: 'uppercase',
       color: colors.muted,
-      fontWeight: '700',
+      fontWeight: semibold,
     },
-    h1: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 8 },
+    h1: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: semibold, color: colors.text, marginTop: 8 },
     sub: { fontSize: 13, lineHeight: 19, color: colors.muted },
     chatStack: { gap: 10, marginTop: 6 },
     dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },

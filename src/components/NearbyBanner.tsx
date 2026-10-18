@@ -6,7 +6,7 @@ import { navigationRef } from '../navigation/navigationRef';
 import { NearbyAvatar } from '../screens/golive/NearbyView';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 import { useTopInset } from './Screen';
 
 const SHOW_MS = 8000;
@@ -94,7 +94,7 @@ const makeStyles = (colors: ThemeColors) =>
     },
     pressed: { opacity: 0.85 },
     flex: { flex: 1, minWidth: 0 },
-    title: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    title: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
     body: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
-    cta: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
+    cta: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text },
   });

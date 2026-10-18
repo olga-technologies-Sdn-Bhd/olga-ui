@@ -14,7 +14,7 @@ import { useNearby } from '../../context/NearbyContext';
 import { HomeStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { MatchSummary } from '../golive/LiveMatchesScreen';
 import { NearbyPersonSummary } from '../golive/NearbyPeopleScreen';
 
@@ -106,7 +106,7 @@ const makeStyles = (colors: ThemeColors) =>
       letterSpacing: 1.5,
       textTransform: 'uppercase',
       color: colors.muted,
-      fontWeight: '700',
+      fontWeight: semibold,
       marginTop: 6,
     },
     sub: { fontSize: 12, color: colors.muted },

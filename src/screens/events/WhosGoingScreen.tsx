@@ -13,7 +13,7 @@ import { useEvents } from '../../context/EventsContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'WhosGoing'>;
 
@@ -147,7 +147,7 @@ const makeStyles = (colors: ThemeColors) =>
     summary: { gap: 6, marginTop: 4 },
     event: { fontSize: 13, color: colors.muted },
     countRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-    count: { fontFamily: fonts.headingBold, fontSize: 34, lineHeight: 38, fontWeight: '800', color: colors.text },
+    count: { fontFamily: fonts.headingBold, fontSize: 34, lineHeight: 38, fontWeight: semibold, color: colors.text },
     countLabel: { flex: 1, fontSize: 14, color: colors.muted },
     privacy: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     privacyText: { flex: 1, fontSize: 12, lineHeight: 17, color: colors.muted },
@@ -162,7 +162,7 @@ const makeStyles = (colors: ThemeColors) =>
       backgroundColor: colors.accentSoft,
     },
     roleText: { fontSize: 12, color: colors.text },
-    roleCount: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.text },
+    roleCount: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: semibold, color: colors.text },
     loading: { marginTop: 24 },
     error: { gap: 10 },
     note: { fontSize: 13, lineHeight: 18, color: colors.muted },
@@ -177,8 +177,8 @@ const makeStyles = (colors: ThemeColors) =>
       borderBottomWidth: 1,
       borderBottomColor: colors.line,
     },
-    headline: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 19, fontWeight: '700', color: colors.text },
+    headline: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 19, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, color: colors.muted, marginTop: 2 },
     more: { alignSelf: 'center', minHeight: 40, justifyContent: 'center', paddingHorizontal: 12 },
-    moreText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text, textDecorationLine: 'underline' },
+    moreText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text, textDecorationLine: 'underline' },
   });

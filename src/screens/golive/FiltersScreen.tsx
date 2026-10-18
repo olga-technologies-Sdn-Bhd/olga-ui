@@ -12,7 +12,7 @@ import { Seniority } from '../../context/PrefsContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'Filters'>;
 
@@ -149,10 +149,10 @@ const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
-    sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 6 },
-    label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text, marginTop: 4 },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
+    sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold, marginTop: 6 },
+    label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text, marginTop: 4 },
     hint: { fontSize: 11, lineHeight: 16, color: colors.muted, marginTop: 2 },
     intent: {
       backgroundColor: colors.accentSoft,
@@ -168,7 +168,7 @@ const makeStyles = (colors: ThemeColors) =>
     divider: { height: 1, backgroundColor: colors.line, marginTop: 6 },
     tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     matchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-    matchValue: { fontFamily: fonts.headingExtraBold, fontSize: 14, fontWeight: '800', color: colors.text },
+    matchValue: { fontFamily: fonts.headingExtraBold, fontSize: 14, fontWeight: semibold, color: colors.text },
     toggles: { gap: 14, marginTop: 6 },
     toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     cardDivider: { height: 1, backgroundColor: colors.line },

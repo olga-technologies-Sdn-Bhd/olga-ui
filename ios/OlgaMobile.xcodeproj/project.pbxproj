@@ -18,12 +18,16 @@
 		A102A6F193BE4F4A91DF99A0 /* InstrumentSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1EAA5A3A23A74FCF81504D61 /* InstrumentSans-Regular.ttf */; };
 		A86B2EE6AF0F4E8B8D6B1FF8 /* IBMPlexMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C2783E68B50F4D5E874BCEC4 /* IBMPlexMono-Bold.ttf */; };
 		A987A0DB9C4F4663971DDA5B /* Outfit-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 012A0D23604F402A95BFD7E3 /* Outfit-Bold.ttf */; };
+		7ED9E4E627C84011881F27F0 /* Inter-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 970D0EEFAE964DDB8A37DA06 /* Inter-SemiBold.ttf */; };
+		25485D12F4494B61B47CFF22 /* Inter-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D2D15DE27C8447A0B90A924C /* Inter-Regular.ttf */; };
 		B5695371BF363002A1D4082B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		E4A13C70F5554001A39C088F /* InstrumentSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 05AB967224D94C478E9FFC50 /* InstrumentSans-Bold.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		012A0D23604F402A95BFD7E3 /* Outfit-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Outfit-Bold.ttf"; path = "../src/assets/fonts/Outfit-Bold.ttf"; sourceTree = "<group>"; };
+		970D0EEFAE964DDB8A37DA06 /* Inter-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter-SemiBold.ttf"; path = "../src/assets/fonts/Inter-SemiBold.ttf"; sourceTree = "<group>"; };
+		D2D15DE27C8447A0B90A924C /* Inter-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter-Regular.ttf"; path = "../src/assets/fonts/Inter-Regular.ttf"; sourceTree = "<group>"; };
 		05AB967224D94C478E9FFC50 /* InstrumentSans-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "InstrumentSans-Bold.ttf"; path = "../src/assets/fonts/InstrumentSans-Bold.ttf"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* OlgaMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OlgaMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = OlgaMobile/Images.xcassets; sourceTree = "<group>"; };
@@ -113,6 +117,8 @@
 			isa = PBXGroup;
 			children = (
 				012A0D23604F402A95BFD7E3 /* Outfit-Bold.ttf */,
+				970D0EEFAE964DDB8A37DA06 /* Inter-SemiBold.ttf */,
+				D2D15DE27C8447A0B90A924C /* Inter-Regular.ttf */,
 				C2783E68B50F4D5E874BCEC4 /* IBMPlexMono-Bold.ttf */,
 				5747569A56A44739A1D822BC /* IBMPlexMono-Medium.ttf */,
 				D7C7D6553EE349EE95F7C10B /* IBMPlexMono-Regular.ttf */,
@@ -196,6 +202,8 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				B5695371BF363002A1D4082B /* PrivacyInfo.xcprivacy in Resources */,
 				A987A0DB9C4F4663971DDA5B /* Outfit-Bold.ttf in Resources */,
+				7ED9E4E627C84011881F27F0 /* Inter-SemiBold.ttf in Resources */,
+				25485D12F4494B61B47CFF22 /* Inter-Regular.ttf in Resources */,
 				A86B2EE6AF0F4E8B8D6B1FF8 /* IBMPlexMono-Bold.ttf in Resources */,
 				7A9A88D9700D4D6FA5C66BB2 /* IBMPlexMono-Medium.ttf in Resources */,
 				776FF07D1DBC40899C2913EA /* IBMPlexMono-Regular.ttf in Resources */,

@@ -5,7 +5,7 @@ import { APP_ENV } from '../config/env';
 import { useNearby } from '../context/NearbyContext';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 import { showDialog } from './DialogHost';
 
 // Development only: what Bluetooth discovery is doing, for testing two or
@@ -77,13 +77,13 @@ const makeStyles = (colors: ThemeColors) =>
       padding: 12,
       gap: 4,
     },
-    title: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: colors.muted, marginBottom: 2 },
+    title: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: semibold, letterSpacing: 1.2, color: colors.muted, marginBottom: 2 },
     row: { flexDirection: 'row', justifyContent: 'space-between' },
     label: { fontSize: 12, color: colors.text },
-    value: { fontFamily: fonts.monoBold, fontSize: 12, fontWeight: '700' },
+    value: { fontFamily: fonts.monoBold, fontSize: 12, fontWeight: semibold },
     on: { color: colors.positive },
     off: { color: colors.muted },
-    reset: { fontSize: 11, fontWeight: '700', color: colors.danger },
+    reset: { fontSize: 11, fontWeight: semibold, color: colors.danger },
     note: { fontSize: 11, color: colors.muted, marginTop: 2 },
     error: { fontSize: 11, color: colors.danger },
     device: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line, paddingTop: 4 },

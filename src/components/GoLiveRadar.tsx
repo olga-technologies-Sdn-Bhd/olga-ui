@@ -16,7 +16,7 @@ import {
 import Svg, { Circle } from 'react-native-svg';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 // idle: press and hold. searching: live, looking. found: live, with matches.
 // empty: live, searched, nobody yet. live: live with nothing to show (e.g.
@@ -254,7 +254,7 @@ const avatarStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  text: { fontFamily: fonts.bodyBold, fontSize: 9.5, fontWeight: '600', letterSpacing: 0.1, color: AVATAR_INK },
+  text: { fontFamily: fonts.bodyBold, fontSize: 9.5, fontWeight: semibold, letterSpacing: 0.1, color: AVATAR_INK },
 });
 
 // A line of text that fades and lifts into place whenever it changes.
@@ -598,7 +598,7 @@ const makeStyles = (colors: ThemeColors) =>
       fontFamily: fonts.headingBold,
       fontSize: 26,
       lineHeight: BRAND_H,
-      fontWeight: '700',
+      fontWeight: semibold,
       color: colors.text,
     },
     core: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
@@ -613,7 +613,7 @@ const makeStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
       gap: 5,
     },
-    label: { fontFamily: fonts.headingBold, fontSize: 21, fontWeight: '800', letterSpacing: 1, color: colors.white, marginTop: 3 },
-    caption: { fontFamily: fonts.bodyBold, fontSize: 10, fontWeight: '700', letterSpacing: 2, color: 'rgba(255,255,255,0.78)' },
+    label: { fontFamily: fonts.headingBold, fontSize: 21, fontWeight: semibold, letterSpacing: 1, color: colors.white, marginTop: 3 },
+    caption: { fontFamily: fonts.bodyBold, fontSize: 10, fontWeight: semibold, letterSpacing: 2, color: 'rgba(255,255,255,0.78)' },
     labelLive: { fontSize: 19 },
   });

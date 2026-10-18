@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 type Props = {
   topLeft?: React.ReactNode;
@@ -46,6 +46,6 @@ const makeStyles = (colors: ThemeColors) =>
     },
     topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
     spacer: { flex: 1 },
-    title: { fontFamily: fonts.headingExtraBold, color: colors.text, fontSize: 20, fontWeight: '800', marginTop: 8 },
+    title: { fontFamily: fonts.headingExtraBold, color: colors.text, fontSize: 20, fontWeight: semibold, marginTop: 8 },
     subtitle: { color: colors.muted, marginTop: 4, fontSize: 12 },
   });
