@@ -30,7 +30,7 @@ type Props = CompositeScreenProps<
 // Each tip disappears once the member does the action (not on tap) and never
 // returns. "Confirm you met" is amber: an outcome state.
 const TIPS: { key: TipKey; title: string; body: string }[] = [
-  { key: 'wentLive', title: 'Go Live when you arrive.', body: 'Check in, then press and hold Go Live. Only your matches in the room can see you.' },
+  { key: 'wentLive', title: 'Go Live when you arrive.', body: 'Check in, then press and hold Go Live. Only relevant people in the room can see you.' },
   { key: 'savedFilter', title: 'Set who you want to meet.', body: 'Your filter decides who you see, and who can reach you.' },
   { key: 'confirmedMeeting', title: 'Confirm you met.', body: 'The morning after, two taps. Only meetings you both confirm count.' },
 ];

@@ -62,11 +62,7 @@ export function DeleteAccountScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <BackHeader onBack={() => navigation.goBack()} />
-      <View>
-        <Text style={styles.eyebrow}>Account</Text>
-        <Text style={styles.h2}>Delete your account</Text>
-      </View>
+      <BackHeader onBack={() => navigation.goBack()} title="Delete account" />
 
       <Card>
         <Text style={styles.label}>What's deleted</Text>
@@ -108,8 +104,6 @@ export function DeleteAccountScreen({ navigation }: Props) {
 
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
     label: { fontFamily: fonts.monoBold, fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginBottom: 6 },
     item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5 },
     dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.danger },

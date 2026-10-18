@@ -119,7 +119,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
             text={
               currentHeadline
                 ? `First, your work. Right now it says “${currentHeadline}”. Send me a new line, or keep it as it is.`
-                : 'First, your work. What is your role, and what do you work on?'
+                : "First, your work. What's your role, and what do you work on?"
             }
           />
         )}
@@ -140,7 +140,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
         {failed && <ChatBubble from="them" text="That needs another try. Please check your connection and send it again." />}
         {step === 'saving' && <ChatBubble from="them" text="Saving that for you…" />}
         {step === 'done' && (
-          <ChatBubble from="them" text="All set. That is what relevant people will see. Your name stays private until you both accept a Commit." />
+          <ChatBubble from="them" text="All set. That's what relevant people will see. Your name stays private until you both accept a Commit." />
         )}
       </ScrollView>
 
