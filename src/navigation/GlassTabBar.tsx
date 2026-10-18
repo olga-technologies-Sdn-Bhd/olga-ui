@@ -9,6 +9,7 @@ import { useTheme } from '../theme/ThemeContext';
 
 export const TAB_BAR_HEIGHT = 58;
 const PILL_INSET = 4;
+const BORDER = 1;
 const ICON_SIZE = 21;
 
 export type GlassTab = { icon: LucideIcon; label: string; strong?: boolean };
@@ -25,7 +26,8 @@ export function GlassTabBar({ state, navigation, tabs, hidden }: Props) {
   const { bottom } = useSafeAreaInsets();
   const [width, setWidth] = useState(0);
   const count = state.routes.length;
-  const slot = width > 0 ? (width - PILL_INSET * 2) / count : 0;
+  // The tabs share the space inside the outline and padding; the pill must use the same slots.
+  const slot = width > 0 ? (width - BORDER * 2 - PILL_INSET * 2) / count : 0;
 
   const x = useRef(new Animated.Value(0)).current;
   const stretch = useRef(new Animated.Value(1)).current;
@@ -165,7 +167,7 @@ const makeStyles = (colors: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: PILL_INSET,
-      borderWidth: 1,
+      borderWidth: BORDER,
       borderColor: colors.glassLine,
       // A soft lift on iOS; Android draws elevation shadows through
       // translucent fills, so it goes without.
