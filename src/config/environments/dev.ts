@@ -13,5 +13,6 @@ export const environment: Environment = {
     apiScope: 'api://733db389-f55d-4a33-8cd6-18a14393e3d9/access_as_user',
     redirectScheme: 'olga-dev',
   },
+  linkScheme: 'olgaapp-dev',
   inAppEmailOtp: true,
 };

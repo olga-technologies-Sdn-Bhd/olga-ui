@@ -28,6 +28,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>$(OLGA_AUTH_SCHEME)</string>
+				<string>$(OLGA_LINK_SCHEME)</string>
 			</array>
 		</dict>
 	</array>

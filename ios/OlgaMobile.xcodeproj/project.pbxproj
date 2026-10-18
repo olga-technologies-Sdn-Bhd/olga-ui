@@ -331,6 +331,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				OLGA_AUTH_SCHEME = "olga-dev";
+				OLGA_LINK_SCHEME = "olgaapp-dev";
 				OLGA_BUNDLE_ID = com.olga.dev.connect;
 				OLGA_NAME_SUFFIX = " Dev";
 				OTHER_LDFLAGS = (
@@ -375,6 +376,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				OLGA_AUTH_SCHEME = olga;
+				OLGA_LINK_SCHEME = olgaapp;
 				OLGA_BUNDLE_ENV = prod;
 				OLGA_BUNDLE_ID = com.olga.connect;
 				OLGA_NAME_SUFFIX = "";

@@ -82,6 +82,9 @@ gradle.taskGraph.whenReady { graph ->
 }
 // Must match redirectScheme in src/config/environments/<name>.ts.
 def olgaAuthRedirectScheme = olgaEnv == "prod" ? "olga" : "olga-dev"
+// Event links (olgaapp://event/<id>): their own scheme, because AppAuth's
+// redirect activity claims every URL of the auth scheme.
+def olgaLinkScheme = olgaEnv == "prod" ? "olgaapp" : "olgaapp-dev"
 // Prod is the store app. Every other environment installs next to it as a separate
 // app, with its own app ID and launcher name, so a phone can hold both.
 def olgaApplicationId = olgaEnv == "prod" ? "com.olga.connect" : "com.olga.connect.dev"
@@ -138,7 +141,7 @@ android {
         versionName "1.0"
         // Claimed by react-native-app-auth to catch the <scheme>://auth
         // redirect back from Entra External ID's hosted sign-in page.
-        manifestPlaceholders = [appAuthRedirectScheme: olgaAuthRedirectScheme, appLabel: olgaAppLabel]
+        manifestPlaceholders = [appAuthRedirectScheme: olgaAuthRedirectScheme, appLabel: olgaAppLabel, linkScheme: olgaLinkScheme]
     }
     signingConfigs {
         debug {

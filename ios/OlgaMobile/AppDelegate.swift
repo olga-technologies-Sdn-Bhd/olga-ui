@@ -42,7 +42,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, RNAppAuthAuthorizationFlo
   }
 
   // Resumes the Entra External ID login flow (ASWebAuthenticationSession) when
-  // the hosted sign-in page redirects back to the olga-dev:// scheme.
+  // the hosted sign-in page redirects back to the olga-dev:// scheme; any other
+  // URL (an event link, olgaapp://event/<id>) goes to React Native's Linking.
   func application(
     _ app: UIApplication,
     open url: URL,
@@ -52,7 +53,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, RNAppAuthAuthorizationFlo
        authorizationFlowManagerDelegate.resumeExternalUserAgentFlow(with: url) {
       return true
     }
-    return false
+    return RCTLinkingManager.application(app, open: url, options: options)
   }
 }
 
