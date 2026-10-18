@@ -40,3 +40,19 @@ export function formatDayLabel(iso: string, now = Date.now()): string {
 export function dayKey(iso: string): string {
   return new Date(iso).toDateString();
 }
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const pad = (n: number) => String(n).padStart(2, '0');
+
+// The time on a Chats list row, as WhatsApp shows it: today "18:39", then
+// "Yesterday", a weekday within the last week ("Monday"), then "13/10/2026".
+// Built by hand so it reads the same on every phone and engine.
+export function formatChatListTime(iso: string, now = Date.now()): string {
+  const date = new Date(iso);
+  const start = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((start(new Date(now)) - start(date)) / 86400000);
+  if (days <= 0) return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return WEEKDAYS[date.getDay()];
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
