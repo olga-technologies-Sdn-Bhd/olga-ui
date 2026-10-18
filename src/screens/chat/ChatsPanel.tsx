@@ -249,8 +249,15 @@ const makeStyles = (colors: ThemeColors) =>
     row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: 16 },
     rowPressed: { backgroundColor: colors.accentFill },
     // The divider starts after the avatar.
-    // As WhatsApp's Android list: no dividers, the rows' spacing separates them.
-    rowBody: { flex: 1, gap: 3, paddingVertical: 13, paddingRight: 16 },
+    // A hairline under each chat that starts after the avatar (as WhatsApp on iPhone).
+    rowBody: {
+      flex: 1,
+      gap: 3,
+      paddingVertical: 13,
+      paddingRight: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.line,
+    },
     line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
     // As in WhatsApp: a medium-weight name, not heavy bold.
     name: { flex: 1, fontFamily: fonts.bodyRegular, fontSize: 16, fontWeight: semibold, color: colors.text },
