@@ -4,14 +4,14 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { Check, ChevronRight, SlidersHorizontal, Ticket, UsersRound } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { coreApi } from '../../api/core';
 import type { Meeting } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
 import { ComingSoonModal } from '../../components/ComingSoonModal';
 import { GoLiveMark } from '../../components/GoLiveMark';
-import { Screen } from '../../components/Screen';
+import { FLOATING_TAB_SPACE, Screen, usePullToRefresh } from '../../components/Screen';
 import { SlidingUnderline } from '../../components/SlidingUnderline';
 import { useAuth } from '../../context/AuthContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
@@ -120,6 +120,8 @@ export function HomeScreen({ navigation }: Props) {
   async function refresh() {
     await Promise.all([refreshEvents(), loadNetwork()]);
   }
+  // Pull to refresh on the updates list.
+  const { refreshing, handleRefresh } = usePullToRefresh(refresh);
 
   function tipIcon(key: TipKey) {
     if (key === 'wentLive') return <GoLiveMark size={20} color={colors.text} />;
@@ -204,7 +206,8 @@ export function HomeScreen({ navigation }: Props) {
   const shown = filter === 'all' ? updates : updates.filter((u) => u.kind === filter);
 
   return (
-    <Screen onRefresh={refresh} style={styles.page}>
+    // Only the updates list scrolls; the header, card and tabs stay put.
+    <Screen scroll={false} style={styles.page} contentStyle={styles.fixed}>
       <View style={styles.header}>
         <View style={styles.headerSpacer} />
         <Text style={styles.brand}>Ol-ga</Text>
@@ -290,7 +293,11 @@ export function HomeScreen({ navigation }: Props) {
         <SlidingUnderline count={FILTERS.length} index={FILTERS.findIndex((f) => f.key === filter)} lineWidth={44} color={colors.selected} inset={8} />
       </View>
 
-      <View style={styles.list}>
+      <ScrollView
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+      >
         {shown.map((u) => (
           <Pressable key={u.key} onPress={u.onPress} disabled={!u.onPress} style={styles.row} accessibilityRole={u.onPress ? 'button' : undefined}>
             <View style={[styles.icon, u.kind === 'network' && styles.iconPerson, u.key === 'tip-confirmedMeeting' && styles.iconAmber]}>{u.icon}</View>
@@ -314,7 +321,7 @@ export function HomeScreen({ navigation }: Props) {
                   : 'New updates will appear here.'}
           </Text>
         )}
-      </View>
+      </ScrollView>
 
       <ComingSoonModal
         visible={indexSoon}
@@ -373,7 +380,10 @@ const makeStyles = (colors: ThemeColors) =>
     tabText: { fontSize: 14, color: colors.muted, paddingBottom: 9 },
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.text },
     // Rows run edge to edge, split by hairlines.
-    list: { marginHorizontal: -20 },
+    // The page itself doesn't scroll: no bottom padding here, the list has it.
+    fixed: { flex: 1, paddingBottom: 0 },
+    list: { flex: 1, marginHorizontal: -20 },
+    listContent: { paddingBottom: FLOATING_TAB_SPACE },
     row: {
       flexDirection: 'row',
       alignItems: 'flex-start',
