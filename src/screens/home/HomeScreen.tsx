@@ -256,7 +256,7 @@ export function HomeScreen({ navigation }: Props) {
               </View>
               <View style={styles.flex}>
                 <Text style={styles.meta}>{u.meta}</Text>
-                <Text style={styles.body}>
+                <Text style={styles.body} numberOfLines={2}>
                   <Text style={styles.bodyBold}>{u.title}</Text>
                   {u.body}
                 </Text>
@@ -447,10 +447,11 @@ const makeStyles = (colors: ThemeColors) =>
     collapsibleInner: { gap: 12 },
     row: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       gap: 12,
       paddingHorizontal: 20,
-      paddingVertical: 8,
+      // Same height for every update: meta line + up to two lines of text.
+      height: 78,
       borderBottomWidth: 1,
       borderBottomColor: colors.line,
     },

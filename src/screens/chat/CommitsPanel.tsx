@@ -182,6 +182,7 @@ export function CommitsPanel() {
                 leading={<Avatar initials={m.display_name ? getInitials(m.display_name) : '?'} />}
                 title={m.display_name ?? 'Your meeting'}
                 subtitle={m.headline}
+                threeLines
                 detail={
                   m.plan && (
                     <View style={styles.planRow}>
@@ -215,8 +216,9 @@ export function CommitsPanel() {
                   leading={named ? <Avatar initials={getInitials(o.recipient.display_name!)} /> : <Silhouette />}
                   // The name appears only once they accept.
                   title={named ? o.recipient.display_name! : o.recipient.headline || 'Attendee'}
-                  subtitle={named ? o.recipient.headline : planLine(o.plan)}
-                  detail={named ? <Text style={styles.detail}>{planLine(o.plan)}</Text> : undefined}
+                  subtitle={named ? o.recipient.headline : o.recipient.role_category ? roleLabel(o.recipient.role_category) : null}
+                  threeLines
+                  detail={<Text style={styles.planMuted}>{planLine(o.plan)}</Text>}
                   trailing={<Pill label={STATUS_LABELS[o.status]} tone={accepted ? 'positive' : 'default'} />}
                   onPress={
                     accepted
@@ -255,8 +257,8 @@ const makeStyles = (colors: ThemeColors) =>
     row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
     actions: { flexDirection: 'row', gap: 10, marginTop: 12 },
-    planRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+    planRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    planMuted: { fontSize: 12, color: colors.muted },
     time: { fontSize: 12, color: colors.muted },
-    detail: { fontSize: 12, color: colors.muted },
     planText: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: semibold, color: colors.positive },
   });

@@ -12,6 +12,8 @@ import { fonts, semibold } from '../theme/typography';
 const LEAD = 42; // the leading avatar/silhouette size rows are laid out for
 const PAD = 14;
 const GAP = 12;
+const ROW_H = 66;
+const ROW_H_TALL = 82;
 
 export function ListGroup({ children }: { children: React.ReactNode }) {
   const { colors } = useTheme();
@@ -29,19 +31,23 @@ export function ListGroup({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Rows in a list are all the same height. Two-line rows: title + subtitle.
+// Three-line rows (threeLines): title + subtitle + detail (e.g. a plan with an
+// icon). The height is fixed per kind and the text is centred in it, so a
+// row with a missing line is the same size, without a gap.
 type RowProps = {
   leading?: React.ReactNode;
   title: string;
   subtitle?: string | null;
-  // A third line (e.g. the plan), any node.
   detail?: React.ReactNode;
+  threeLines?: boolean;
   trailing?: React.ReactNode;
   onPress?: () => void;
   disabled?: boolean;
   accessibilityLabel?: string;
 };
 
-export function ListRow({ leading, title, subtitle, detail, trailing, onPress, disabled, accessibilityLabel }: RowProps) {
+export function ListRow({ leading, title, subtitle, detail, threeLines, trailing, onPress, disabled, accessibilityLabel }: RowProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
@@ -49,7 +55,7 @@ export function ListRow({ leading, title, subtitle, detail, trailing, onPress, d
       onPress={onPress}
       disabled={disabled || !onPress}
       android_ripple={onPress ? { color: colors.accentFill } : undefined}
-      style={({ pressed }) => [styles.row, pressed && Platform.OS === 'ios' && styles.pressed]}
+      style={({ pressed }) => [styles.row, threeLines && styles.rowTall, pressed && Platform.OS === 'ios' && styles.pressed]}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={accessibilityLabel}
     >
@@ -63,9 +69,10 @@ export function ListRow({ leading, title, subtitle, detail, trailing, onPress, d
             {subtitle}
           </Text>
         )}
-        {detail}
+        {threeLines && detail}
       </View>
-      {trailing}
+      {/* Centred, whatever it is (a time, a status pill). */}
+      {trailing != null && <View style={styles.trailing}>{trailing}</View>}
     </Pressable>
   );
 }
@@ -80,9 +87,12 @@ const makeStyles = (colors: ThemeColors) =>
       overflow: 'hidden',
     },
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line, marginLeft: PAD + LEAD + GAP },
-    row: { flexDirection: 'row', alignItems: 'center', gap: GAP, paddingHorizontal: PAD, paddingVertical: 11 },
+    // A fixed height, so every row in every list is the same size.
+    row: { flexDirection: 'row', alignItems: 'center', gap: GAP, paddingHorizontal: PAD, height: ROW_H },
+    rowTall: { height: ROW_H_TALL },
     pressed: { backgroundColor: colors.accentFill },
-    body: { flex: 1, gap: 2 },
+    body: { flex: 1, gap: 2, justifyContent: 'center' },
+    trailing: { alignSelf: 'center', alignItems: 'flex-end' },
     title: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: semibold, color: colors.text },
     subtitle: { fontSize: 13, color: colors.muted },
   });
