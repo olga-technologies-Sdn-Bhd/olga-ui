@@ -2,7 +2,7 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { Check, ChevronRight, SlidersHorizontal, Ticket } from 'lucide-react-native';
+import { Check, ChevronRight, SlidersHorizontal, Ticket, UsersRound } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -12,6 +12,7 @@ import { Avatar } from '../../components/Avatar';
 import { ComingSoonModal } from '../../components/ComingSoonModal';
 import { GoLiveMark } from '../../components/GoLiveMark';
 import { Screen } from '../../components/Screen';
+import { SlidingUnderline } from '../../components/SlidingUnderline';
 import { useAuth } from '../../context/AuthContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
 import { useNearby } from '../../context/NearbyContext';
@@ -286,16 +287,16 @@ export function HomeScreen({ navigation }: Props) {
               accessibilityState={{ selected: active }}
             >
               <Text style={[styles.tabText, active && styles.tabTextActive]}>{f.label}</Text>
-              <View style={[styles.tabLine, active && styles.tabLineActive]} />
             </Pressable>
           );
         })}
+        <SlidingUnderline count={FILTERS.length} index={FILTERS.findIndex((f) => f.key === filter)} lineWidth={44} color={colors.selected} inset={8} />
       </View>
 
       <View style={styles.list}>
         {shown.map((u) => (
           <Pressable key={u.key} onPress={u.onPress} disabled={!u.onPress} style={styles.row} accessibilityRole={u.onPress ? 'button' : undefined}>
-            <View style={[styles.icon, u.key === 'tip-confirmedMeeting' && styles.iconAmber]}>{u.icon}</View>
+            <View style={[styles.icon, u.kind === 'network' && styles.iconPerson, u.key === 'tip-confirmedMeeting' && styles.iconAmber]}>{u.icon}</View>
             <View style={styles.flex}>
               <Text style={styles.meta}>{u.meta}</Text>
               <Text style={styles.body}>
@@ -321,9 +322,9 @@ export function HomeScreen({ navigation }: Props) {
       <ComingSoonModal
         visible={indexSoon}
         onClose={() => setIndexSoon(false)}
+        icon={UsersRound}
         title="Your Social Capital Graph"
         message="Your graph is coming soon. For now, this card shows your confirmed relationships."
-        icon="◎"
       />
     </Screen>
   );
@@ -368,11 +369,10 @@ const makeStyles = (colors: ThemeColors) =>
     sub: { fontSize: 12, color: colors.muted },
     // Filters as text tabs with an underline, edge to edge above the list.
     tabs: { flexDirection: 'row', marginHorizontal: -20, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
-    tab: { flex: 1, alignItems: 'center', paddingTop: 8, minHeight: 44 },
-    tabText: { fontSize: 14, color: colors.muted, paddingBottom: 9 },
+    // The underline sits on the divider (no gap below it); 40 still makes a comfortable tap target.
+    tab: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingTop: 6, minHeight: 40 },
+    tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
-    tabLine: { height: 3, width: 44, borderRadius: 2, backgroundColor: 'transparent' },
-    tabLineActive: { backgroundColor: colors.selected },
     // Rows run edge to edge, split by hairlines.
     list: { marginHorizontal: -20 },
     row: {
@@ -385,8 +385,10 @@ const makeStyles = (colors: ThemeColors) =>
       borderBottomColor: colors.line,
     },
     icon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+    // People's initials on the soft brand tint (as Avatar).
+    iconPerson: { backgroundColor: colors.accentFill },
     iconAmber: { backgroundColor: colors.amberSoft },
-    initials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
+    initials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.accent },
     meta: { fontSize: 12, color: colors.muted },
     body: { fontSize: 14, lineHeight: 20, color: colors.text, marginTop: 1 },
     bodyBold: { fontFamily: fonts.bodyBold, fontWeight: '700' },

@@ -27,8 +27,9 @@ export function useTopInset() {
 // the screen updates when the data arrives.
 const REFRESH_SPINNER_MAX_MS = 10000;
 
-// Room at the bottom of every screen so content clears the floating tab bar.
-export const FLOATING_TAB_SPACE = 100;
+// Room at the bottom of every screen so content clears the floating tab bar
+// (58 tall, sitting 40 above the edge on an iPhone with a home indicator).
+export const FLOATING_TAB_SPACE = 116;
 
 export function usePullToRefresh(onRefresh?: () => Promise<void>) {
   const [refreshing, setRefreshing] = useState(false);

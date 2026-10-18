@@ -18,9 +18,11 @@ type Props = {
   // For a ghost/secondary button placed on a dark/gradient card, where the
   // normal blue-on-blue text+border would be unreadable — forces white.
   onDark?: boolean;
+  // Overrides the label colour (e.g. red text on an outlined destructive button).
+  labelColor?: string;
 };
 
-export function Button({ label, onPress, variant = 'primary', loading, disabled, small, style, onDark }: Props) {
+export function Button({ label, onPress, variant = 'primary', loading, disabled, small, style, onDark, labelColor }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(
     () =>
@@ -42,7 +44,8 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
         ghostOnDark: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
         small: { paddingVertical: 10, paddingHorizontal: 14, minHeight: 44, borderRadius: 999 },
         disabled: { opacity: 0.5 },
-        pressed: { opacity: 0.85 },
+        // A gentle press-in, like iOS buttons.
+        pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
         label: { fontFamily: fonts.bodyBold, fontWeight: '700', fontSize: 14 },
         labelPrimary: { color: colors.onBrand },
         labelCharcoal: { color: colors.white },
@@ -85,6 +88,7 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
             variant === 'secondary' && styles.labelSecondary,
             variant === 'ghost' && ghostLabelStyle,
             small && styles.labelSmall,
+            !!labelColor && { color: labelColor },
           ]}
         >
           {label}

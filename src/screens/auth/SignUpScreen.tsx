@@ -1,5 +1,6 @@
+import { CircleAlert, MailX, Phone, UserRound } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
 import { OtpEntry } from '../../components/OtpEntry';
@@ -14,6 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
+import { showDialog } from '../../components/DialogHost';
 
 type Step = 'email' | 'verifying' | 'otp' | 'name' | 'mobile' | 'registering';
 
@@ -64,7 +66,7 @@ export function SignUpScreen() {
       setEmail('');
       setStep('email');
       if (!isUserCancelledLogin(error)) {
-        Alert.alert('Sign-in failed', "Something went wrong signing you in. Please try again.");
+        showDialog('Sign-in failed', 'Something went wrong signing you in. Please try again.', undefined, { icon: CircleAlert, tone: 'danger' });
       }
     } finally {
       inProgress.current = false;
@@ -87,11 +89,13 @@ export function SignUpScreen() {
     } catch (error) {
       setEmail('');
       setStep('email');
-      Alert.alert(
+      showDialog(
         "Couldn't send a code",
         error instanceof NativeAuthError && error.code === 'network_error'
           ? 'Check your connection and try again.'
-          : 'Something went wrong. Please try again.'
+          : 'Something went wrong. Please try again.',
+        undefined,
+        { icon: MailX, tone: 'danger' }
       );
       inProgress.current = false;
       return;
@@ -148,7 +152,7 @@ export function SignUpScreen() {
     // Olga.Core only accepts E.164 (+<country code><number>).
     const e164 = value.replace(/[\s\-().]/g, '');
     if (!/^\+[1-9]\d{7,14}$/.test(e164)) {
-      Alert.alert('Check your number', 'Please include your country code, e.g. +60 12 345 6789.');
+      showDialog('Check your number', 'Please include your country code, e.g. +60 12 345 6789.', undefined, { icon: Phone });
       return;
     }
     setMobile(value);
@@ -160,10 +164,9 @@ export function SignUpScreen() {
       if (error instanceof MemberRecoveryUnavailableError) {
         // Registered on another device / before a reinstall; retrying can't
         // help until the backend can look the member up, so sign out.
-        Alert.alert(
-          'Already registered',
-          'This email or mobile number is already on Ol-ga. Please contact Ol-ga support.'
-        );
+        showDialog('Already registered', 'This email or mobile number is already on Ol-ga. Please contact Ol-ga support.', undefined, {
+          icon: UserRound,
+        });
         await logOut();
         setName('');
         setEmail('');
@@ -171,7 +174,7 @@ export function SignUpScreen() {
         return;
       }
       setStep('mobile');
-      Alert.alert("Couldn't create your profile", 'Please check your connection and try again.');
+      showDialog("Couldn't create your profile", 'Please check your connection and try again.', undefined, { icon: CircleAlert, tone: 'danger' });
     }
   }
 

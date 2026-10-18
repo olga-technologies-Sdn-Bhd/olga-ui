@@ -7,6 +7,7 @@ import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } 
 import { ApiError } from '../../api/client';
 import { CoreEvent } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
+import { SlidingUnderline } from '../../components/SlidingUnderline';
 import { Button } from '../../components/Button';
 import { DateBlock } from '../../components/DateBlock';
 import { FLOATING_TAB_SPACE, usePullToRefresh, useTopInset } from '../../components/Screen';
@@ -174,10 +175,10 @@ export function EventsScreen({ navigation }: Props) {
                 accessibilityState={{ selected: active }}
               >
                 <Text style={[styles.tabText, active && styles.tabTextActive]}>{key === 'upcoming' ? 'Upcoming' : 'Past'}</Text>
-                <View style={[styles.tabLine, active && styles.tabLineActive]} />
               </Pressable>
             );
           })}
+          <SlidingUnderline count={2} index={tab === 'upcoming' ? 0 : 1} lineWidth={76} color={colors.selected} />
         </View>
       </View>
 
@@ -264,8 +265,6 @@ const makeStyles = (colors: ThemeColors) =>
     tab: { flex: 1, alignItems: 'center', paddingTop: 10, minHeight: 44 },
     tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
-    tabLine: { height: 3, width: 76, borderRadius: 2, backgroundColor: 'transparent' },
-    tabLineActive: { backgroundColor: colors.selected },
     content: { paddingBottom: FLOATING_TAB_SPACE },
     section: { fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: '700', color: colors.text, paddingHorizontal: 20, marginTop: 16 },
     // Rows run edge to edge, split by hairlines.

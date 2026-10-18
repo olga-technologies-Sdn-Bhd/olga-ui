@@ -8,12 +8,13 @@ import { NearbyCommitScreen } from '../screens/golive/NearbyCommitScreen';
 import { NearbyPeopleScreen } from '../screens/golive/NearbyPeopleScreen';
 import { NearbyRequestScreen } from '../screens/golive/NearbyRequestScreen';
 import { GoLiveStackParamList } from './types';
+import { STACK_OPTIONS } from './stackOptions';
 
 const Stack = createNativeStackNavigator<GoLiveStackParamList>();
 
 export function GoLiveStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={STACK_OPTIONS}>
       <Stack.Screen name="GoLive" component={GoLiveScreen} />
       <Stack.Screen name="Filters" component={FiltersScreen} />
       <Stack.Screen name="LiveMatches" component={LiveMatchesScreen} />

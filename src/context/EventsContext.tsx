@@ -1,8 +1,10 @@
+import { CalendarX } from 'lucide-react-native';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
+import {  } from 'react-native';
 import { ApiError } from '../api/client';
 import { coreApi, CoreEvent } from '../api/core';
 import { useAuth } from './AuthContext';
+import { showDialog } from '../components/DialogHost';
 
 type EventsState = {
   events: CoreEvent[] | null; // null until the first load finishes
@@ -48,7 +50,7 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
     const fresh = ids.filter((id) => !notified.current.has(id));
     if (!fresh.length) return;
     fresh.forEach((id) => notified.current.add(id));
-    Alert.alert('Event cancelled', 'This event was cancelled.');
+    showDialog('Event cancelled', 'This event was cancelled.', undefined, { icon: CalendarX });
   }, []);
 
   const applyEvents = useCallback(

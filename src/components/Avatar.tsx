@@ -22,14 +22,15 @@ export function Avatar({ initials, size = 'md', dark }: Props) {
     () =>
       StyleSheet.create({
         base: {
-          backgroundColor: colors.accentSoft,
+          // Initials on a soft brand tint, like iOS contacts.
+          backgroundColor: colors.accentFill,
           alignItems: 'center',
           justifyContent: 'center',
         },
         text: {
           fontFamily: fonts.bodyBold,
           fontWeight: '800',
-          color: colors.brand,
+          color: colors.accent,
         },
         dark: { backgroundColor: colors.charcoal },
         textDark: { color: colors.white },

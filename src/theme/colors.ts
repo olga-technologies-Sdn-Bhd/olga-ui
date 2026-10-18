@@ -5,23 +5,24 @@
 // variants share the same shape so any screen can switch via useTheme()
 // without branching logic.
 export const lightColors = {
-  bg: '#F6F6F4', // App ground
+  bg: '#F2F2F7', // App ground: Apple's cool grouped grey, so white cards stand out
+  bgClear: 'rgba(242,242,247,0)', // The ground, fully transparent (fades into it)
   surface: '#FFFFFF', // Card surface
-  surface2: '#EEEEEB', // Secondary surface (date blocks, inputs, pill base)
+  surface2: '#E9E9EE', // Secondary surface (date blocks, inputs, pill base)
   text: '#141B26', // Ink, with a navy cast
   muted: '#646B76', // Secondary text
-  line: '#E4E4E1', // Hairlines and card borders
+  line: '#E5E5EA', // Hairlines and card borders
   // Midnight navy is the one "accent": primary buttons, selected
   // chips, progress fill, tab active tint. Low saturation, never bright.
   brand: '#1B2A41',
   // Text/icons on a brand (primary) button.
   onBrand: '#ffffff',
   // Outline button border.
-  brand2: '#CFCFCB',
+  brand2: '#D1D1D6',
   // Selected chips, icon-wrap fills.
-  brandSoft: '#E4E4E0',
+  brandSoft: '#E3E3E8',
   // Avatar/icon backgrounds, soft pill tint, chat "me" bubble.
-  accentSoft: '#EEEEEB',
+  accentSoft: '#EDEDF2',
   // Buttons like chat "send": the same navy as brand.
   ink: '#1B2A41',
   onInk: '#FFFFFF',
@@ -54,13 +55,18 @@ export const lightColors = {
   selected: '#1B2A41',
   onSelected: '#ffffff',
   danger: '#D64555',
+  dangerSoft: 'rgba(214,69,85,0.12)',
+  // Apple-style tint for active states (selected tab, its pill, menu icons):
+  // a brighter navy-blue from the brand family, so selection reads alive, not grey.
+  accent: '#24508F',
+  accentFill: 'rgba(36,80,143,0.13)',
   white: '#ffffff',
   // Concentric halo behind the Go Live ring, lightest to deepest.
-  tint: '#EFEFEC',
-  tint2: '#E4E4E0',
-  tintLine: '#CFCFCB',
-  track: '#D6D6D2',
-  progressTrack: '#ECECE9',
+  tint: '#ECECF1',
+  tint2: '#E3E3E8',
+  tintLine: '#CDCDD3',
+  track: '#D4D4D9',
+  progressTrack: '#E8E8ED',
 };
 
 export const darkColors = {
@@ -68,6 +74,7 @@ export const darkColors = {
   // Graphite: neutral near-black greys with no brown cast, same roles as the
   // light palette. Not a client-approved palette yet.
   bg: '#121314',
+  bgClear: 'rgba(18,19,20,0)', // The ground, fully transparent (fades into it)
   surface: '#1B1C1E',
   surface2: '#242628',
   text: '#F2F3F4',
@@ -100,6 +107,9 @@ export const darkColors = {
   selected: '#F2F3F4',
   onSelected: '#121314',
   danger: '#ff7a86',
+  dangerSoft: 'rgba(255,122,134,0.16)',
+  accent: '#8EB4F0',
+  accentFill: 'rgba(142,180,240,0.18)',
   white: '#ffffff',
   tint: '#1E1F21',
   tint2: '#26282A',
