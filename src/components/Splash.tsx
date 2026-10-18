@@ -18,15 +18,21 @@ const LETTERS = EDGES.length - 1;
 // The same line as the sign-up screen.
 const TAGLINE = 'Meet people who matter most.'.split(' ');
 
-const FADE_MS = 420; // one character coming in
-const STAGGER_MS = 200; // gap between characters
-const WORD_FADE_MS = 380; // one word coming in
-const WORD_STAGGER_MS = 170; // gap between words
+const FADE_MS = 460; // one character coming in
+const STAGGER_MS = 150; // gap between characters
+const WORD_FADE_MS = 420; // one word coming in
+const WORD_STAGGER_MS = 120; // gap between words
 const REVEAL_MS = STAGGER_MS * (LETTERS - 1) + FADE_MS;
 const WORDS_MS = WORD_STAGGER_MS * (TAGLINE.length - 1) + WORD_FADE_MS;
-const ZOOM_MS = 1500; // everything, once
-const HOLD_MS = 300;
-export const SPLASH_MIN_MS = REVEAL_MS + WORDS_MS + ZOOM_MS + HOLD_MS;
+// The phases overlap a little, so it reads as one continuous motion.
+const OVERLAP_MS = 180;
+const ZOOM_MS = 1300; // everything, once
+const HOLD_MS = 150;
+export const SPLASH_MIN_MS = REVEAL_MS + WORDS_MS + ZOOM_MS + HOLD_MS - OVERLAP_MS * 2;
+// The splash then fades away over the app instead of cutting to it.
+export const SPLASH_FADE_MS = 380;
+// Apple-style ease: quick start, long soft settle.
+const SOFT = Easing.bezier(0.22, 1, 0.36, 1);
 
 export function Splash() {
   const covers = useRef(EDGES.slice(0, LETTERS).map(() => new Animated.Value(1))).current;
@@ -34,27 +40,32 @@ export function Splash() {
   const zoom = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const ease = Easing.out(Easing.cubic);
-    const run = Animated.sequence([
-      Animated.stagger(
-        STAGGER_MS,
-        covers.map((cover) => Animated.timing(cover, { toValue: 0, duration: FADE_MS, easing: ease, useNativeDriver: true }))
-      ),
-      Animated.stagger(
-        WORD_STAGGER_MS,
-        words.map((word) => Animated.timing(word, { toValue: 1, duration: WORD_FADE_MS, easing: ease, useNativeDriver: true }))
-      ),
-      Animated.timing(zoom, { toValue: 1, duration: ZOOM_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+    const letters = Animated.stagger(
+      STAGGER_MS,
+      covers.map((cover) => Animated.timing(cover, { toValue: 0, duration: FADE_MS, easing: SOFT, useNativeDriver: true }))
+    );
+    const line = Animated.stagger(
+      WORD_STAGGER_MS,
+      words.map((word) => Animated.timing(word, { toValue: 1, duration: WORD_FADE_MS, easing: SOFT, useNativeDriver: true }))
+    );
+    const grow = Animated.timing(zoom, { toValue: 1, duration: ZOOM_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true });
+    // Each phase starts just before the last one finishes.
+    const run = Animated.parallel([
+      letters,
+      Animated.sequence([Animated.delay(REVEAL_MS - OVERLAP_MS), line]),
+      Animated.sequence([Animated.delay(REVEAL_MS + WORDS_MS - OVERLAP_MS * 2), grow]),
     ]);
     run.start();
     return () => run.stop();
   }, [covers, words, zoom]);
 
-  const scale = zoom.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] });
+  // A gentle zoom, and the name settles up from just below as it appears.
+  const scale = zoom.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
+  const rise = covers[LETTERS - 1].interpolate({ inputRange: [0, 1], outputRange: [0, 6] });
 
   return (
     <View style={styles.wrap}>
-      <Animated.View style={[styles.logo, { transform: [{ scale }] }]}>
+      <Animated.View style={[styles.logo, { transform: [{ scale }, { translateY: rise }] }]}>
         <Animated.Image source={LOGO} resizeMode="contain" style={styles.logo} />
         {covers.map((opacity, i) => (
           <Animated.View
