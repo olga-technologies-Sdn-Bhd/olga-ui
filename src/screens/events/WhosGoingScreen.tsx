@@ -35,12 +35,12 @@ export function WhosGoingScreen({ route, navigation }: Props) {
       const code = e instanceof ApiError ? e.code : undefined;
       setError(
         code === 'EVENT_REGISTRATION_REQUIRED'
-          ? "Sign up for this event to see who's going."
+          ? "Register for this event to see who's going."
           : code === 'EVENT_NOT_FOUND'
             ? 'This event is no longer available.'
             : e instanceof ApiError && e.status > 0
               ? `Couldn't load who's going (${e.status})`
-              : "Couldn't reach the server"
+              : "Couldn't connect. Try again."
       );
     }
   }, [route.params.eventId]);
@@ -102,7 +102,7 @@ export function WhosGoingScreen({ route, navigation }: Props) {
           <Button label="Try again" variant="secondary" small onPress={load} />
         </View>
       )}
-      {data && attendees.length === 0 && <Text style={styles.note}>You're among the first to sign up.</Text>}
+      {data && attendees.length === 0 && <Text style={styles.note}>You're among the first to register.</Text>}
 
       {shown.length > 0 && (
         <View style={styles.list}>
@@ -131,7 +131,7 @@ export function WhosGoingScreen({ route, navigation }: Props) {
 // Same number as the event page; the list itself leaves out you (and anyone
 // you've blocked), so say so when they differ.
 function countLine(shown: number, signedUp?: number) {
-  return typeof signedUp === 'number' && signedUp !== shown ? `shown here, of ${signedUp} signed up` : 'signed up';
+  return typeof signedUp === 'number' && signedUp !== shown ? `shown here, of ${signedUp} registered` : 'registered';
 }
 
 // "PRODUCT_MANAGEMENT" -> "Product management"

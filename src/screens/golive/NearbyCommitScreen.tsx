@@ -81,7 +81,7 @@ export function NearbyCommitScreen({ route, navigation }: Props) {
         <>
           <View style={styles.consequence}>
             <Text style={styles.consequenceText}>
-              They see your role and intent. Not your name. If they <Text style={styles.bold}>accept</Text>, you both see
+              They see your role and what you're looking for. Not your name. If they <Text style={styles.bold}>accept</Text>, you both see
               names at once. If not, nothing happens and you're never told.
             </Text>
           </View>
@@ -92,7 +92,7 @@ export function NearbyCommitScreen({ route, navigation }: Props) {
       {sent ? (
         <Button label="Back to people nearby" variant="secondary" onPress={() => navigation.goBack()} />
       ) : (
-        <Button label="Send commit" variant="charcoal" loading={sending} disabled={!person} onPress={send} />
+        <Button label="Send Commit" variant="charcoal" loading={sending} disabled={!person} onPress={send} />
       )}
     </Screen>
   );

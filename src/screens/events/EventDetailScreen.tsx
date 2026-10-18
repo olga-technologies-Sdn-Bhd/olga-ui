@@ -108,7 +108,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
       if (e instanceof ApiError && e.code === 'EVENT_NOT_FOUND') {
         setError('This event was cancelled.');
       } else {
-        setError(e instanceof ApiError && e.status > 0 ? `Couldn't register (${e.status})` : "Couldn't reach the server");
+        setError(e instanceof ApiError && e.status > 0 ? `Couldn't register (${e.status})` : "Couldn't connect. Try again.");
       }
       if (e instanceof ApiError) console.warn(`Event registration failed (${e.code}), correlation_id=${e.correlationId}`);
     } finally {
@@ -156,7 +156,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
         <View style={styles.flex}>
           <Text style={styles.goingTitle}>
             {typeof event.attendee_count === 'number'
-              ? `${event.attendee_count.toLocaleString('en-US')} ${event.attendee_count === 1 ? 'professional' : 'professionals'} signed up`
+              ? `${event.attendee_count.toLocaleString('en-US')} ${event.attendee_count === 1 ? 'professional' : 'professionals'} registered`
               : "See who's going"}
           </Text>
           {open && matchCount !== null && matchCount > 0 ? (
@@ -231,21 +231,21 @@ export function EventDetailScreen({ route, navigation }: Props) {
               <Check size={16} color={colors.positive} strokeWidth={3} />
             </View>
             <View style={styles.flex}>
-              <Text style={styles.h3}>{checkedIn ? "You're checked in" : "You're signed up"}</Text>
+              <Text style={styles.h3}>{checkedIn ? "You're checked in" : "You're registered"}</Text>
               <Text style={styles.sub}>
                 {open
                   ? "You stay private until you Go Live in the room."
                   : "You stay private until you Go Live. It opens on the day, once you check in at the badge desk."}
               </Text>
               {awaitingCheckIn && (
-                <Text style={styles.sub}>This event needs check-in: check in at the badge desk before you appear in matches.</Text>
+                <Text style={styles.sub}>Check in at the badge desk to appear to relevant people.</Text>
               )}
             </View>
           </View>
           {open && event.live_mode_enabled && <Button label="Go Live" variant="charcoal" onPress={handleGoLive} />}
         </>
       ) : (
-        <Button label="Sign up for this event" onPress={handleRegister} loading={registering} />
+        <Button label="Register for this event" onPress={handleRegister} loading={registering} />
       )}
     </Screen>
   );

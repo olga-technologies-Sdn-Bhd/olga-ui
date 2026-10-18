@@ -35,12 +35,12 @@ const AUTO_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 2000;
 const RETRYABLE: MatchingFailure[] = ['MATCHING_FAILED', 'TIMED_OUT'];
 
-const LIVE_LINE = 'Role and intent only, never your name.';
+const LIVE_LINE = "Your role and what you're looking for. Never your name.";
 
 const BLOCKER_MESSAGES: Record<Exclude<GoLiveBlocker, 'CONSENT_REQUIRED'>, string> = {
-  REGISTRATION_REQUIRED: 'Sign up for this event first, then you can go live.',
+  REGISTRATION_REQUIRED: 'Register for this event first, then you can Go Live.',
   EVENT_NOT_ACTIVE: 'This event has ended.',
-  LIVE_MODE_NOT_ENABLED: "Live Mode isn't available for this event.",
+  LIVE_MODE_NOT_ENABLED: "Go Live isn't available for this event.",
   EVENT_NOT_FOUND: 'This event was cancelled.',
   TAKEN_OFFLINE: "You've been taken offline. Contact support if you think this is a mistake.",
 };
@@ -50,23 +50,23 @@ const MATCHING_MESSAGES: Record<MatchingFailure, string> = {
   INTENT_FAILED: "We couldn't read what you're looking for. Try rephrasing it in your filter.",
   MATCHING_FAILED: "You're live, but matching failed.",
   TIMED_OUT: "You're live, but matching is taking longer than usual.",
-  CONSENT_DENIED: "Matching is off, so we can't find your matches. Go Live again and allow matching to turn it on.",
+  CONSENT_DENIED: 'Matching is off. Go Live again and allow matching.',
 };
 
 // Consent wording is the app's; Core keeps the policy version and hash.
 // MATCHING text is placeholder plain language until the client approves it.
 const CONSENT_PROMPTS: Record<ConsentPurpose, { title: string; body: string }> = {
   LIVE_MODE: {
-    title: 'Allow Live Mode?',
-    body: "While you're live, people at this event who match your intent can see you're here. You can go invisible anytime.",
+    title: 'Allow Go Live?',
+    body: 'Relevant people at this event can see you while you’re live. End it anytime.',
   },
   MATCHING: {
     title: 'Allow matching?',
-    body: "To find your matches, Ol-ga compares what you're looking for with the other people at this event who allowed matching. Your matches see your role and intent, never your name.",
+    body: "Ol-ga finds relevant people at this event. They see your role and what you're looking for, never your name.",
   },
 };
 
-const CHECK_IN_NOTE = 'This event needs check-in: check in at the badge desk before you appear in matches.';
+const CHECK_IN_NOTE = 'Check in at the badge desk to appear to relevant people.';
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -208,8 +208,8 @@ export function GoLiveScreen({ navigation }: Props) {
         unreachable
           ? BLE_DISCOVERY_ENABLED
             ? 'No internet. Switch to Nearby to find people around you over Bluetooth.'
-            : "Couldn't reach the server"
-          : `Couldn't go live (${e instanceof ApiError ? e.status : 0})`
+            : "Couldn't connect. Try again."
+          : `Couldn't Go Live (${e instanceof ApiError ? e.status : 0})`
       );
       return;
     }
@@ -226,11 +226,11 @@ export function GoLiveScreen({ navigation }: Props) {
         setError(
           e instanceof ApiError && e.code === 'CONSENT_POLICY_NOT_ACTIVE'
             ? purpose === 'LIVE_MODE'
-              ? "Live Mode isn't available right now. Please try again later."
+              ? "Go Live isn't available right now. Please try again later."
               : "Matching isn't available right now. Please try again later."
             : e instanceof ApiError && e.status > 0
               ? `Couldn't save your consent (${e.status})`
-              : "Couldn't reach the server"
+              : "Couldn't connect. Try again."
         );
         return;
       }
@@ -252,7 +252,7 @@ export function GoLiveScreen({ navigation }: Props) {
       await stopLive();
       setMatchingFailed(false);
     } catch (e) {
-      setError(e instanceof ApiError && e.status > 0 ? `Couldn't go invisible (${e.status})` : "Couldn't reach the server");
+      setError(e instanceof ApiError && e.status > 0 ? `Couldn't end Go Live (${e.status})` : "Couldn't connect. Try again.");
     } finally {
       setStopping(false);
     }
@@ -295,7 +295,7 @@ export function GoLiveScreen({ navigation }: Props) {
         <GoLiveDisc locked label="GO LIVE" caption="OPENS AT CHECK-IN" fill={disc.fill} textColor={disc.text} />
         <Text style={styles.lead}>Nobody can see you.</Text>
         <Card>
-          <Text style={styles.sub}>Sign up for an event. Go Live opens when you check in at the badge desk.</Text>
+          <Text style={styles.sub}>Register for an event. Go Live opens when you check in at the badge desk.</Text>
           <Button label="Find an event" variant="secondary" small style={styles.cardButton} onPress={() => navigation.getParent()?.navigate('EventsTab')} />
         </Card>
         <FilterSummary title="Who you'll see" intent={intentText} filters={filters} onChange={openFilter} />
@@ -413,10 +413,10 @@ export function GoLiveScreen({ navigation }: Props) {
       {isLive && (
         <View style={[styles.visible, searching && styles.dimmed]}>
           <View style={styles.flex}>
-            <Text style={styles.h3}>Visible to your matches</Text>
+            <Text style={styles.h3}>Visible to relevant people</Text>
             <Text style={styles.sub}>{LIVE_LINE}</Text>
           </View>
-          <ToggleSwitch on={!stopping} onToggle={handleGoInvisible} label="Visible to your matches" />
+          <ToggleSwitch on={!stopping} onToggle={handleGoInvisible} label="Visible to relevant people" />
         </View>
       )}
 

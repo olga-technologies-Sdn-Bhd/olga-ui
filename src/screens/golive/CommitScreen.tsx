@@ -87,7 +87,7 @@ export function CommitScreen({ route, navigation }: Props) {
   const remaining = quota?.remaining;
   const noneLeft = remaining === 0;
   const sendLabel =
-    remaining === undefined ? 'Send commit' : noneLeft ? 'No Commits left in this room' : `Send commit · ${remaining} of ${limit} left in this room`;
+    remaining === undefined ? 'Send Commit' : noneLeft ? 'No Commits left in this room' : `Send Commit · ${remaining} of ${limit} left in this room`;
 
   return (
     <Screen>
@@ -137,7 +137,7 @@ export function CommitScreen({ route, navigation }: Props) {
 
           <View style={styles.consequence}>
             <Text style={styles.consequenceText}>
-              They see your role, intent and this plan. Not your name. If they <Text style={styles.bold}>accept</Text>, you
+              They see your role, what you're looking for and this plan. Not your name. If they <Text style={styles.bold}>accept</Text>, you
               both see names at once. If not, nothing happens and you're never told.
               {activeEvent ? ' The request disappears when the room closes.' : ''}
             </Text>

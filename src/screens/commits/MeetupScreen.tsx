@@ -22,7 +22,7 @@ export function MeetupScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { name, headline, where, when, eventName, picker } = route.params;
-  const who = name || 'your match';
+  const who = name || 'your connection';
 
   return (
     <Screen>
@@ -36,7 +36,7 @@ export function MeetupScreen({ route, navigation }: Props) {
       <Card style={styles.row}>
         <Avatar initials={name ? getInitials(name) : '?'} size="lg" />
         <View style={styles.flex}>
-          <Text style={styles.h3}>{name ?? 'Your match'}</Text>
+          <Text style={styles.h3}>{name ?? 'Your connection'}</Text>
           {headline && <Text style={styles.sub}>{headline}</Text>}
         </View>
       </Card>
