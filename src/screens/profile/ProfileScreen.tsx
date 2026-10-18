@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronRight } from 'lucide-react-native';
+import { BriefcaseBusiness, ChevronRight, Hash, LucideIcon, Mail, Moon, Phone, Search, Server } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
@@ -80,6 +80,7 @@ export function ProfileScreen({ navigation }: Props) {
           accessibilityRole="button"
           style={({ pressed }) => [styles.row, pressed && styles.pressed]}
         >
+          <RowIcon icon={BriefcaseBusiness} styles={styles} colors={colors} />
           <View style={styles.rowText}>
             <Text style={styles.label}>Your work and About you</Text>
             <Text style={styles.sub}>What relevant people see first</Text>
@@ -93,6 +94,7 @@ export function ProfileScreen({ navigation }: Props) {
           accessibilityRole="button"
           style={({ pressed }) => [styles.row, pressed && styles.pressed]}
         >
+          <RowIcon icon={Search} styles={styles} colors={colors} />
           <View style={styles.rowText}>
             <Text style={styles.label}>What you're looking for</Text>
             <Text style={styles.sub} numberOfLines={2}>
@@ -105,23 +107,24 @@ export function ProfileScreen({ navigation }: Props) {
 
       <Text style={styles.sectionTitle}>Account</Text>
       <Card style={styles.list}>
-        <Row label="Email" value={email} styles={styles} />
+        <Row icon={Mail} label="Email" value={email} styles={styles} colors={colors} />
         <View style={styles.divider} />
-        <Row label="Mobile" value={mobile ?? phoneHint} styles={styles} />
+        <Row icon={Phone} label="Mobile" value={mobile ?? phoneHint} styles={styles} colors={colors} />
         <View style={styles.divider} />
-        <Row label="Member ID" value={memberId} styles={styles} small />
+        <Row icon={Hash} label="Member ID" value={memberId} styles={styles} colors={colors} small />
         {/* Which backend this build talks to. For the team only: production
             builds never show it. */}
         {APP_ENV !== 'prod' && (
           <>
             <View style={styles.divider} />
-            <Row label="Environment" value={APP_ENV} styles={styles} small />
+            <Row icon={Server} label="Environment" value={APP_ENV} styles={styles} colors={colors} small />
           </>
         )}
       </Card>
 
       <Text style={styles.sectionTitle}>Appearance</Text>
       <Card style={styles.row}>
+        <RowIcon icon={Moon} styles={styles} colors={colors} />
         <View style={styles.rowText}>
           <Text style={styles.label}>Dark mode</Text>
           <Text style={styles.sub}>{scheme === 'dark' ? 'On' : 'Off'} — applies across the app</Text>
@@ -143,22 +146,36 @@ export function ProfileScreen({ navigation }: Props) {
 }
 
 function Row({
+  icon,
   label,
   value,
   styles,
+  colors,
   small,
 }: {
+  icon: LucideIcon;
   label: string;
   value: string | null;
   styles: ReturnType<typeof makeStyles>;
+  colors: ThemeColors;
   small?: boolean;
 }) {
   return (
     <View style={styles.row}>
+      <RowIcon icon={icon} styles={styles} colors={colors} />
       <Text style={styles.label}>{label}</Text>
-      <Text style={[styles.value, small && styles.valueSmall]} numberOfLines={1} selectable>
+      <Text style={[styles.value, small && styles.valueSmall]} numberOfLines={1} ellipsizeMode="middle">
         {value ?? '—'}
       </Text>
+    </View>
+  );
+}
+
+// A menu row's leading icon, in the brand colour (like a settings list).
+function RowIcon({ icon: Icon, styles, colors }: { icon: LucideIcon; styles: ReturnType<typeof makeStyles>; colors: ThemeColors }) {
+  return (
+    <View style={styles.rowIcon}>
+      <Icon size={19} color={colors.brand} strokeWidth={2} />
     </View>
   );
 }
@@ -171,11 +188,13 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   list: { paddingVertical: 4 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 10 },
   rowText: { flex: 1 },
+  rowIcon: { width: 22, alignItems: 'center' },
   pressed: { opacity: 0.7 },
   label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
-  value: { fontSize: 13, color: colors.muted, flexShrink: 1, textAlign: 'right' },
+  // Takes the rest of the row, so the label stays beside its icon.
+  value: { flex: 1, fontSize: 13, color: colors.muted, textAlign: 'right' },
   valueSmall: { fontSize: 11 },
-  divider: { height: 1, backgroundColor: colors.line },
+  divider: { height: 1, backgroundColor: colors.line, marginLeft: 34 },
   logout: { marginTop: 8 },
   delete: { alignSelf: 'center', paddingVertical: 10 },
   deleteLabel: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.danger },

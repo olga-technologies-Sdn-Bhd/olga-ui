@@ -6,6 +6,7 @@
 // without branching logic.
 export const lightColors = {
   bg: '#F6F6F4', // App ground
+  bgClear: 'rgba(246,246,244,0)', // The ground, fully transparent (fades into it)
   surface: '#FFFFFF', // Card surface
   surface2: '#EEEEEB', // Secondary surface (date blocks, inputs, pill base)
   text: '#141B26', // Ink, with a navy cast
@@ -68,6 +69,7 @@ export const darkColors = {
   // Graphite: neutral near-black greys with no brown cast, same roles as the
   // light palette. Not a client-approved palette yet.
   bg: '#121314',
+  bgClear: 'rgba(18,19,20,0)', // The ground, fully transparent (fades into it)
   surface: '#1B1C1E',
   surface2: '#242628',
   text: '#F2F3F4',
