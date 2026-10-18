@@ -27,6 +27,7 @@ import { topMatches } from './LiveMatchesScreen';
 import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH, NearbyView } from './NearbyView';
 import { showDialog } from '../../components/DialogHost';
 import { LiveDuration, usePrefs } from '../../context/PrefsContext';
+import { haptics } from '../../utils/haptics';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'GoLive'>;
 
@@ -456,7 +457,11 @@ export function GoLiveScreen({ navigation }: Props) {
             maximumValue={LIVE_DURATIONS.length - 1}
             step={1}
             value={durationIndex}
-            onValueChange={(i) => setLiveDuration(LIVE_DURATIONS[Math.round(i)].value)}
+            onValueChange={(i) => {
+              const next = LIVE_DURATIONS[Math.round(i)].value;
+              if (next !== liveDuration) haptics.tick();
+              setLiveDuration(next);
+            }}
             minimumTrackTintColor={colors.brand}
             maximumTrackTintColor={colors.track}
             thumbTintColor={colors.brand}

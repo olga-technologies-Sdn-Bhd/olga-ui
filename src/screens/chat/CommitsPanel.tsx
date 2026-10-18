@@ -20,6 +20,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
 import { commitErrorMessage, expiresIn, planLine, roleLabel, WHEN_LABELS, whereLabel } from '../../utils/commitText';
 import { getInitials } from '../../utils/initials';
+import { haptics } from '../../utils/haptics';
 
 // Incoming Commits have no push yet, so refresh while the screen is open.
 const REFRESH_MS = 15000;
@@ -89,6 +90,7 @@ export function CommitsPanel() {
     setRowErrors(({ [commit.request_id]: _, ...rest }) => rest);
     try {
       const result = await coreApi.acceptCommit(commit.request_id, { idempotencyKey: keyFor(commit.request_id, 'ACCEPT') });
+      haptics.success();
       setIncoming((list) => (list ?? []).filter((c) => c.request_id !== commit.request_id));
       navigation.navigate('Meetup', {
         name: result.display_name,

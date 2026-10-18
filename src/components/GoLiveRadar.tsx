@@ -18,6 +18,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { fonts, semibold } from '../theme/typography';
+import { haptics } from '../utils/haptics';
 
 // idle: press and hold. searching: live, looking. found: live, with matches.
 // empty: live, searched, nobody yet. live: live with nothing to show (e.g.
@@ -296,6 +297,7 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
   const live = phase !== 'idle';
   // A hold in progress (finger down, not yet live).
   const [holding, setHolding] = useState(false);
+  const tickTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const expanded = live || holding;
   // Once live (or if going live never happens) the hold is over.
   useEffect(() => {
@@ -329,6 +331,8 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
 
   // keepOpen: the hold completed, so the stage stays open while Go Live starts.
   function release(keepOpen = false) {
+    tickTimers.current.forEach(clearTimeout);
+    tickTimers.current = [];
     if (!keepOpen) setHolding(false);
     hold.stopAnimation();
     Animated.timing(hold, { toValue: 0, duration: 180, useNativeDriver: false }).start();
@@ -339,10 +343,15 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
     if (live || disabled) return;
     fired.current = false;
     setHolding(true);
+    haptics.tap();
+    // Soft ticks as the ring fills, so the hold is felt as well as seen.
+    const ticks = [0.34, 0.67].map((at) => setTimeout(() => !fired.current && haptics.tick(), HOLD_MS * at));
+    tickTimers.current = ticks;
     Animated.timing(press, { toValue: 1, duration: 140, useNativeDriver: true }).start();
     Animated.timing(hold, { toValue: 1, duration: HOLD_MS, easing: Easing.linear, useNativeDriver: false }).start(({ finished }) => {
       if (!finished || fired.current) return;
       fired.current = true;
+      haptics.success();
       onHoldComplete();
       release(true);
     });
