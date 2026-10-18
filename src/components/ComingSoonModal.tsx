@@ -1,3 +1,4 @@
+import { LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { radius, ThemeColors } from '../theme/colors';
@@ -11,6 +12,8 @@ type Props = {
   title?: string;
   message?: string;
   icon?: string;
+  // A line icon (shown in the accent colour) instead of the emoji.
+  iconComponent?: LucideIcon;
 };
 
 export function ComingSoonModal({
@@ -19,6 +22,7 @@ export function ComingSoonModal({
   title = 'Coming soon!',
   message = "We're building this next — check back shortly.",
   icon = '💬',
+  iconComponent: Icon,
 }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -41,7 +45,7 @@ export function ComingSoonModal({
         <Animated.View style={[styles.card, { opacity, transform: [{ scale }] }]}>
           <Pressable onPress={() => {}}>
             <View style={styles.iconWrap}>
-              <Text style={styles.icon}>{icon}</Text>
+              {Icon ? <Icon size={28} color={colors.accent} strokeWidth={2} /> : <Text style={styles.icon}>{icon}</Text>}
             </View>
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.message}>{message}</Text>
@@ -73,10 +77,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.brandSoft,
+    backgroundColor: colors.accentFill,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
+    alignSelf: 'center',
   },
   icon: { fontSize: 22 },
   title: { fontFamily: fonts.headingExtraBold, fontSize: 16, fontWeight: '800', color: colors.text, textAlign: 'center' },

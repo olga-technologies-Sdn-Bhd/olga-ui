@@ -2,7 +2,7 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { Check, ChevronRight, SlidersHorizontal, Ticket } from 'lucide-react-native';
+import { Check, ChevronRight, SlidersHorizontal, Ticket, UsersRound } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -12,6 +12,7 @@ import { Avatar } from '../../components/Avatar';
 import { ComingSoonModal } from '../../components/ComingSoonModal';
 import { GoLiveMark } from '../../components/GoLiveMark';
 import { Screen } from '../../components/Screen';
+import { SlidingUnderline } from '../../components/SlidingUnderline';
 import { useAuth } from '../../context/AuthContext';
 import { isRegistered, useEvents } from '../../context/EventsContext';
 import { useNearby } from '../../context/NearbyContext';
@@ -286,10 +287,10 @@ export function HomeScreen({ navigation }: Props) {
               accessibilityState={{ selected: active }}
             >
               <Text style={[styles.tabText, active && styles.tabTextActive]}>{f.label}</Text>
-              <View style={[styles.tabLine, active && styles.tabLineActive]} />
             </Pressable>
           );
         })}
+        <SlidingUnderline count={FILTERS.length} index={FILTERS.findIndex((f) => f.key === filter)} lineWidth={44} color={colors.selected} inset={8} />
       </View>
 
       <View style={styles.list}>
@@ -321,6 +322,7 @@ export function HomeScreen({ navigation }: Props) {
       <ComingSoonModal
         visible={indexSoon}
         onClose={() => setIndexSoon(false)}
+        iconComponent={UsersRound}
         title="Your Social Capital Graph"
         message="Your graph is coming soon. For now, this card shows your confirmed relationships."
         icon="◎"
@@ -370,10 +372,8 @@ const makeStyles = (colors: ThemeColors) =>
     tabs: { flexDirection: 'row', marginHorizontal: -20, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
     // The underline sits on the divider (no gap below it); 40 still makes a comfortable tap target.
     tab: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingTop: 6, minHeight: 40 },
-    tabText: { fontSize: 14, color: colors.muted, paddingBottom: 7 },
+    tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
-    tabLine: { height: 3, width: 44, borderRadius: 2, backgroundColor: 'transparent', marginBottom: -1 },
-    tabLineActive: { backgroundColor: colors.selected },
     // Rows run edge to edge, split by hairlines.
     list: { marginHorizontal: -20 },
     row: {
