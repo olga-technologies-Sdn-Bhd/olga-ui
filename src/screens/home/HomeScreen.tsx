@@ -219,7 +219,8 @@ export function HomeScreen({ navigation }: Props) {
           Hey {firstName || 'there'}
         </Text>
         <Text style={styles.date}>
-          {WEEKDAYS[today.getDay()]} {today.getDate()} {MONTHS[today.getMonth()]}
+          {/* Short and calm, as in Calendar or Mail: "Sun, 18 Oct". */}
+          {WEEKDAYS[today.getDay()].slice(0, 3)}, {today.getDate()} {MONTHS[today.getMonth()].slice(0, 3)}
         </Text>
       </View>
 
@@ -334,7 +335,7 @@ const makeStyles = (colors: ThemeColors) =>
     // Same width as the avatar, so the wordmark sits in the true centre.
     headerSpacer: { width: 34 },
     brand: { flex: 1, textAlign: 'center', fontSize: 21, color: colors.text },
-    date: { fontSize: 11, fontWeight: semibold, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.muted },
+    date: { fontSize: 13, color: colors.muted },
     greeting: { fontFamily: fonts.headingBold, fontSize: 24, lineHeight: 28, fontWeight: semibold, color: colors.text, marginTop: 1 },
     hello: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
     // A quiet line, not a call to action: no box, small muted text.
@@ -361,14 +362,15 @@ const makeStyles = (colors: ThemeColors) =>
     capitalFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 2 },
     countLabel: { flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.78)' },
     pressed: { opacity: 0.85 },
-    updatesHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginTop: 8 },
+    // The screen's 12 gap is too loose here: the title sits close to the card, its tabs and the list.
+    updatesHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginTop: 2, marginBottom: -8 },
     h2: { fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, color: colors.muted },
     // Filters as text tabs with an underline, edge to edge above the list.
-    tabs: { flexDirection: 'row', marginHorizontal: -20, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
+    tabs: { flexDirection: 'row', marginHorizontal: -20, marginBottom: -12, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
     // The underline sits on the divider (no gap below it); 40 still makes a comfortable tap target.
-    tab: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingTop: 6, minHeight: 40 },
-    tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
+    tab: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingTop: 4, minHeight: 36 },
+    tabText: { fontSize: 14, color: colors.muted, paddingBottom: 9 },
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.text },
     // Rows run edge to edge, split by hairlines.
     list: { marginHorizontal: -20 },
