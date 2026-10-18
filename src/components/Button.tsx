@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 // charcoal: Commit / Accept (navy, white text in both themes).
 // danger: an action that can't be undone (Delete account).
@@ -46,7 +46,7 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
         disabled: { opacity: 0.5 },
         // A gentle press-in, like iOS buttons.
         pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
-        label: { fontFamily: fonts.bodyBold, fontWeight: '700', fontSize: 14 },
+        label: { fontFamily: fonts.bodyBold, fontWeight: semibold, fontSize: 14 },
         labelPrimary: { color: colors.onBrand },
         labelCharcoal: { color: colors.white },
         labelSecondary: { color: colors.text },

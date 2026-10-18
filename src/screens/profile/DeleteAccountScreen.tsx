@@ -12,7 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { HomeStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'DeleteAccount'>;
 
@@ -104,11 +104,11 @@ export function DeleteAccountScreen({ navigation }: Props) {
 
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    label: { fontFamily: fonts.monoBold, fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginBottom: 6 },
+    label: { fontFamily: fonts.monoBold, fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold, marginBottom: 6 },
     item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5 },
     dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.danger },
     body: { fontSize: 13, lineHeight: 19, color: colors.text },
-    strong: { fontFamily: fonts.bodyBold, fontWeight: '700', marginTop: 6 },
+    strong: { fontFamily: fonts.bodyBold, fontWeight: semibold, marginTop: 6 },
     note: { backgroundColor: colors.accentSoft, borderRadius: radius.md, padding: 14 },
     error: { fontSize: 12, lineHeight: 18, color: colors.danger, textAlign: 'center' },
   });

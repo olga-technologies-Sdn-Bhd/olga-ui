@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
+import { semibold } from '../theme/typography';
 
 type Props = {
   placeholder: string;
@@ -37,7 +38,7 @@ export function ChatComposer({ placeholder, onSubmit, keyboardType = 'default' }
           alignItems: 'center',
           justifyContent: 'center',
         },
-        sendText: { color: colors.onInk, fontWeight: '800', fontSize: 15 },
+        sendText: { color: colors.onInk, fontWeight: semibold, fontSize: 15 },
       }),
     [colors]
   );

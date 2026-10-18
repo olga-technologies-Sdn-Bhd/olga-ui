@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 type Props = {
   label: string;
@@ -35,6 +35,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd2ff',
   },
-  label: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: '700', color: colors.brand },
+  label: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: semibold, color: colors.brand },
   remove: { fontSize: 13, color: colors.brand, lineHeight: 13 },
 });

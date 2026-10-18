@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 type Size = 'sm' | 'md' | 'lg';
 
@@ -29,7 +29,7 @@ export function Avatar({ initials, size = 'md', dark }: Props) {
         },
         text: {
           fontFamily: fonts.bodyBold,
-          fontWeight: '800',
+          fontWeight: semibold,
           color: colors.accent,
         },
         dark: { backgroundColor: colors.charcoal },

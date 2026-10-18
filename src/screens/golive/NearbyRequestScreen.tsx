@@ -10,7 +10,7 @@ import { estimateScore } from '../../nearby/score';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { NearbyPersonSummary } from './NearbyPeopleScreen';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'NearbyRequest'>;
@@ -105,8 +105,8 @@ export function NearbyRequestScreen({ route, navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
+    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, marginTop: 4 },
     sub: { fontSize: 12, lineHeight: 18, color: colors.muted },
     small: { fontSize: 11, lineHeight: 16, color: colors.muted, marginTop: 6 },
     note: { backgroundColor: colors.accentSoft, borderRadius: radius.md, padding: 14 },

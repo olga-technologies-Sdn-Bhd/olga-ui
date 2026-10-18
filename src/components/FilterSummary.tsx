@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { MatchFilters } from '../context/PrefsContext';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Pill } from './Pill';
@@ -57,8 +57,8 @@ export function FilterSummary({ title, intent, filters, onChange }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    intent: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 20, fontWeight: '700', color: colors.text, marginTop: 10 },
+    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold },
+    intent: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 20, fontWeight: semibold, color: colors.text, marginTop: 10 },
     missing: { fontFamily: fonts.bodyRegular, color: colors.muted, fontWeight: '400' },
     tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
     detail: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 10 },

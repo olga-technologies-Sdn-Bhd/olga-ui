@@ -9,7 +9,7 @@ import { useNearby } from '../../context/NearbyContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { NearbyPersonSummary } from './NearbyPeopleScreen';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'NearbyCommit'>;
@@ -100,12 +100,12 @@ export function NearbyCommitScreen({ route, navigation }: Props) {
 
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 4 },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text, marginBottom: 4 },
     sub: { fontSize: 12, lineHeight: 18, color: colors.muted, marginTop: 4 },
     small: { fontSize: 11, lineHeight: 16, color: colors.muted, marginTop: 6 },
     consequence: { backgroundColor: colors.accentSoft, borderRadius: radius.md, padding: 14, marginTop: 6 },
     consequenceText: { fontSize: 12, lineHeight: 18, color: colors.text },
-    bold: { fontWeight: '800' },
+    bold: { fontWeight: semibold },
     error: { fontSize: 12, color: colors.danger, textAlign: 'center' },
   });

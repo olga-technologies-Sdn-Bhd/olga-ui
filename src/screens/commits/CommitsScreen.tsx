@@ -16,7 +16,7 @@ import { useLive } from '../../context/LiveContext';
 import { CommitsStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { commitErrorMessage, expiresIn, planLine, roleLabel, WHEN_LABELS, whereLabel } from '../../utils/commitText';
 import { getInitials } from '../../utils/initials';
 
@@ -246,17 +246,17 @@ export function CommitsScreen({ navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, marginTop: 4 },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
     small: { fontSize: 11, lineHeight: 16, color: colors.muted, marginTop: 8 },
-    link: { color: colors.text, fontWeight: '700', textDecorationLine: 'underline' },
+    link: { color: colors.text, fontWeight: semibold, textDecorationLine: 'underline' },
     filterLine: { alignSelf: 'flex-start', marginTop: 2 },
-    sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
+    sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold, marginTop: 10 },
     error: { fontSize: 12, color: colors.danger, marginTop: 6 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
     actions: { flexDirection: 'row', gap: 10, marginTop: 12 },
     planRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
-    planText: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.positive },
+    planText: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: semibold, color: colors.positive },
   });

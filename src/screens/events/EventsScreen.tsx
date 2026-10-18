@@ -16,7 +16,7 @@ import { isRegistered, useEvents } from '../../context/EventsContext';
 import { EventsStackParamList, MainTabParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 type Props = CompositeScreenProps<
   NativeStackScreenProps<EventsStackParamList, 'Events'>,
@@ -248,7 +248,7 @@ const makeStyles = (colors: ThemeColors) =>
     container: { flex: 1, backgroundColor: colors.surface },
     top: { borderBottomWidth: 1, borderBottomColor: colors.line },
     header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 },
-    title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: '700', color: colors.text },
+    title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: semibold, color: colors.text },
     locationButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -260,13 +260,13 @@ const makeStyles = (colors: ThemeColors) =>
       borderWidth: 1,
       borderColor: colors.brand2,
     },
-    locationText: { flexShrink: 1, fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
+    locationText: { flexShrink: 1, fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text },
     tabs: { flexDirection: 'row', marginTop: 10 },
     tab: { flex: 1, alignItems: 'center', paddingTop: 10, minHeight: 44 },
     tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
-    tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
+    tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.text },
     content: { paddingBottom: FLOATING_TAB_SPACE },
-    section: { fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: '700', color: colors.text, paddingHorizontal: 20, marginTop: 16 },
+    section: { fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: semibold, color: colors.text, paddingHorizontal: 20, marginTop: 16 },
     // Rows run edge to edge, split by hairlines.
     row: {
       flexDirection: 'row',
@@ -278,12 +278,12 @@ const makeStyles = (colors: ThemeColors) =>
       borderBottomColor: colors.line,
     },
     register: { alignSelf: 'flex-start', marginTop: 8 },
-    h3: { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20, fontWeight: '700', color: colors.text },
+    h3: { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20, fontWeight: semibold, color: colors.text },
     where: { fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
     stat: { fontSize: 12, lineHeight: 18, color: colors.muted, marginTop: 2 },
     // Green text token, never the green fill colour.
-    registered: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.positive },
-    live: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.positive },
+    registered: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.positive },
+    live: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.positive },
     note: { fontSize: 13, color: colors.muted, paddingHorizontal: 20, paddingVertical: 14 },
     error: { color: colors.danger },
     footnote: { fontSize: 12, lineHeight: 17, color: colors.muted, paddingHorizontal: 20, paddingTop: 16 },
@@ -300,5 +300,5 @@ const makeStyles = (colors: ThemeColors) =>
     },
     menuRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44, paddingHorizontal: 16 },
     menuText: { flexShrink: 1, fontSize: 14, color: colors.text },
-    menuTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700' },
+    menuTextActive: { fontFamily: fonts.bodyBold, fontWeight: semibold },
   });

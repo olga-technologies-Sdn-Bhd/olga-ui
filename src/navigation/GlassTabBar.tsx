@@ -6,6 +6,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
+import { semibold } from '../theme/typography';
 
 export const TAB_BAR_HEIGHT = 58;
 const PILL_INSET = 4;
@@ -201,6 +202,6 @@ const makeStyles = (colors: ThemeColors) =>
     },
     tab: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'center' },
     tabInner: { alignItems: 'center', gap: 2 },
-    label: { fontSize: 10, fontWeight: '600' },
+    label: { fontSize: 10, fontWeight: semibold },
     layer: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
   });

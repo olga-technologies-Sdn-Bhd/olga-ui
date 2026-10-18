@@ -20,7 +20,7 @@ import { TipKey, usePrefs } from '../../context/PrefsContext';
 import { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 type Props = CompositeScreenProps<
   NativeStackScreenProps<HomeStackParamList, 'Home'>,
@@ -55,11 +55,6 @@ type Update = {
 };
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-function greeting(date: Date) {
-  const hour = date.getHours();
-  return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-}
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -218,13 +213,13 @@ export function HomeScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
-      <View>
+      {/* Sree: a simple "Hey <first name>", no time-of-day wishes; the date on the right. */}
+      <View style={styles.hello}>
+        <Text style={styles.greeting} numberOfLines={1}>
+          Hey {firstName || 'there'}
+        </Text>
         <Text style={styles.date}>
           {WEEKDAYS[today.getDay()]} {today.getDate()} {MONTHS[today.getMonth()]}
-        </Text>
-        <Text style={styles.greeting} numberOfLines={1}>
-          {greeting(today)}
-          {firstName ? `, ${firstName}` : ''}
         </Text>
       </View>
 
@@ -338,8 +333,9 @@ const makeStyles = (colors: ThemeColors) =>
     // Same width as the avatar, so the wordmark sits in the true centre.
     headerSpacer: { width: 34 },
     brand: { flex: 1, textAlign: 'center', fontSize: 21, color: colors.text },
-    date: { fontSize: 9, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.muted },
-    greeting: { fontFamily: fonts.headingBold, fontSize: 24, lineHeight: 28, fontWeight: '800', color: colors.text, marginTop: 1 },
+    date: { fontSize: 11, fontWeight: semibold, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.muted },
+    greeting: { fontFamily: fonts.headingBold, fontSize: 24, lineHeight: 28, fontWeight: semibold, color: colors.text, marginTop: 1 },
+    hello: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
     // A quiet line, not a call to action: no box, small muted text.
     // Tucked under the greeting (the screen's 12 gap is too much here).
     setup: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 22, marginTop: -11, alignSelf: 'flex-start' },
@@ -357,22 +353,22 @@ const makeStyles = (colors: ThemeColors) =>
       borderColor: 'rgba(255,255,255,0.08)',
     },
     capitalTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    capitalTitle: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.champagne },
+    capitalTitle: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: semibold, color: colors.champagne },
     month: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10 },
-    monthText: { fontFamily: fonts.bodyBold, fontSize: 10, fontWeight: '700', color: colors.white },
-    count: { fontFamily: fonts.headingBold, fontSize: 40, lineHeight: 44, fontWeight: '700', color: colors.white, marginTop: 6 },
+    monthText: { fontFamily: fonts.bodyBold, fontSize: 10, fontWeight: semibold, color: colors.white },
+    count: { fontFamily: fonts.headingBold, fontSize: 40, lineHeight: 44, fontWeight: semibold, color: colors.white, marginTop: 6 },
     capitalFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 2 },
     countLabel: { flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.78)' },
     pressed: { opacity: 0.85 },
     updatesHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginTop: 8 },
-    h2: { fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: '700', color: colors.text },
+    h2: { fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, color: colors.muted },
     // Filters as text tabs with an underline, edge to edge above the list.
     tabs: { flexDirection: 'row', marginHorizontal: -20, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
     // The underline sits on the divider (no gap below it); 40 still makes a comfortable tap target.
     tab: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingTop: 6, minHeight: 40 },
     tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
-    tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
+    tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.text },
     // Rows run edge to edge, split by hairlines.
     list: { marginHorizontal: -20 },
     row: {
@@ -388,9 +384,9 @@ const makeStyles = (colors: ThemeColors) =>
     // People's initials on the soft brand tint (as Avatar).
     iconPerson: { backgroundColor: colors.accentFill },
     iconAmber: { backgroundColor: colors.amberSoft },
-    initials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.accent },
+    initials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.accent },
     meta: { fontSize: 12, color: colors.muted },
     body: { fontSize: 14, lineHeight: 20, color: colors.text, marginTop: 1 },
-    bodyBold: { fontFamily: fonts.bodyBold, fontWeight: '700' },
+    bodyBold: { fontFamily: fonts.bodyBold, fontWeight: semibold },
     empty: { fontSize: 13, color: colors.muted, paddingHorizontal: 20, paddingVertical: 18 },
   });

@@ -21,7 +21,7 @@ import { ConsentPurpose, GoLiveBlocker, useLive } from '../../context/LiveContex
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { topMatches } from './LiveMatchesScreen';
 import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH, NearbyView } from './NearbyView';
 import { showDialog } from '../../components/DialogHost';
@@ -436,7 +436,7 @@ const makeStyles = (colors: ThemeColors) =>
     eventName: {
       fontFamily: fonts.monoBold,
       fontSize: 11,
-      fontWeight: '700',
+      fontWeight: semibold,
       letterSpacing: 1.2,
       textTransform: 'uppercase',
       color: colors.muted,
@@ -445,10 +445,10 @@ const makeStyles = (colors: ThemeColors) =>
     eventNameBox: { marginHorizontal: 74 },
     // On the left, leaving the right-hand end for the wordmark when live.
     status: { position: 'absolute', left: 0 },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
-    lead: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'center' },
+    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, marginTop: 4 },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
+    lead: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: semibold, color: colors.text, textAlign: 'center' },
     center: { fontSize: 12, lineHeight: 18, color: colors.muted, textAlign: 'center', marginTop: -6, paddingHorizontal: 8 },
     searching: { fontSize: 13, color: colors.muted, textAlign: 'center' },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
@@ -480,5 +480,5 @@ const makeStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
     },
     foundAvatarNext: { marginLeft: -10 },
-    foundInitials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '600', color: AVATAR_INK },
+    foundInitials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: AVATAR_INK },
   });

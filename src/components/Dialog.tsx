@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { radius, ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 import { Button } from './Button';
 
 // info: blue (a permission, a note); warning: amber (e.g. offensive text);
@@ -115,7 +115,7 @@ const makeStyles = (colors: ThemeColors) =>
       alignItems: 'center',
     },
     iconWrap: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-    title: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, textAlign: 'center' },
+    title: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, textAlign: 'center' },
     message: { fontSize: 14, lineHeight: 20, color: colors.muted, textAlign: 'center', marginTop: 8 },
     actions: { alignSelf: 'stretch', gap: 8, marginTop: 20 },
   });

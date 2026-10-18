@@ -10,7 +10,7 @@ import { useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'EmptyRoom'>;
 
@@ -58,9 +58,9 @@ export function EmptyRoomScreen({ navigation }: Props) {
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  h2Header: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text },
+  h2Header: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text },
   center: { alignItems: 'center', marginTop: 40, gap: 10 },
-  h2: { fontFamily: fonts.headingExtraBold, fontSize: 17, fontWeight: '800', color: colors.text, marginTop: 8, textAlign: 'center' },
+  h2: { fontFamily: fonts.headingExtraBold, fontSize: 17, fontWeight: semibold, color: colors.text, marginTop: 8, textAlign: 'center' },
   sub: { fontSize: 12, color: colors.muted, textAlign: 'center', maxWidth: 280 },
   actions: { width: '100%', gap: 10, marginTop: 20 },
 });
