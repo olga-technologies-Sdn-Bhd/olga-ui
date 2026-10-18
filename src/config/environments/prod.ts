@@ -17,5 +17,6 @@ export const environment: Environment = {
   },
   // Production sign-in is browser-delegated only: the email code is entered
   // on the Microsoft-hosted page, never in the app.
+  linkScheme: 'olgaapp',
   inAppEmailOtp: false,
 };

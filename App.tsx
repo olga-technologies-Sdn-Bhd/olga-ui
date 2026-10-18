@@ -4,6 +4,7 @@ import { StatusBar, Text, TextInput } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { warmUpApis } from './src/api/warmup';
 import { DialogHost } from './src/components/DialogHost';
+import { startEventLinks } from './src/navigation/eventLinks';
 import { AuthProvider } from './src/context/AuthContext';
 import { EventsProvider } from './src/context/EventsContext';
 import { LiveProvider } from './src/context/LiveContext';
@@ -27,6 +28,8 @@ function ThemedApp() {
   // Wake the dev APIs (cold start) while the user is still signing in.
   useEffect(() => {
     warmUpApis();
+    // Event links (QR codes, shares) can open the app before sign-in.
+    startEventLinks();
   }, []);
   const { scheme, colors } = useTheme();
   const navTheme = useMemo(() => {

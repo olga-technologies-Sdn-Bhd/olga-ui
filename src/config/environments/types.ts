@@ -20,6 +20,9 @@ export type Environment = {
     // same scheme (android/app/build.gradle, iOS OLGA_AUTH_SCHEME).
     redirectScheme: string;
   };
+  // Event links (<linkScheme>://event/<id>), from QR codes and shares. Its own
+  // scheme: Android's sign-in redirect handler claims every redirectScheme URL.
+  linkScheme: string;
   // Continue with Email inside the app (Entra native auth). Off: the email
   // code is entered on the Microsoft-hosted page instead.
   inAppEmailOtp: boolean;

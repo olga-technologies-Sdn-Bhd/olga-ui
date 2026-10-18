@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { useEffect } from 'react';
 import { House, MessageCircle, Radio, Ticket } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -12,7 +13,9 @@ import { HomeStack } from './HomeStack';
 import { useTheme } from '../theme/ThemeContext';
 import { EventsStack } from './EventsStack';
 import { GlassTab, GlassTabBar, TAB_BAR_HEIGHT } from './GlassTabBar';
+import { setEventOpener } from './eventLinks';
 import { GoLiveStack } from './GoLiveStack';
+import { navigationRef } from './navigationRef';
 import { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -22,6 +25,14 @@ export function MainTabs() {
   const { bottom } = useSafeAreaInsets();
   const { isLive } = useLive();
   const { available } = useNearby();
+
+  // Signed in: an event link (now or held from before sign-in) opens that event's page.
+  useEffect(() => {
+    setEventOpener((eventId) => {
+      if (navigationRef.isReady()) navigationRef.navigate('EventsTab', { screen: 'EventDetail', params: { eventId } });
+    });
+    return () => setEventOpener(null);
+  }, []);
 
   // While live (or available nearby) Go Live stays bold in the Go Live
   // button's dark blue, on any tab.
