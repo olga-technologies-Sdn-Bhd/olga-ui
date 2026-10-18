@@ -65,7 +65,7 @@ export function ProfileScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <BackHeader onBack={() => navigation.goBack()} title="Profile" />
+      <BackHeader onBack={() => navigation.goBack()} title="Account" />
 
       <View style={styles.identity}>
         <Avatar initials={(name ?? '?').slice(0, 1).toUpperCase()} size="lg" />
@@ -130,6 +130,14 @@ export function ProfileScreen({ navigation }: Props) {
       </Card>
 
       <Button label="Log out" variant="secondary" loading={loggingOut} onPress={confirmLogOut} style={styles.logout} />
+      <Pressable
+        onPress={() => navigation.navigate('DeleteAccount')}
+        accessibilityRole="button"
+        hitSlop={8}
+        style={({ pressed }) => [styles.delete, pressed && styles.pressed]}
+      >
+        <Text style={styles.deleteLabel}>Delete account</Text>
+      </Pressable>
     </Screen>
   );
 }
@@ -169,4 +177,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   valueSmall: { fontSize: 11 },
   divider: { height: 1, backgroundColor: colors.line },
   logout: { marginTop: 8 },
+  delete: { alignSelf: 'center', paddingVertical: 10 },
+  deleteLabel: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.danger },
 });

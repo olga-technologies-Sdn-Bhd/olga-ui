@@ -4,7 +4,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { fonts } from '../theme/typography';
 
 // charcoal: Commit / Accept (navy, white text in both themes).
-type Variant = 'primary' | 'secondary' | 'ghost' | 'charcoal';
+// danger: an action that can't be undone (Delete account).
+type Variant = 'primary' | 'secondary' | 'ghost' | 'charcoal' | 'danger';
 
 type Props = {
   label: string;
@@ -35,6 +36,7 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
         },
         primary: { backgroundColor: colors.brand },
         charcoal: { backgroundColor: colors.charcoal },
+        danger: { backgroundColor: colors.danger },
         secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },
         ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.brand2 },
         ghostOnDark: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
@@ -63,6 +65,7 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
         styles.base,
         variant === 'primary' && styles.primary,
         variant === 'charcoal' && styles.charcoal,
+        variant === 'danger' && styles.danger,
         variant === 'secondary' && styles.secondary,
         variant === 'ghost' && ghostStyle,
         small && styles.small,
@@ -72,13 +75,13 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.onBrand : variant === 'charcoal' ? colors.white : colors.brand} />
+        <ActivityIndicator color={variant === 'primary' ? colors.onBrand : variant === 'charcoal' || variant === 'danger' ? colors.white : colors.brand} />
       ) : (
         <Text
           style={[
             styles.label,
             variant === 'primary' && styles.labelPrimary,
-            variant === 'charcoal' && styles.labelCharcoal,
+            (variant === 'charcoal' || variant === 'danger') && styles.labelCharcoal,
             variant === 'secondary' && styles.labelSecondary,
             variant === 'ghost' && ghostLabelStyle,
             small && styles.labelSmall,

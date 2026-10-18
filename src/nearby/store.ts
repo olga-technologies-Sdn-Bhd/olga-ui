@@ -52,6 +52,21 @@ export async function loadNearby(memberId: string): Promise<NearbySaved> {
 // Writes are chained so two quick saves never land out of order.
 let chain: Promise<unknown> = Promise.resolve();
 
+// Removes everything Nearby kept for this member (account deletion).
+export function clearNearby(memberId: string) {
+  chain = chain
+    .then(async () => {
+      const all = await loadAll();
+      delete all[memberId];
+      await Keychain.setGenericPassword(SERVICE, JSON.stringify(all), {
+        service: SERVICE,
+        accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+      });
+    })
+    .catch(() => {});
+  return chain;
+}
+
 export function saveNearby(memberId: string, data: NearbySaved) {
   const now = Date.now();
   const trimmed: NearbySaved = {
