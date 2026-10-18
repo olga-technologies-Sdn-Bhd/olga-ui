@@ -150,6 +150,37 @@ async function send<T>(
   };
 }
 
+// No answer yet (no network, timed out) or the gateway says the app is still
+// starting: worth asking again. A real answer (4xx, 500) is not.
+export function isTransient(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 0 || error.status === 502 || error.status === 503 || error.status === 504);
+}
+
+// Dev Core scales to zero when idle, and its first answer can take over a
+// minute. One long wait looks frozen and can still run out, so a call that
+// must get through (sign-in) is tried several times with growing timeouts,
+// each attempt on a fresh request. The first attempt also wakes the server.
+// Pass the same idempotency key in every attempt for writes.
+export const PATIENT_ATTEMPTS_MS = [15000, 20000, 25000, 30000];
+
+export async function withRetries<T>(
+  call: (timeoutMs: number) => Promise<T>,
+  attemptsMs: number[] = PATIENT_ATTEMPTS_MS,
+  pauseMs = 1000
+): Promise<T> {
+  let last: unknown;
+  for (const [i, timeoutMs] of attemptsMs.entries()) {
+    try {
+      return await call(timeoutMs);
+    } catch (error) {
+      last = error;
+      if (!isTransient(error) || i === attemptsMs.length - 1) break;
+      await new Promise<void>((resolve) => setTimeout(resolve, pauseMs));
+    }
+  }
+  throw last;
+}
+
 // Normalizes a response to one `etag`: the body's `e_tag` (what Core/NLP
 // send), else the ETag response header.
 export function withEtag<T extends { e_tag?: string }>(r: { data: T; headers: Headers }): WithEtag<T> {
