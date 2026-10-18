@@ -5,6 +5,7 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
+  LayoutAnimation,
   LayoutChangeEvent,
   Pressable,
   StyleProp,
@@ -49,6 +50,13 @@ const BRAND_SMALL_HALF = 24; // half its width at that size
 const STAGE_H = 372;
 const LIVE_CY = 184;
 const IDLE_CY = LIVE_CY + LIFT;
+// Idle, the stage ends just under the button so the line below sits close to
+// it; it grows to the full radar (STAGE_H) the moment a hold starts, and
+// everything under it slides down with one layout animation.
+const IDLE_STAGE_H = IDLE_CY + BUTTON / 2 + RING_GAP + 18;
+// After a completed hold the stage stays open while Go Live starts; if it
+// never does (an error), it closes again after this long.
+const OPEN_WAIT_MS = 8000;
 const LIVE_R = (BUTTON / 2) * LIVE_SCALE;
 const BRAND_TOP = IDLE_CY - BUTTON / 2 - RING_GAP - BRAND_GAP - BRAND_H;
 // How far the ripples travel from the button before they fade out. Nothing
@@ -286,6 +294,25 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
   const [width, setWidth] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
   const live = phase !== 'idle';
+  // A hold in progress (finger down, not yet live).
+  const [holding, setHolding] = useState(false);
+  const expanded = live || holding;
+  // Once live (or if going live never happens) the hold is over.
+  useEffect(() => {
+    if (!holding) return;
+    if (live) {
+      setHolding(false);
+      return;
+    }
+    const timer = setTimeout(() => setHolding(false), OPEN_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [holding, live]);
+  const lastExpanded = useRef(expanded);
+  if (lastExpanded.current !== expanded) {
+    // Animate the stage's height change and the content below it, together.
+    lastExpanded.current = expanded;
+    if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.create(260, 'easeInEaseOut', 'opacity'));
+  }
   const scanning = phase === 'searching' || phase === 'found';
   const moving = focused && !reduceMotion;
 
@@ -300,7 +327,9 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
   const press = useRef(new Animated.Value(0)).current; // 0..1 pressed in
   const fired = useRef(false);
 
-  function release() {
+  // keepOpen: the hold completed, so the stage stays open while Go Live starts.
+  function release(keepOpen = false) {
+    if (!keepOpen) setHolding(false);
     hold.stopAnimation();
     Animated.timing(hold, { toValue: 0, duration: 180, useNativeDriver: false }).start();
     Animated.timing(press, { toValue: 0, duration: 180, useNativeDriver: true }).start();
@@ -309,12 +338,13 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
   function handlePressIn() {
     if (live || disabled) return;
     fired.current = false;
+    setHolding(true);
     Animated.timing(press, { toValue: 1, duration: 140, useNativeDriver: true }).start();
     Animated.timing(hold, { toValue: 1, duration: HOLD_MS, easing: Easing.linear, useNativeDriver: false }).start(({ finished }) => {
       if (!finished || fired.current) return;
       fired.current = true;
       onHoldComplete();
-      release();
+      release(true);
     });
   }
 
@@ -439,7 +469,7 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
           : null;
 
   return (
-    <View style={styles.stage} onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}>
+    <View style={[styles.stage, { height: expanded ? STAGE_H : IDLE_STAGE_H }]} onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}>
       {width > 0 && (
         <>
           {/* Radar, centred on where the button comes to rest when live. */}
