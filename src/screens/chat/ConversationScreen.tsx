@@ -106,7 +106,7 @@ function nearbyNote(reach: NearbyReach, firstName: string) {
     case 'nearby-off':
       return 'No internet. Turn on Nearby in Go Live to send over Bluetooth';
     case 'key-changed':
-      return `${firstName}'s chat key changed. Trust it to send over Bluetooth`;
+      return `${firstName} is on a new phone. Trust it to send over Bluetooth`;
     default:
       return `No internet. Messages send when ${firstName} is close by or you’re online`;
   }
@@ -644,7 +644,7 @@ export function ConversationScreen({ route, navigation }: Props) {
                 </View>
               )}
             </Text>
-            {reach === 'key-changed' && peerId && <Pill label="Trust new key" tone="active" onPress={() => chat.trustNewKey(peerId)} />}
+            {reach === 'key-changed' && peerId && <Pill label="Trust new phone" tone="active" onPress={() => chat.trustNewKey(peerId)} />}
           </View>
         )}
         <ChatComposer
@@ -661,7 +661,7 @@ export function ConversationScreen({ route, navigation }: Props) {
         visible={offensiveDraft !== null}
         icon={ShieldAlert}
         title="This might come across as offensive"
-        message="Ol-ga is for professional connections. Would you like to edit your message?"
+        message="Ol-ga is for professional connections. Edit your message?"
         primaryLabel="Edit message"
         onPrimary={() => {
           setDraft(offensiveDraft ?? '');

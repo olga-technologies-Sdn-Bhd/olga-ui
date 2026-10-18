@@ -71,7 +71,7 @@ export function ChatsPanel() {
       if (__DEV__) console.warn(`Conversations load failed (${e instanceof ApiError ? e.code : 'unknown'})`);
       setError(
         e instanceof ApiError && e.status > 0
-          ? "Couldn't load your conversations. Pull down to try again."
+          ? "Couldn't load your chats. Pull down to try again."
           : 'No connection. Pull down to try again.'
       );
     }
@@ -159,8 +159,8 @@ export function ChatsPanel() {
 
       {items?.length === 0 && chat.peers.length === 0 && (
         <Card>
-          <Text style={styles.h3}>No conversations yet</Text>
-          <Text style={styles.sub}>When you and someone accept each other's commit, your conversation opens here.</Text>
+          <Text style={styles.h3}>No chats yet</Text>
+          <Text style={styles.sub}>When a Commit is accepted, your chat opens here.</Text>
         </Card>
       )}
 

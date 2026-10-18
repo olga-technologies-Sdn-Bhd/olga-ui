@@ -279,7 +279,7 @@ export function OfflineChatProvider({ children }: { children: React.ReactNode })
       showLocalNotification(
         `chat-${wire.from}`,
         peer.name ?? 'Message from a connection',
-        isOffensive(message.body) ? 'New message (hidden: it may be offensive)' : message.body,
+        isOffensive(message.body) ? 'New message (hidden: may be offensive)' : message.body,
         peer.initials ?? '··',
         pastelFor(wire.from)
       );

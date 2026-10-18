@@ -98,7 +98,7 @@ export function ChatBubble({ from, text, person, time, status, deleted, hidden, 
             (deleted || hidden) && styles.textDeleted,
           ]}
         >
-          {deleted ? 'This message was deleted' : hidden ? 'Message hidden: it may be offensive. Tap to view' : text}
+          {deleted ? 'This message was deleted' : hidden ? 'Hidden: may be offensive. Tap to view' : text}
         </Text>
       </Pressable>
       {status === 'failed' ? (

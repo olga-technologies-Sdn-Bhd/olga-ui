@@ -20,10 +20,10 @@ import { fonts } from '../../theme/typography';
 
 const NEARBY_CONSENT = {
   title: 'Allow Nearby?',
-  body: "While you're available, Ol-ga members close to you can see your role and what you're looking for, over Bluetooth, even without internet. Never your name. You can go invisible anytime.",
+  body: "Ol-ga members close by see your role and what you're looking for over Bluetooth, even offline. Never your name. End it anytime.",
 };
 
-const VISIBLE_LINE = 'Role and intent only, never your name.';
+const VISIBLE_LINE = "Your role and what you're looking for. Never your name.";
 
 // The mode switch sits between the header and the radar; the radar flies the
 // wordmark up to the header row, so it needs to know (its default, 27, is for
@@ -229,7 +229,7 @@ export function NearbyView({ navigation, onSwitchToEvent }: Props) {
       {phase === 'live' && (
         <>
           <Text style={styles.lead}>Looking around you…</Text>
-          <Text style={styles.center}>Keep Ol-ga open. People appear as they come close and go available.</Text>
+          <Text style={styles.center}>Keep Ol-ga open. People appear as they come close and go live.</Text>
         </>
       )}
       {phase === 'found' && (
