@@ -19,7 +19,7 @@ import { ChatStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
-import { formatRelativeTime } from '../../utils/chatTime';
+import { formatChatListTime } from '../../utils/chatTime';
 import { getInitials } from '../../utils/initials';
 import { usePollWhileFocused } from '../../utils/usePollWhileFocused';
 
@@ -127,7 +127,7 @@ export function ChatsPanel() {
                   key={p.memberId}
                   name={p.name || FALLBACK_NAME}
                   initials={p.name ? getInitials(p.name) : p.initials ?? '?'}
-                  time={last ? formatRelativeTime(last.sentAt) : undefined}
+                  time={last ? formatChatListTime(last.sentAt) : undefined}
                   preview={
                     last
                       ? last.from === 'them' && isOffensive(last.body)
@@ -153,7 +153,7 @@ export function ChatsPanel() {
             key={c.conversation_id}
             name={c.display_name || FALLBACK_NAME}
             initials={c.display_name ? getInitials(c.display_name) : '?'}
-            time={formatRelativeTime(c.last_activity_at)}
+            time={formatChatListTime(c.last_activity_at)}
             preview={preview(c, myId)}
             unread={c.unread_count}
             muted={Boolean(c.muted_until)}
@@ -249,25 +249,26 @@ const makeStyles = (colors: ThemeColors) =>
     row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: 16 },
     rowPressed: { backgroundColor: colors.accentFill },
     // The divider starts after the avatar.
-    rowBody: { flex: 1, gap: 2, paddingVertical: 12, paddingRight: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
+    // As WhatsApp's Android list: no dividers, the rows' spacing separates them.
+    rowBody: { flex: 1, gap: 3, paddingVertical: 13, paddingRight: 16 },
     line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
     // As in WhatsApp: a medium-weight name, not heavy bold.
     name: { flex: 1, fontFamily: fonts.bodyRegular, fontSize: 16, fontWeight: semibold, color: colors.text },
-    time: { fontSize: 12, color: colors.muted },
+    time: { fontSize: 12, lineHeight: 16, color: colors.muted },
     timeUnread: { color: colors.accent, fontWeight: semibold },
-    preview: { flex: 1, fontSize: 14, lineHeight: 18, color: colors.muted },
+    preview: { flex: 1, fontSize: 14, lineHeight: 19, color: colors.muted },
     previewUnread: { color: colors.text },
     marks: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     badge: {
-      minWidth: 22,
-      height: 22,
-      borderRadius: 11,
-      paddingHorizontal: 6,
+      minWidth: 20,
+      height: 20,
+      borderRadius: 10,
+      paddingHorizontal: 5,
       backgroundColor: colors.accent,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    badgeText: { color: colors.white, fontSize: 12, fontWeight: semibold },
+    badgeText: { color: colors.white, fontSize: 11, lineHeight: 14, fontWeight: semibold },
     empty: { alignItems: 'center', gap: 6, paddingVertical: 40 },
     emptyTitle: { fontFamily: fonts.headingBold, fontSize: 16, fontWeight: semibold, color: colors.text },
   });
