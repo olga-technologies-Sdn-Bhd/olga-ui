@@ -59,6 +59,9 @@ export interface Spec extends TurboModule {
   requestNotificationPermission(): Promise<boolean>;
   // The notification the app was opened from (cold start), once; '' if none.
   consumeOpenedNotification(): Promise<string>;
+  // count bytes from the platform's secure random source, base64 (chat keys
+  // and nonces; Hermes has no crypto.getRandomValues).
+  randomBytes(count: number): string;
 }
 
 export default TurboModuleRegistry.get<Spec>('OlgaBle');

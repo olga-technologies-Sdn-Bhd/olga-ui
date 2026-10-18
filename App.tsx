@@ -8,6 +8,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { EventsProvider } from './src/context/EventsContext';
 import { LiveProvider } from './src/context/LiveContext';
 import { NearbyProvider } from './src/context/NearbyContext';
+import { OfflineChatProvider } from './src/context/OfflineChatContext';
 import { PrefsProvider } from './src/context/PrefsContext';
 import { navigationRef } from './src/navigation/navigationRef';
 import { RootNavigator } from './src/navigation/RootNavigator';
@@ -44,9 +45,11 @@ function ThemedApp() {
           <EventsProvider>
             <LiveProvider>
               <NearbyProvider>
-                <NavigationContainer ref={navigationRef} theme={navTheme}>
-                  <RootNavigator />
-                </NavigationContainer>
+                <OfflineChatProvider>
+                  <NavigationContainer ref={navigationRef} theme={navTheme}>
+                    <RootNavigator />
+                  </NavigationContainer>
+                </OfflineChatProvider>
                 {/* Every popup in the app (showDialog), themed. */}
                 <DialogHost />
               </NearbyProvider>

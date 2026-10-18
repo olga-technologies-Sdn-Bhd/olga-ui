@@ -37,10 +37,14 @@ export type EventsStackParamList = {
   WhosGoing: { eventId: string };
 };
 
-// The Chat tab (board 10): Commits for you, sent Commits and meetings. The
-// chat itself isn't Phase 1.
-export type CommitsStackParamList = {
-  Commits: undefined;
+// The Chat tab: two tabs, Commits (for you, sent, meetings) and Chats
+// (conversations with connected members, online or over Bluetooth).
+export type ChatTabKey = 'commits' | 'chats';
+export type ChatStackParamList = {
+  ChatHome: { tab?: ChatTabKey } | undefined;
+  // conversationId once Ol-ga has it; memberId alone for a connection made
+  // nearby that hasn't synced yet (Bluetooth only).
+  Conversation: { conversationId?: string; memberId?: string };
   // picker: who chooses the spot when the plan is "Their choice" (the
   // receiver); unknown for meetings opened from the list.
   Meetup: { name?: string; headline?: string; where: string; when: CommitWhen; eventName?: string; picker?: 'you' | 'them' };
@@ -50,5 +54,5 @@ export type MainTabParamList = {
   HomeTab: NavigatorScreenParams<HomeStackParamList> | undefined;
   GoLiveTab: NavigatorScreenParams<GoLiveStackParamList> | undefined;
   EventsTab: NavigatorScreenParams<EventsStackParamList> | undefined;
-  ChatTab: NavigatorScreenParams<CommitsStackParamList> | undefined;
+  ChatTab: NavigatorScreenParams<ChatStackParamList> | undefined;
 };

@@ -13,7 +13,7 @@ import { ApiError, getMemberId } from './client';
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Every cached read, so sign-out can delete them all.
-export const CACHED = ['events', 'profile', 'connections', 'meetings', 'commits-in', 'commits-out', 'attendees'] as const;
+export const CACHED = ['events', 'profile', 'connections', 'meetings', 'commits-in', 'commits-out', 'attendees', 'conversations'] as const;
 export type CachedName = (typeof CACHED)[number];
 
 type Entry<T> = { savedAt: number; key: string; value: T };

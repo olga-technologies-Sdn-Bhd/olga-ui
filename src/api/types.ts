@@ -434,3 +434,62 @@ export type Meeting = {
 };
 
 export type MeetingPage = { items: Meeting[]; next_cursor?: string; has_more: boolean };
+
+// Chat (dev Core). Null fields are omitted from the JSON, hence optional.
+export type ConversationStatus = 'ACTIVE' | 'CLOSED' | 'RESTRICTED';
+
+export type ChatMessage = {
+  message_id: string;
+  conversation_id: string;
+  sender_member_id: string;
+  message_type: string;
+  body?: string; // absent once deleted
+  server_sequence: number;
+  moderation_status: string;
+  created_at: string;
+  deleted_at?: string; // soft delete: render a placeholder
+};
+
+export type Conversation = {
+  conversation_id: string;
+  connection_id: string;
+  status: ConversationStatus;
+  member_id: string; // the other member
+  display_name?: string;
+  headline?: string;
+  role_category?: string;
+  last_message?: ChatMessage;
+  unread_count: number;
+  last_activity_at: string;
+  can_send: boolean;
+  muted_until?: string; // only present while a mute is active
+};
+
+// GET /v1/conversations: newest first; next_cursor is opaque.
+export type ConversationPage = {
+  items: Conversation[];
+  next_cursor?: string;
+  has_more: boolean;
+};
+
+export type SendMessageRequest = {
+  message_id: string; // client-generated; reused on retry
+  body: string; // 1-4000 chars, not blank
+  message_type: 'TEXT';
+  client_sent_at: string;
+};
+
+export type ReportCategory = 'SPAM' | 'HARASSMENT' | 'INAPPROPRIATE' | 'SCAM' | 'OTHER';
+
+export type MessageReportRequest = {
+  category: ReportCategory;
+  description?: string; // max 2000 chars
+};
+
+export type MessageReportResponse = {
+  report_id: string;
+  message_id: string;
+  category: ReportCategory;
+  status: string;
+  created_at: string;
+};

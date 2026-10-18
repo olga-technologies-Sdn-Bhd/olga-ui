@@ -84,7 +84,7 @@ export function GoLiveScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { events } = useEvents();
-  const { mode, setMode, available: nearbyAvailable } = useNearby();
+  const { mode, setMode, available: nearbyAvailable, online } = useNearby();
   const disc = { fill: colors.charcoal, text: colors.white };
   const {
     activeEvent,
@@ -278,8 +278,10 @@ export function GoLiveScreen({ navigation }: Props) {
   }, []);
   const openMatches = useCallback(() => navigation.navigate('LiveMatches'), [navigation]);
 
-  // Nearby (no event): when there's no room, or the member picked it.
-  const nearby = BLE_DISCOVERY_ENABLED && !isLive && (!room || mode === 'nearby' || (mode === null && nearbyAvailable));
+  // Nearby (no event): when there's no room, the member picked it, or there's
+  // no internet (the event room needs Ol-ga; Nearby works without it).
+  const nearby =
+    BLE_DISCOVERY_ENABLED && !isLive && (!room || mode === 'nearby' || (mode === null && (nearbyAvailable || online === false)));
   if (nearby) {
     return <NearbyView navigation={navigation} onSwitchToEvent={room ? () => setMode('event') : undefined} />;
   }

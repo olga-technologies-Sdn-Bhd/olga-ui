@@ -85,6 +85,12 @@ export function sendBleMessage(token: string, payload: string): Promise<void> {
   return NativeOlgaBle ? NativeOlgaBle.sendMessage(token, payload) : Promise.reject(new Error('Bluetooth unavailable'));
 }
 
+// Secure random bytes from the platform (base64), or null without the module.
+export function secureRandomBase64(count: number): string | null {
+  const value = NativeOlgaBle?.randomBytes(count);
+  return value ? value : null;
+}
+
 export function showLocalNotification(id: string, title: string, body: string, initials: string, color: string) {
   NativeOlgaBle?.showNotification(id, title, body, initials, color);
 }

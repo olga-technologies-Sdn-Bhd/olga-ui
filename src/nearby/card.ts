@@ -1,3 +1,4 @@
+import { isPublicKey } from '../chat/crypto';
 import type { NearbyCard, NearbyMessage } from './types';
 
 const MAX_CARD_BYTES = 500; // the characteristic holds 512
@@ -23,7 +24,14 @@ export function initialsFromHeadline(headline: string) {
   return letters ? letters.charAt(0).toUpperCase() + letters.slice(1).toLowerCase() : '··';
 }
 
-export function buildCard(memberId: string, headline: string, roleCategory: string | undefined, want: string, offer: string): NearbyCard {
+export function buildCard(
+  memberId: string,
+  headline: string,
+  roleCategory: string | undefined,
+  want: string,
+  offer: string,
+  chatKey?: string
+): NearbyCard {
   const h = headline.trim() || 'Ol-ga member';
   let card: NearbyCard = {
     v: 1,
@@ -33,6 +41,7 @@ export function buildCard(memberId: string, headline: string, roleCategory: stri
     w: clip(want.trim(), 220),
     ...(offer.trim() ? { o: clip(offer.trim(), 160) } : {}),
     i: initialsFromHeadline(h),
+    ...(chatKey ? { k: chatKey } : {}),
   };
   // Shorten what we offer, then what we want, until it fits.
   for (let room = 150; utf8Length(JSON.stringify(card)) > MAX_CARD_BYTES && room > 20; room -= 20) {
@@ -53,6 +62,7 @@ export function parseCard(text: string): NearbyCard | null {
       i: c.i,
       ...(typeof c.r === 'string' ? { r: c.r } : {}),
       ...(typeof c.o === 'string' ? { o: c.o } : {}),
+      ...(isPublicKey(c.k) ? { k: c.k } : {}),
     };
   } catch {
     return null;

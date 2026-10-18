@@ -297,6 +297,16 @@ static OlgaNotificationDelegate *gNotificationDelegate = nil;
   });
 }
 
+- (NSString *)randomBytes:(double)count
+{
+  NSUInteger n = (NSUInteger)MAX(0, MIN(count, 1024));
+  NSMutableData *data = [NSMutableData dataWithLength:n];
+  if (n > 0 && SecRandomCopyBytes(kSecRandomDefault, n, data.mutableBytes) != errSecSuccess) {
+    return @"";
+  }
+  return [data base64EncodedStringWithOptions:0];
+}
+
 - (void)requestNotificationPermission:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
   dispatch_async(dispatch_get_main_queue(), ^{

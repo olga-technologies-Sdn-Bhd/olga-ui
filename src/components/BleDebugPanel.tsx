@@ -2,6 +2,7 @@ import { RotateCcw } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { APP_ENV } from '../config/env';
+import { useOfflineChat } from '../context/OfflineChatContext';
 import { useNearby } from '../context/NearbyContext';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
@@ -20,11 +21,24 @@ function Panel() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { ble, people, resetForTesting } = useNearby();
+  const chat = useOfflineChat();
   const confirmReset = () =>
-    showDialog('Reset Nearby on this phone?', "Forgets this member's Nearby consent, Commits and passes on this phone, and goes invisible. Ol-ga's own data isn't touched.", [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Reset', style: 'destructive', onPress: resetForTesting },
-    ], { icon: RotateCcw, tone: 'danger' });
+    showDialog(
+      'Reset Nearby on this phone?',
+      "Forgets this member's Nearby consent, Commits, passes and Bluetooth chats on this phone, and goes invisible. Ol-ga's own data isn't touched.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: () => {
+            resetForTesting();
+            chat.resetForTesting();
+          },
+        },
+      ],
+      { icon: RotateCcw, tone: 'danger' }
+    );
   // Ages tick once a second while the list is showing.
   const [now, setNow] = useState(Date.now());
   useEffect(() => {

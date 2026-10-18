@@ -9,6 +9,7 @@ export type NearbyCard = {
   w: string; // what they're looking for (intent)
   o?: string; // what they offer (headline and summary), for scoring
   i: string; // avatar initials, from the headline
+  k?: string; // public chat key (X25519, base64): only connected members use it
 };
 
 export type NearbyPerson = {

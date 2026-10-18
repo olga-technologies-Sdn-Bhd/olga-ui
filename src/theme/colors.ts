@@ -67,6 +67,13 @@ export const lightColors = {
   tintLine: '#CDCDD3',
   track: '#D4D4D9',
   progressTrack: '#E8E8ED',
+  // Conversations: my messages in the brand navy (the Social Capital card's
+  // lighter end), theirs on white; the time under mine in a soft blue-grey.
+  bubbleMe: '#2A4066',
+  onBubbleMe: '#FFFFFF',
+  bubbleThem: '#FFFFFF',
+  bubbleThemLine: '#E5E5EA',
+  chatGround: '#F1F0EC',
 };
 
 export const darkColors = {
@@ -116,6 +123,11 @@ export const darkColors = {
   tintLine: '#3E4145',
   track: '#3A3D41',
   progressTrack: '#2A2C2F',
+  bubbleMe: '#2A4066',
+  onBubbleMe: '#FFFFFF',
+  bubbleThem: '#242628',
+  bubbleThemLine: '#2E3033',
+  chatGround: '#151618',
 };
 
 export type ThemeColors = typeof lightColors;

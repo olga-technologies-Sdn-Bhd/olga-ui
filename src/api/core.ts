@@ -12,7 +12,13 @@ import type {
   SendCommitRequest,
   SendCommitResponse,
   SyncPage,
+  ChatMessage,
+  Conversation,
+  ConversationPage,
   EventAttendeesResponse,
+  MessageReportRequest,
+  MessageReportResponse,
+  SendMessageRequest,
   ConsentPolicy,
   ConsentRequest,
   ConnectionRequestCreate,
@@ -32,6 +38,9 @@ import type {
   RegisterMemberRequest,
   UpdateProfileRequest,
 } from './types';
+
+const conversationPath = (conversationId: string) => `/v1/conversations/${encodeURIComponent(conversationId)}`;
+const messagePath = (messageId: string) => `/v1/messages/${encodeURIComponent(messageId)}`;
 
 const client = makeApiClient(CORE_API_URL, { sendAccessToken: true });
 
@@ -123,6 +132,32 @@ export const coreApi = {
   // This member's change feed (requests sent to them, new connections).
   getChanges: (cursor?: string) =>
     client.get<SyncPage>(`/v1/sync/changes?limit=200${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`),
+
+  // Chat. Writes take an Idempotency-Key per action; pass the same one when
+  // retrying that action.
+  // The first page is kept on the phone for when there's no network.
+  listConversations: (cursor?: string, limit = 20) => {
+    const load = () =>
+      client.get<ConversationPage>(`/v1/conversations?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+    return cursor ? load() : cached('conversations', load, `limit-${limit}`);
+  },
+  getConversation: (conversationId: string) => client.get<Conversation>(conversationPath(conversationId)),
+  // Ascending server_sequence; there is no "before", so history pages forward.
+  listMessages: (conversationId: string, after: number, limit: number) =>
+    client.get<ChatMessage[]>(`${conversationPath(conversationId)}/messages?after=${after}&limit=${limit}`),
+  sendMessage: (conversationId: string, body: SendMessageRequest, options?: RequestOptions) =>
+    client.post<ChatMessage>(`${conversationPath(conversationId)}/messages`, body, options),
+  // Marks the other member's messages up to and including this one as read.
+  markConversationRead: (conversationId: string, lastReadMessageId: string) =>
+    client.post<Conversation>(`${conversationPath(conversationId)}/read`, { last_read_message_id: lastReadMessageId }),
+  // null unmutes.
+  muteConversation: (conversationId: string, mutedUntil: string | null) =>
+    client.put<Conversation>(`${conversationPath(conversationId)}/mute`, { muted_until: mutedUntil }),
+  // Sender only; soft delete (the message stays, without a body).
+  deleteMessage: (messageId: string) => client.del<void>(messagePath(messageId)),
+  reportMessage: (messageId: string, body: MessageReportRequest) =>
+    client.post<MessageReportResponse>(`${messagePath(messageId)}/report`, body),
+  blockMember: (memberId: string) => client.post<void>('/v1/members/block', { member_id: memberId }),
 
   // Files a request to delete this member's account (202). Pass the same
   // idempotencyKey when retrying the same request.

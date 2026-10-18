@@ -133,6 +133,12 @@ class OlgaBleModule(private val context: ReactApplicationContext) : NativeOlgaBl
     main.post { notifier.show(id, title, body, initials, color) }
   }
 
+  override fun randomBytes(count: Double): String {
+    val bytes = ByteArray(count.toInt().coerceIn(0, 1024))
+    SecureRandom().nextBytes(bytes)
+    return android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+  }
+
   override fun requestNotificationPermission(promise: Promise) {
     // Android 13+ asks at runtime from JS (POST_NOTIFICATIONS); this answers.
     promise.resolve(notifier.canNotify())

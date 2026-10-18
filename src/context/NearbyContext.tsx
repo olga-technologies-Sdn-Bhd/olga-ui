@@ -13,6 +13,7 @@ import {
 } from '../bluetooth/bleDiscovery';
 import type { BleDiscoveryState } from '../bluetooth/types';
 import { useBluetoothDiscovery } from '../bluetooth/useBluetoothDiscovery';
+import { loadKeyPair } from '../chat/crypto';
 import { pastelFor } from '../components/GoLiveRadar';
 import { buildCard, parseCard, parseMessage } from '../nearby/card';
 import { estimateScore } from '../nearby/score';
@@ -29,6 +30,8 @@ import { useLive } from './LiveContext';
 // connects the two and reveals names, as an accepted Commit does.
 
 export type GoLiveMode = 'event' | 'nearby';
+
+export type NearbyInRange = { token: string; card: NearbyCard; lastSeenAt: number };
 
 export type AvailableResult = 'OK' | 'NEED_INTENT' | 'NEED_CONSENT';
 
@@ -54,6 +57,12 @@ type NearbyState = {
   dismissBanner: () => void;
   // Ol-ga answered the last sync (null: not tried yet).
   online: boolean | null;
+  // Every Ol-ga member in range right now (passed ones too), by member ID.
+  inRange: Record<string, NearbyInRange>;
+  // Writes to that member's phone if it's in range. false: not in range or failed.
+  sendPayload: (memberId: string, payload: string) => Promise<boolean>;
+  // Messages from other phones that aren't Nearby's own (chat). Returns unsubscribe.
+  addPayloadListener: (listener: (payload: string) => void) => () => void;
   // Dev only (the debug panel): forget consent, Commits and passes on this phone.
   resetForTesting: () => void;
 };
@@ -167,10 +176,24 @@ export function NearbyProvider({ children }: { children: React.ReactNode }) {
     if (loaded) refreshProfile();
   }, [loaded, refreshProfile]);
 
+  // Public chat key on the card, so connected members can chat over Bluetooth.
+  const [chatKey, setChatKey] = useState<string | undefined>();
+  useEffect(() => {
+    setChatKey(undefined);
+    if (!memberId) return;
+    let cancelled = false;
+    loadKeyPair(memberId)
+      .then((pair) => !cancelled && setChatKey(pair.publicKey))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [memberId]);
+
   const want = (intentText || saved.intent).trim();
   const myCard = useMemo(
-    () => (memberId && want ? buildCard(memberId, saved.headline, saved.roleCategory, want, saved.offer) : null),
-    [memberId, want, saved.headline, saved.roleCategory, saved.offer]
+    () => (memberId && want ? buildCard(memberId, saved.headline, saved.roleCategory, want, saved.offer, chatKey) : null),
+    [memberId, want, saved.headline, saved.roleCategory, saved.offer, chatKey]
   );
   const myName = saved.name || name || '';
 
@@ -264,9 +287,21 @@ export function NearbyProvider({ children }: { children: React.ReactNode }) {
 
   // ---- messages between phones ----
 
+  const payloadListeners = useRef(new Set<(payload: string) => void>());
+  const addPayloadListener = useCallback((listener: (payload: string) => void) => {
+    payloadListeners.current.add(listener);
+    return () => {
+      payloadListeners.current.delete(listener);
+    };
+  }, []);
+
   handleMessage.current = (payload: string) => {
     const message = parseMessage(payload);
-    if (!message || !memberId) return;
+    if (!message) {
+      payloadListeners.current.forEach((listener) => listener(payload));
+      return;
+    }
+    if (!memberId) return;
     const known = savedRef.current.requests.find((r) => r.id === message.id);
     if (message.t === 'commit') {
       if (known || message.from.m === memberId) return;
@@ -309,6 +344,30 @@ export function NearbyProvider({ children }: { children: React.ReactNode }) {
 
   const peopleRef = useRef(people);
   peopleRef.current = people;
+
+  const inRange = useMemo(() => {
+    const byMember: Record<string, NearbyInRange> = {};
+    for (const device of ble.devices) {
+      const card = cards[device.discoveryId];
+      if (!card || card.m === memberId) continue;
+      const known = byMember[card.m];
+      if (!known || device.lastSeenAt > known.lastSeenAt) byMember[card.m] = { token: device.discoveryId, card, lastSeenAt: device.lastSeenAt };
+    }
+    return byMember;
+  }, [ble.devices, cards, memberId]);
+  const inRangeRef = useRef(inRange);
+  inRangeRef.current = inRange;
+
+  const sendPayload = useCallback(async (peerId: string, payload: string) => {
+    const peer = inRangeRef.current[peerId];
+    if (!peer) return false;
+    try {
+      await sendBleMessage(peer.token, payload);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
   const delivering = useRef(false);
   const deliver = useCallback(async () => {
     if (delivering.current) return;
@@ -437,6 +496,11 @@ export function NearbyProvider({ children }: { children: React.ReactNode }) {
           if (wasPending) notifyAccepted(accepted);
         }
       }
+
+      // Open items that needed no call this round (e.g. a Commit still waiting
+      // for our decision) say nothing about the network: ask Ol-ga directly,
+      // or a working connection would read as "no internet".
+      if (!reached) await coreApi.getConnectionsFresh().then(() => note(true));
     } catch (e) {
       if (!isNetworkError(e)) note(true);
     } finally {
@@ -539,6 +603,9 @@ export function NearbyProvider({ children }: { children: React.ReactNode }) {
       banner,
       dismissBanner: () => setBanner(null),
       online,
+      inRange,
+      sendPayload,
+      addPayloadListener,
       resetForTesting: () => {
         update((s) => ({ ...EMPTY_NEARBY, intent: s.intent, headline: s.headline, roleCategory: s.roleCategory, offer: s.offer, name: s.name }));
         setCards({});
@@ -546,7 +613,7 @@ export function NearbyProvider({ children }: { children: React.ReactNode }) {
         setBanner(null);
       },
     }),
-    [mode, saved, setAvailable, update, ble, people, myCard, sendCommit, respond, banner, online]
+    [mode, saved, setAvailable, update, ble, people, myCard, sendCommit, respond, banner, online, inRange, sendPayload, addPayloadListener]
   );
 
   return <NearbyContext.Provider value={value}>{children}</NearbyContext.Provider>;

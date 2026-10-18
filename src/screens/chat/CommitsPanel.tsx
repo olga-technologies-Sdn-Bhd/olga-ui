@@ -1,5 +1,5 @@
-import { useFocusEffect } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Check } from 'lucide-react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -13,14 +13,12 @@ import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { Silhouette } from '../../components/Silhouette';
 import { useLive } from '../../context/LiveContext';
-import { CommitsStackParamList } from '../../navigation/types';
+import { ChatStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
 import { commitErrorMessage, expiresIn, planLine, roleLabel, WHEN_LABELS, whereLabel } from '../../utils/commitText';
 import { getInitials } from '../../utils/initials';
-
-type Props = NativeStackScreenProps<CommitsStackParamList, 'Commits'>;
 
 // Incoming Commits have no push yet, so refresh while the screen is open.
 const REFRESH_MS = 15000;
@@ -36,9 +34,10 @@ function formatTime(iso: string) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-// Board 10 without the chat itself (not Phase 1): "Commits for you" above,
-// answered with Accept or Decline; meetings below, only after Accept.
-export function CommitsScreen({ navigation }: Props) {
+// Chat > Commits: "Commits for you" above, answered with Accept or Decline;
+// meetings below, only after Accept.
+export function CommitsPanel() {
+  const navigation = useNavigation<NativeStackNavigationProp<ChatStackParamList>>();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { filters } = useLive();
@@ -123,9 +122,8 @@ export function CommitsScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen onRefresh={load}>
+    <Screen onRefresh={load} contentStyle={styles.panel}>
       <View>
-        <Text style={styles.h2}>Chat</Text>
         <Pressable
           onPress={() => navigation.getParent()?.navigate('GoLiveTab', { screen: 'Filters' })}
           accessibilityRole="link"
@@ -246,7 +244,7 @@ export function CommitsScreen({ navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, marginTop: 4 },
+    panel: { paddingTop: 12 },
     h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
     small: { fontSize: 11, lineHeight: 16, color: colors.muted, marginTop: 8 },

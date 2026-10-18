@@ -1,15 +1,26 @@
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 type Props = {
   from: 'them' | 'me';
   text: string;
+  // Conversation extras (sign-up uses none of these).
+  person?: boolean;
+  time?: string; // the prototype's `.chat-time` line under the bubble
+  status?: 'pending' | 'failed';
+  deleted?: boolean;
+  // Their message looked abusive: shown covered until tapped.
+  hidden?: boolean;
+  onPress?: () => void;
+  onLongPress?: () => void;
+  onRetry?: () => void;
 };
 
 // Ol-ga's messages sit on the left with her avatar; the member's on the right.
-export function ChatBubble({ from, text }: Props) {
+// In a conversation (person), the other member's bubbles have no avatar.
+export function ChatBubble({ from, text, person, time, status, deleted, hidden, onPress, onLongPress, onRetry }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(
     () =>
@@ -41,11 +52,31 @@ export function ChatBubble({ from, text }: Props) {
         textThem: { backgroundColor: colors.surface, color: colors.text },
         // Same accent hue as the rest of the app, at its lightest tint.
         textMe: { backgroundColor: colors.accentSoft, color: colors.text },
+        // In a conversation: WhatsApp-style tails, navy for mine, white for theirs.
+        personMe: { backgroundColor: colors.bubbleMe, color: colors.onBubbleMe, borderBottomRightRadius: 6 },
+        personThem: {
+          backgroundColor: colors.bubbleThem,
+          color: colors.text,
+          borderWidth: 1,
+          borderColor: colors.bubbleThemLine,
+          borderBottomLeftRadius: 6,
+        },
+        textPending: { opacity: 0.6 },
+        textDeleted: {
+          backgroundColor: 'transparent',
+          borderWidth: 1,
+          borderColor: colors.line,
+          color: colors.muted,
+          fontStyle: 'italic',
+        },
+        meta: { fontSize: 9, color: colors.muted, marginTop: 3 },
+        metaMe: { textAlign: 'right' },
+        failed: { fontSize: 11, color: colors.danger, marginTop: 4, textAlign: 'right', fontWeight: semibold },
       }),
     [colors]
   );
 
-  if (from === 'them') {
+  if (from === 'them' && !person) {
     return (
       <View style={styles.row}>
         <View style={styles.olga}>
@@ -55,9 +86,28 @@ export function ChatBubble({ from, text }: Props) {
       </View>
     );
   }
+  const meta = status === 'pending' ? 'Sending…' : time;
   return (
-    <View style={[styles.wrap, styles.wrapMe]}>
-      <Text style={[styles.text, styles.textMe]}>{text}</Text>
+    <View style={[styles.wrap, from === 'me' && styles.wrapMe]}>
+      <Pressable onPress={onPress} onLongPress={onLongPress} disabled={!onLongPress && !onPress} delayLongPress={350}>
+        <Text
+          style={[
+            styles.text,
+            from === 'me' ? (person ? styles.personMe : styles.textMe) : person ? styles.personThem : styles.textThem,
+            status === 'pending' && styles.textPending,
+            (deleted || hidden) && styles.textDeleted,
+          ]}
+        >
+          {deleted ? 'This message was deleted' : hidden ? 'Hidden: may be offensive. Tap to view' : text}
+        </Text>
+      </Pressable>
+      {status === 'failed' ? (
+        <Pressable onPress={onRetry} hitSlop={8} accessibilityRole="button">
+          <Text style={styles.failed}>Not sent · Tap to retry</Text>
+        </Pressable>
+      ) : (
+        meta && <Text style={[styles.meta, from === 'me' && styles.metaMe]}>{meta}</Text>
+      )}
     </View>
   );
 }
