@@ -496,6 +496,11 @@ export function NearbyProvider({ children }: { children: React.ReactNode }) {
           if (wasPending) notifyAccepted(accepted);
         }
       }
+
+      // Open items that needed no call this round (e.g. a Commit still waiting
+      // for our decision) say nothing about the network: ask Ol-ga directly,
+      // or a working connection would read as "no internet".
+      if (!reached) await coreApi.getConnectionsFresh().then(() => note(true));
     } catch (e) {
       if (!isNetworkError(e)) note(true);
     } finally {

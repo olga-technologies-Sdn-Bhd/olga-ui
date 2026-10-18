@@ -2,6 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../components/Avatar';
+import { SlidingUnderline } from '../../components/SlidingUnderline';
 import { useTopInset } from '../../components/Screen';
 import { CHAT_COMING_SOON } from '../../config/env';
 import { useAuth } from '../../context/AuthContext';
@@ -60,10 +61,10 @@ export function ChatScreen({ navigation, route }: Props) {
                 accessibilityState={{ selected: active }}
               >
                 <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
-                <View style={[styles.tabLine, active && styles.tabLineActive]} />
               </Pressable>
             );
           })}
+          <SlidingUnderline count={TABS.length} index={TABS.findIndex((t) => t.key === tab)} lineWidth={76} color={colors.selected} />
         </View>
       </View>
 
@@ -91,8 +92,6 @@ const makeStyles = (colors: ThemeColors) =>
     tab: { flex: 1, alignItems: 'center', paddingTop: 10, minHeight: 44 },
     tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.text },
-    tabLine: { height: 3, width: 76, borderRadius: 2, backgroundColor: 'transparent' },
-    tabLineActive: { backgroundColor: colors.selected },
     soon: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, paddingBottom: 100 },
     soonText: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: semibold, color: colors.muted, textAlign: 'center' },
   });
