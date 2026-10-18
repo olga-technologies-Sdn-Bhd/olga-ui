@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, newIdempotencyKey, setAccessTokenProvider, setMemberIdProvider } from '../api/client';
+import { ApiError, newIdempotencyKey, setAccessTokenProvider, setMemberIdProvider, withRetries } from '../api/client';
 import { clearCache } from '../api/offlineCache';
 import { coreApi } from '../api/core';
 import {
@@ -45,11 +45,17 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
+// The reads that decide who signs in are retried while Core wakes up (dev
+// scales to zero), instead of one long wait that can run out.
 const memberApi: MemberApi = {
-  getMyProfile: (memberId) => coreApi.getMyProfile({ headers: { 'X-Member-Id': memberId } }),
+  getMyProfile: (memberId) => withRetries((timeoutMs) => coreApi.getMyProfile({ headers: { 'X-Member-Id': memberId }, timeoutMs })),
   updateMyProfile: (memberId, body, ifMatch) =>
     coreApi.updateMyProfile(body, ifMatch, { headers: { 'X-Member-Id': memberId } }),
-  lookupMember: (email) => coreApi.lookupMember(email),
+  // Lookup changes nothing, so one key for every attempt is enough.
+  lookupMember: (email) => {
+    const idempotencyKey = newIdempotencyKey();
+    return withRetries((timeoutMs) => coreApi.lookupMember(email, { idempotencyKey, timeoutMs }));
+  },
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -171,9 +177,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       let next: StoredMember;
       try {
-        const registered = await coreApi.registerMember(
-          { display_name: enteredName, email, phone: enteredMobile, visibility: 'MEMBERS' },
-          { idempotencyKey: registrationKey.current }
+        // Same key on every attempt, so a retry never creates a second member.
+        const key = registrationKey.current;
+        const registered = await withRetries((timeoutMs) =>
+          coreApi.registerMember({ display_name: enteredName, email, phone: enteredMobile, visibility: 'MEMBERS' }, { idempotencyKey: key, timeoutMs })
         );
         next = await activateMember(
           {

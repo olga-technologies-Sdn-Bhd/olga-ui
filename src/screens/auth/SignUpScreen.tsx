@@ -6,6 +6,7 @@ import { OtpEntry } from '../../components/OtpEntry';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { SocialSignInButton } from '../../components/SocialSignInButton';
+import { warmUpApis } from '../../api/warmup';
 import { MemberRecoveryUnavailableError } from '../../auth/memberSession';
 import { isExpiredSession, isInvalidCode, NativeAuthError } from '../../auth/nativeAuthClient';
 import { EntraProvider, isUserCancelledLogin } from '../../auth/useEntraLogin';
@@ -48,6 +49,7 @@ export function SignUpScreen() {
   async function signIn(options: { loginHint?: string; provider?: EntraProvider }, shown: string) {
     if (inProgress.current) return;
     inProgress.current = true;
+    warmUpApis(); // Core starts while the user signs in with Google/Apple
     setEmail(shown);
     setStep('verifying');
     try {
@@ -74,6 +76,7 @@ export function SignUpScreen() {
   async function handleEmailSubmit(value: string) {
     if (inProgress.current) return;
     inProgress.current = true;
+    warmUpApis(); // Core starts while the user fetches the code
     setEmail(value);
     setStep('verifying');
     let result;
