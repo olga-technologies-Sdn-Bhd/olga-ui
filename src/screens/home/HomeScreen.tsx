@@ -3,8 +3,8 @@ import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { Check, ChevronRight, SlidersHorizontal, Ticket, UsersRound } from 'lucide-react-native';
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Animated, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { coreApi } from '../../api/core';
 import type { Meeting } from '../../api/types';
@@ -22,15 +22,16 @@ import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
 
-type Props = CompositeScreenProps<
-  NativeStackScreenProps<HomeStackParamList, 'Home'>,
-  BottomTabScreenProps<MainTabParamList>
->;
+type Props = CompositeScreenProps<NativeStackScreenProps<HomeStackParamList, 'Home'>, BottomTabScreenProps<MainTabParamList>>;
 
 // Each tip disappears once the member does the action (not on tap) and never
 // returns. "Confirm you met" is amber: an outcome state.
 const TIPS: { key: TipKey; title: string; body: string }[] = [
-  { key: 'wentLive', title: 'Go Live when you arrive.', body: 'Check in, then press and hold Go Live. Only relevant people in the room can see you.' },
+  {
+    key: 'wentLive',
+    title: 'Go Live when you arrive.',
+    body: 'Check in, then press and hold Go Live. Only relevant people in the room can see you.',
+  },
   { key: 'savedFilter', title: 'Set who you want to meet.', body: 'Your filter decides who you see, and who can reach you.' },
   { key: 'confirmedMeeting', title: 'Confirm you met.', body: 'The morning after, two taps. Only meetings you both confirm count.' },
 ];
@@ -54,13 +55,16 @@ type Update = {
   onPress?: () => void;
 };
 
+// Space between the collapsing part (greeting, card) and the Updates title.
+const COLLAPSIBLE_GAP = 14;
+
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : '')).toUpperCase() || '?';
+  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] ?? '' : '')).toUpperCase() || '?';
 }
 
 // "2h", "3d", then a short date.
@@ -102,11 +106,8 @@ export function HomeScreen({ navigation }: Props) {
   const { requests: nearbyRequests } = useNearby();
 
   const loadNetwork = useCallback(async () => {
-    const [connections, page] = await Promise.all([
-      coreApi.getConnections().catch(() => null),
-      coreApi.getMeetings().catch(() => null),
-    ]);
-    if (connections) setRelationships(connections.filter((c) => c.status === 'ACTIVE').length);
+    const [connections, page] = await Promise.all([coreApi.getConnections().catch(() => null), coreApi.getMeetings().catch(() => null)]);
+    if (connections) setRelationships(connections.filter(c => c.status === 'ACTIVE').length);
     if (page) setMeetings(page.items);
   }, []);
 
@@ -114,7 +115,7 @@ export function HomeScreen({ navigation }: Props) {
     useCallback(() => {
       refreshIfStale();
       loadNetwork();
-    }, [refreshIfStale, loadNetwork])
+    }, [refreshIfStale, loadNetwork]),
   );
 
   async function refresh() {
@@ -122,6 +123,21 @@ export function HomeScreen({ navigation }: Props) {
   }
   // Pull to refresh on the updates list.
   const { refreshing, handleRefresh } = usePullToRefresh(refresh);
+
+  // Collapsing header (native driver, so it stays smooth): as the list
+  // scrolls up, the greeting and card drift up at about half speed and fade,
+  // and the Updates tabs rise until they stick at the top.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const onScroll = useMemo(
+    () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
+    [scrollY],
+  );
+  const [headHeight, setHeadHeight] = useState(0);
+  const [collapse, setCollapse] = useState(1);
+  const range = Math.max(1, collapse);
+  const headShift = scrollY.interpolate({ inputRange: [0, range], outputRange: [0, -range], extrapolate: 'clamp' });
+  const headParallax = scrollY.interpolate({ inputRange: [0, range], outputRange: [0, range * 0.4], extrapolate: 'clamp' });
+  const headFade = scrollY.interpolate({ inputRange: [0, range * 0.7], outputRange: [1, 0], extrapolate: 'clamp' });
 
   function tipIcon(key: TipKey) {
     if (key === 'wentLive') return <GoLiveMark size={20} color={colors.text} />;
@@ -135,15 +151,15 @@ export function HomeScreen({ navigation }: Props) {
   }
 
   const today = new Date(now);
-  const changesThisMonth = meetings.filter((m) => {
+  const changesThisMonth = meetings.filter(m => {
     const at = new Date(m.last_activity_at);
     return at.getFullYear() === today.getFullYear() && at.getMonth() === today.getMonth();
   }).length;
 
   // Commits made over Bluetooth with people nearby, newest first.
   const nearbyUpdates = nearbyRequests
-    .filter((r) => (r.direction === 'in' && r.status !== 'declined') || (r.direction === 'out' && r.status === 'accepted'))
-    .map((r) => {
+    .filter(r => (r.direction === 'in' && r.status !== 'declined') || (r.direction === 'out' && r.status === 'accepted'))
+    .map(r => {
       const at = r.respondedAt ?? r.createdAt;
       const connected = r.status === 'accepted';
       const update: Update = {
@@ -158,7 +174,7 @@ export function HomeScreen({ navigation }: Props) {
       return { at, update };
     })
     .sort((a, b) => b.at - a.at)
-    .map((x) => x.update);
+    .map(x => x.update);
 
   const updates: Update[] = [
     ...nearbyUpdates,
@@ -177,7 +193,7 @@ export function HomeScreen({ navigation }: Props) {
         };
       }),
     ...(events ?? [])
-      .filter((e) => new Date(e.ends_at).getTime() > now)
+      .filter(e => new Date(e.ends_at).getTime() > now)
       .map((e): Update => {
         const started = new Date(e.starts_at).getTime() <= now;
         const attending = typeof e.attendee_count === 'number' ? ` ${e.attendee_count.toLocaleString('en-US')} members attending.` : '';
@@ -186,12 +202,14 @@ export function HomeScreen({ navigation }: Props) {
           kind: 'event',
           meta: ['Event', eventDay(e.starts_at, now)].filter(Boolean).join(' · '),
           title: e.name,
-          body: `${started ? ' is on now.' : isRegistered(e) ? ' is coming up.' : ''}${isRegistered(e) ? ' You are registered.' : started ? ' Registration is open.' : ' is open for registration.'}${attending}`,
+          body: `${started ? ' is on now.' : isRegistered(e) ? ' is coming up.' : ''}${
+            isRegistered(e) ? ' You are registered.' : started ? ' Registration is open.' : ' is open for registration.'
+          }${attending}`,
           icon: <Ticket size={20} color={colors.text} />,
           onPress: () => navigation.navigate('EventsTab', { screen: 'EventDetail', params: { eventId: e.event_id } }),
         };
       }),
-    ...TIPS.filter((t) => !prefs.tipsDone[t.key]).map(
+    ...TIPS.filter(t => !prefs.tipsDone[t.key]).map(
       (t): Update => ({
         key: `tip-${t.key}`,
         kind: 'tip',
@@ -200,10 +218,10 @@ export function HomeScreen({ navigation }: Props) {
         body: ` ${t.body}`,
         icon: tipIcon(t.key),
         onPress: t.key === 'confirmedMeeting' ? undefined : () => openTip(t.key),
-      })
+      }),
     ),
   ];
-  const shown = filter === 'all' ? updates : updates.filter((u) => u.kind === filter);
+  const shown = filter === 'all' ? updates : updates.filter(u => u.kind === filter);
 
   return (
     // Only the updates list scrolls; the header, card and tabs stay put.
@@ -216,112 +234,144 @@ export function HomeScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
-      {/* Sree: a simple "Hey <first name>", no time-of-day wishes; the date on the right. */}
-      <View style={styles.hello}>
-        <Text style={styles.greeting} numberOfLines={1}>
-          Hey {firstName || 'there'}
-        </Text>
-        <Text style={styles.date}>
-          {/* Short and calm, as in Calendar or Mail: "Sun, 18 Oct". */}
-          {WEEKDAYS[today.getDay()].slice(0, 3)}, {today.getDate()} {MONTHS[today.getMonth()].slice(0, 3)}
-        </Text>
-      </View>
-
-      <Pressable
-        onPress={() => navigation.navigate('ProfileSetup')}
-        accessibilityRole="button"
-        hitSlop={8}
-        style={({ pressed }) => [styles.setup, pressed && styles.pressed]}
-      >
-        <Text style={styles.setupText}>Let me help you with your introduction</Text>
-        <ChevronRight size={15} color={colors.muted} />
-      </Pressable>
-
-      <Pressable
-        style={({ pressed }) => [styles.capital, pressed && styles.pressed]}
-        onPress={() => setIndexSoon(true)}
-        accessibilityRole="button"
-        accessibilityLabel="Your Social Capital Index"
-      >
-        <LinearGradient
-          colors={[colors.cardFrom, colors.cardTo]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.capitalTop}>
-          <Text style={styles.capitalTitle} numberOfLines={1}>
-            {/* Sree: "Your", not the member's name. */}
-            Your Social Capital Index
-          </Text>
-          <View style={styles.month}>
-            <Text style={styles.monthText}>
-              {MONTHS[today.getMonth()]} {today.getFullYear()}
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.count}>{relationships === null ? '–' : relationships.toLocaleString('en-US')}</Text>
-        <View style={styles.capitalFoot}>
-          <Text style={styles.countLabel}>Confirmed professional relationships</Text>
-          <ChevronRight size={22} color={colors.white} />
-        </View>
-      </Pressable>
-
-      <View style={styles.updatesHead}>
-        <Text style={styles.h2}>Updates</Text>
-        {changesThisMonth > 0 && (
-          <Text style={styles.sub}>
-            {changesThisMonth} network {changesThisMonth === 1 ? 'change' : 'changes'} this month
-          </Text>
-        )}
-      </View>
-      <View style={styles.tabs}>
-        {FILTERS.map((f) => {
-          const active = f.key === filter;
-          return (
+      {/* The list scrolls under this header; see the collapse values above. */}
+      <View style={styles.scrollArea}>
+        <Animated.ScrollView
+          style={styles.list}
+          contentContainerStyle={[styles.listContent, { paddingTop: headHeight }]}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} progressViewOffset={headHeight} />}
+        >
+          {shown.map(u => (
             <Pressable
-              key={f.key}
-              onPress={() => setFilter(f.key)}
-              style={styles.tab}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
+              key={u.key}
+              onPress={u.onPress}
+              disabled={!u.onPress}
+              style={styles.row}
+              accessibilityRole={u.onPress ? 'button' : undefined}
             >
-              <Text style={[styles.tabText, active && styles.tabTextActive]}>{f.label}</Text>
+              <View style={[styles.icon, u.kind === 'network' && styles.iconPerson, u.key === 'tip-confirmedMeeting' && styles.iconAmber]}>
+                {u.icon}
+              </View>
+              <View style={styles.flex}>
+                <Text style={styles.meta}>{u.meta}</Text>
+                <Text style={styles.body}>
+                  <Text style={styles.bodyBold}>{u.title}</Text>
+                  {u.body}
+                </Text>
+              </View>
             </Pressable>
-          );
-        })}
-        <SlidingUnderline count={FILTERS.length} index={FILTERS.findIndex((f) => f.key === filter)} lineWidth={44} color={colors.selected} inset={8} />
-      </View>
-
-      <ScrollView
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-      >
-        {shown.map((u) => (
-          <Pressable key={u.key} onPress={u.onPress} disabled={!u.onPress} style={styles.row} accessibilityRole={u.onPress ? 'button' : undefined}>
-            <View style={[styles.icon, u.kind === 'network' && styles.iconPerson, u.key === 'tip-confirmedMeeting' && styles.iconAmber]}>{u.icon}</View>
-            <View style={styles.flex}>
-              <Text style={styles.meta}>{u.meta}</Text>
-              <Text style={styles.body}>
-                <Text style={styles.bodyBold}>{u.title}</Text>
-                {u.body}
-              </Text>
-            </View>
-          </Pressable>
-        ))}
-        {shown.length === 0 && (
-          <Text style={styles.empty}>
-            {filter === 'network'
-              ? 'People you meet through a Commit appear here.'
-              : filter === 'event'
+          ))}
+          {shown.length === 0 && (
+            <Text style={styles.empty}>
+              {filter === 'network'
+                ? 'People you meet through a Commit appear here.'
+                : filter === 'event'
                 ? 'More events are on the way.'
                 : filter === 'tip'
-                  ? "You're all set."
-                  : 'New updates will appear here.'}
-          </Text>
-        )}
-      </ScrollView>
+                ? "You're all set."
+                : 'New updates will appear here.'}
+            </Text>
+          )}
+        </Animated.ScrollView>
+
+        <Animated.View
+          style={[styles.head, { transform: [{ translateY: headShift }] }]}
+          onLayout={e => setHeadHeight(e.nativeEvent.layout.height)}
+        >
+          <Animated.View
+            style={[styles.collapsible, { opacity: headFade }]}
+            onLayout={e => setCollapse(e.nativeEvent.layout.height + COLLAPSIBLE_GAP)}
+          >
+            {/* Clipped, so the slower drift slides under the edge, never over the tabs. */}
+            <Animated.View style={[styles.collapsibleInner, { transform: [{ translateY: headParallax }] }]}>
+              {/* Sree: a simple "Hey <first name>", no time-of-day wishes; the date on the right. */}
+              <View style={styles.hello}>
+                <Text style={styles.greeting} numberOfLines={1}>
+                  Hey {firstName || 'there'}
+                </Text>
+                <Text style={styles.date}>
+                  {/* Short and calm, as in Calendar or Mail: "Sun, 18 Oct". */}
+                  {WEEKDAYS[today.getDay()].slice(0, 3)}, {today.getDate()} {MONTHS[today.getMonth()].slice(0, 3)}
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={() => navigation.navigate('ProfileSetup')}
+                accessibilityRole="button"
+                hitSlop={8}
+                style={({ pressed }) => [styles.setup, pressed && styles.pressed]}
+              >
+                <Text style={styles.setupText}>Let me help you with your introduction</Text>
+                <ChevronRight size={15} color={colors.muted} />
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [styles.capital, pressed && styles.pressed]}
+                onPress={() => setIndexSoon(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Your Social Capital Index"
+              >
+                <LinearGradient
+                  colors={[colors.cardFrom, colors.cardTo]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.capitalTop}>
+                  <Text style={styles.capitalTitle} numberOfLines={1}>
+                    {/* Sree: "Your", not the member's name. */}
+                    Your Social Capital Index
+                  </Text>
+                  <View style={styles.month}>
+                    <Text style={styles.monthText}>
+                      {MONTHS[today.getMonth()]} {today.getFullYear()}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.count}>{relationships === null ? '–' : relationships.toLocaleString('en-US')}</Text>
+                <View style={styles.capitalFoot}>
+                  <Text style={styles.countLabel}>Confirmed professional relationships</Text>
+                  <ChevronRight size={22} color={colors.white} />
+                </View>
+              </Pressable>
+            </Animated.View>
+          </Animated.View>
+
+          <View style={styles.updatesHead}>
+            <Text style={styles.h2}>Updates</Text>
+            {changesThisMonth > 0 && (
+              <Text style={styles.sub}>
+                {changesThisMonth} network {changesThisMonth === 1 ? 'change' : 'changes'} this month
+              </Text>
+            )}
+          </View>
+          <View style={styles.tabs}>
+            {FILTERS.map(f => {
+              const active = f.key === filter;
+              return (
+                <Pressable
+                  key={f.key}
+                  onPress={() => setFilter(f.key)}
+                  style={styles.tab}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{f.label}</Text>
+                </Pressable>
+              );
+            })}
+            <SlidingUnderline
+              count={FILTERS.length}
+              index={FILTERS.findIndex(f => f.key === filter)}
+              lineWidth={44}
+              color={colors.selected}
+              inset={8}
+            />
+          </View>
+        </Animated.View>
+      </View>
 
       <ComingSoonModal
         visible={indexSoon}
@@ -374,7 +424,13 @@ const makeStyles = (colors: ThemeColors) =>
     h2: { fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, color: colors.muted },
     // Filters as text tabs with an underline, edge to edge above the list.
-    tabs: { flexDirection: 'row', marginHorizontal: -20, marginBottom: -12, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
+    tabs: {
+      flexDirection: 'row',
+      marginHorizontal: -20,
+      paddingHorizontal: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.line,
+    },
     // The underline sits on the divider (no gap below it); 40 still makes a comfortable tap target.
     tab: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingTop: 4, minHeight: 36 },
     tabText: { fontSize: 14, color: colors.muted, paddingBottom: 9 },
@@ -382,8 +438,13 @@ const makeStyles = (colors: ThemeColors) =>
     // Rows run edge to edge, split by hairlines.
     // The page itself doesn't scroll: no bottom padding here, the list has it.
     fixed: { flex: 1, paddingBottom: 0 },
+    scrollArea: { flex: 1, overflow: 'hidden' },
     list: { flex: 1, marginHorizontal: -20 },
     listContent: { paddingBottom: FLOATING_TAB_SPACE },
+    // Over the list; its background hides the rows scrolling under it.
+    head: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: colors.surface },
+    collapsible: { marginBottom: COLLAPSIBLE_GAP, overflow: 'hidden' },
+    collapsibleInner: { gap: 12 },
     row: {
       flexDirection: 'row',
       alignItems: 'flex-start',
