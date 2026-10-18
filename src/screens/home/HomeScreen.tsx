@@ -56,11 +56,6 @@ type Update = {
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-function greeting(date: Date) {
-  const hour = date.getHours();
-  return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-}
-
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 function initialsOf(name: string) {
@@ -218,13 +213,13 @@ export function HomeScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
-      <View>
+      {/* Sree: a simple "Hey <first name>", no time-of-day wishes; the date on the right. */}
+      <View style={styles.hello}>
+        <Text style={styles.greeting} numberOfLines={1}>
+          Hey {firstName || 'there'}
+        </Text>
         <Text style={styles.date}>
           {WEEKDAYS[today.getDay()]} {today.getDate()} {MONTHS[today.getMonth()]}
-        </Text>
-        <Text style={styles.greeting} numberOfLines={1}>
-          {greeting(today)}
-          {firstName ? `, ${firstName}` : ''}
         </Text>
       </View>
 
@@ -338,8 +333,9 @@ const makeStyles = (colors: ThemeColors) =>
     // Same width as the avatar, so the wordmark sits in the true centre.
     headerSpacer: { width: 34 },
     brand: { flex: 1, textAlign: 'center', fontSize: 21, color: colors.text },
-    date: { fontSize: 9, fontWeight: semibold, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.muted },
+    date: { fontSize: 11, fontWeight: semibold, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.muted },
     greeting: { fontFamily: fonts.headingBold, fontSize: 24, lineHeight: 28, fontWeight: semibold, color: colors.text, marginTop: 1 },
+    hello: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
     // A quiet line, not a call to action: no box, small muted text.
     // Tucked under the greeting (the screen's 12 gap is too much here).
     setup: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 22, marginTop: -11, alignSelf: 'flex-start' },
