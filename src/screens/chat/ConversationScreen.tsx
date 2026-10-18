@@ -616,14 +616,6 @@ export function ConversationScreen({ route, navigation }: Props) {
               item.node
             )
           )}
-
-          {canSend && (
-            <View style={styles.quickReplies}>
-              {QUICK_REPLIES.map((q) => (
-                <Pill key={q.label} label={q.label} tone="white" onPress={() => setDraft(q.text)} />
-              ))}
-            </View>
-          )}
         </ScrollView>
         {floatingDay && (
           <View style={styles.floatingDay} pointerEvents="none">
@@ -646,6 +638,14 @@ export function ConversationScreen({ route, navigation }: Props) {
             </Text>
             {reach === 'key-changed' && peerId && <Pill label="Trust new phone" tone="active" onPress={() => chat.trustNewKey(peerId)} />}
           </View>
+        )}
+        {/* Quick replies sit right above the input, and step aside while typing. */}
+        {canSend && !draft.trim() && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.quickReplies}>
+            {QUICK_REPLIES.map((q) => (
+              <Pill key={q.label} label={q.label} tone="white" onPress={() => setDraft(q.text)} />
+            ))}
+          </ScrollView>
         )}
         <ChatComposer
           placeholder={firstName ? `Message ${firstName}…` : 'Message…'}
@@ -856,12 +856,7 @@ const makeStyles = (colors: ThemeColors) =>
       padding: 16,
       marginBottom: 8,
     },
-    quickReplies: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
-      marginTop: 4,
-    },
+    quickReplies: { flexDirection: 'row', gap: 8, paddingHorizontal: 2 },
     composerBar: {
       gap: 8,
       borderTopWidth: 1,
