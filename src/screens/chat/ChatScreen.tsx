@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ChatStackParamList, ChatTabKey } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { ChatsPanel } from './ChatsPanel';
 import { CommitsPanel } from './CommitsPanel';
 
@@ -86,13 +86,13 @@ const makeStyles = (colors: ThemeColors) =>
     container: { flex: 1, backgroundColor: colors.bg },
     top: { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.line },
     header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 },
-    title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: '700', color: colors.text },
+    title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: semibold, color: colors.text },
     tabs: { flexDirection: 'row', marginTop: 10 },
     tab: { flex: 1, alignItems: 'center', paddingTop: 10, minHeight: 44 },
     tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
-    tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
+    tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.text },
     tabLine: { height: 3, width: 76, borderRadius: 2, backgroundColor: 'transparent' },
     tabLineActive: { backgroundColor: colors.selected },
     soon: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, paddingBottom: 100 },
-    soonText: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: '700', color: colors.muted, textAlign: 'center' },
+    soonText: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: semibold, color: colors.muted, textAlign: 'center' },
   });

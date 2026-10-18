@@ -7,6 +7,7 @@ import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } 
 import { ApiError } from '../../api/client';
 import { CoreEvent } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
+import { SlidingUnderline } from '../../components/SlidingUnderline';
 import { Button } from '../../components/Button';
 import { DateBlock } from '../../components/DateBlock';
 import { FLOATING_TAB_SPACE, usePullToRefresh, useTopInset } from '../../components/Screen';
@@ -15,7 +16,7 @@ import { isRegistered, useEvents } from '../../context/EventsContext';
 import { EventsStackParamList, MainTabParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 type Props = CompositeScreenProps<
   NativeStackScreenProps<EventsStackParamList, 'Events'>,
@@ -67,7 +68,7 @@ export function EventsScreen({ navigation }: Props) {
           ? 'That event was cancelled.'
           : e instanceof ApiError && e.status > 0
             ? `Couldn't register you (${e.status})`
-            : "Couldn't reach the server"
+            : "Couldn't connect. Try again."
       );
     } finally {
       setRegistering(null);
@@ -174,10 +175,10 @@ export function EventsScreen({ navigation }: Props) {
                 accessibilityState={{ selected: active }}
               >
                 <Text style={[styles.tabText, active && styles.tabTextActive]}>{key === 'upcoming' ? 'Upcoming' : 'Past'}</Text>
-                <View style={[styles.tabLine, active && styles.tabLineActive]} />
               </Pressable>
             );
           })}
+          <SlidingUnderline count={2} index={tab === 'upcoming' ? 0 : 1} lineWidth={76} color={colors.selected} />
         </View>
       </View>
 
@@ -247,7 +248,7 @@ const makeStyles = (colors: ThemeColors) =>
     container: { flex: 1, backgroundColor: colors.surface },
     top: { borderBottomWidth: 1, borderBottomColor: colors.line },
     header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 },
-    title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: '700', color: colors.text },
+    title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: semibold, color: colors.text },
     locationButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -259,15 +260,13 @@ const makeStyles = (colors: ThemeColors) =>
       borderWidth: 1,
       borderColor: colors.brand2,
     },
-    locationText: { flexShrink: 1, fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
+    locationText: { flexShrink: 1, fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text },
     tabs: { flexDirection: 'row', marginTop: 10 },
     tab: { flex: 1, alignItems: 'center', paddingTop: 10, minHeight: 44 },
     tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
-    tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
-    tabLine: { height: 3, width: 76, borderRadius: 2, backgroundColor: 'transparent' },
-    tabLineActive: { backgroundColor: colors.selected },
+    tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.text },
     content: { paddingBottom: FLOATING_TAB_SPACE },
-    section: { fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: '700', color: colors.text, paddingHorizontal: 20, marginTop: 16 },
+    section: { fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: semibold, color: colors.text, paddingHorizontal: 20, marginTop: 16 },
     // Rows run edge to edge, split by hairlines.
     row: {
       flexDirection: 'row',
@@ -279,12 +278,12 @@ const makeStyles = (colors: ThemeColors) =>
       borderBottomColor: colors.line,
     },
     register: { alignSelf: 'flex-start', marginTop: 8 },
-    h3: { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20, fontWeight: '700', color: colors.text },
+    h3: { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 20, fontWeight: semibold, color: colors.text },
     where: { fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
     stat: { fontSize: 12, lineHeight: 18, color: colors.muted, marginTop: 2 },
     // Green text token, never the green fill colour.
-    registered: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.positive },
-    live: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.positive },
+    registered: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.positive },
+    live: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.positive },
     note: { fontSize: 13, color: colors.muted, paddingHorizontal: 20, paddingVertical: 14 },
     error: { color: colors.danger },
     footnote: { fontSize: 12, lineHeight: 17, color: colors.muted, paddingHorizontal: 20, paddingTop: 16 },
@@ -301,5 +300,5 @@ const makeStyles = (colors: ThemeColors) =>
     },
     menuRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44, paddingHorizontal: 16 },
     menuText: { flexShrink: 1, fontSize: 14, color: colors.text },
-    menuTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700' },
+    menuTextActive: { fontFamily: fonts.bodyBold, fontWeight: semibold },
   });

@@ -31,6 +31,8 @@ import type {
   MemberLookupBody,
   MemberLookupRequest,
   PresenceRequest,
+  PrivacyRequestCreate,
+  PrivacyRequestResponse,
   ProfileBody,
   RegisterMemberBody,
   RegisterMemberRequest,
@@ -156,4 +158,9 @@ export const coreApi = {
   reportMessage: (messageId: string, body: MessageReportRequest) =>
     client.post<MessageReportResponse>(`${messagePath(messageId)}/report`, body),
   blockMember: (memberId: string) => client.post<void>('/v1/members/block', { member_id: memberId }),
+
+  // Files a request to delete this member's account (202). Pass the same
+  // idempotencyKey when retrying the same request.
+  requestAccountDeletion: (options: RequestOptions) =>
+    client.post<PrivacyRequestResponse>('/v1/me/privacy-requests', { request_type: 'DELETE' } satisfies PrivacyRequestCreate, options),
 };

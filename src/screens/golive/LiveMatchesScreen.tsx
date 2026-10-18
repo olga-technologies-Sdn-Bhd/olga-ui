@@ -14,7 +14,7 @@ import { useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'LiveMatches'>;
 
@@ -29,7 +29,8 @@ export function topMatches(matches: MatchCard[] | null, passedIds: string[]) {
     .slice(0, MAX_SHOWN);
 }
 
-export function MatchSummary({ card }: { card: MatchCard }) {
+// percent replaces the score in a preview (How you appear), where it differs per viewer.
+export function MatchSummary({ card, percent }: { card: MatchCard; percent?: string }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { match, profile } = card;
@@ -41,7 +42,7 @@ export function MatchSummary({ card }: { card: MatchCard }) {
           <Text style={styles.h3}>{profile?.headline || 'Attendee'}</Text>
           {profile?.role_category && <Text style={styles.sub}>{profile.role_category}</Text>}
         </View>
-        <Pill label={`${Math.round(match.score * 100)}%`} tone="positive" />
+        <Pill label={percent ?? `${Math.round(match.score * 100)}%`} tone="positive" />
       </View>
       {!!match.reason_text && <Text style={styles.reason}>{match.reason_text}</Text>}
     </>
@@ -68,10 +69,10 @@ export function LiveMatchesScreen({ navigation }: Props) {
           e.reason === 'TIMED_OUT'
             ? 'Still matching. Try again in a moment.'
             : e.reason === 'CONSENT_DENIED'
-              ? "Matching is off, so we can't find your matches."
+              ? 'Matching is off.'
               : "Couldn't find relevant people right now."
         );
-      else setError(e instanceof ApiError && e.status > 0 ? `Couldn't load matches (${e.status})` : "Couldn't reach the server");
+      else setError(e instanceof ApiError && e.status > 0 ? `Couldn't load matches (${e.status})` : "Couldn't connect. Try again.");
     }
   }, [activeEvent, runMatching, navigation]);
 
@@ -125,9 +126,9 @@ export function LiveMatchesScreen({ navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, marginTop: 4 },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, color: colors.muted, marginTop: 2 },
     reason: { fontSize: 12, lineHeight: 18, color: colors.text, marginTop: 10 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12 },

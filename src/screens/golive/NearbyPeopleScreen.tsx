@@ -12,7 +12,7 @@ import type { NearbyPerson } from '../../nearby/types';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { NearbyAvatar } from './NearbyView';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'NearbyPeople'>;
@@ -22,7 +22,14 @@ export function scoreLabel(person: Pick<NearbyPerson, 'score' | 'scoreSource'>) 
   return `${person.scoreSource === 'estimate' ? '~' : ''}${Math.round(person.score * 100)}%`;
 }
 
-export function NearbyPersonSummary({ person }: { person: Pick<NearbyPerson, 'card' | 'score' | 'scoreSource'> }) {
+// percent replaces the score in a preview (How you appear), where it differs per viewer.
+export function NearbyPersonSummary({
+  person,
+  percent,
+}: {
+  person: Pick<NearbyPerson, 'card' | 'score' | 'scoreSource'>;
+  percent?: string;
+}) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { card } = person;
@@ -34,7 +41,7 @@ export function NearbyPersonSummary({ person }: { person: Pick<NearbyPerson, 'ca
           <Text style={styles.h3}>{card.h}</Text>
           {!!card.r && <Text style={styles.sub}>{card.r}</Text>}
         </View>
-        <Pill label={scoreLabel(person)} tone="positive" />
+        <Pill label={percent ?? scoreLabel(person)} tone="positive" />
       </View>
       <Text style={styles.label}>Looking for</Text>
       <Text style={styles.want}>{card.w}</Text>
@@ -63,7 +70,7 @@ export function NearbyPeopleScreen({ navigation }: Props) {
 
       {shown.length === 0 && (
         <Card>
-          <Text style={styles.sub}>Nobody nearby right now. People appear here as they come close and go available.</Text>
+          <Text style={styles.sub}>Nobody nearby right now. People appear here as they come close and go live.</Text>
         </Card>
       )}
 
@@ -96,11 +103,11 @@ export function NearbyPeopleScreen({ navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, marginTop: 4 },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, color: colors.muted, marginTop: 2 },
-    label: { fontFamily: fonts.monoBold, fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 12 },
+    label: { fontFamily: fonts.monoBold, fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold, marginTop: 12 },
     want: { fontSize: 13, lineHeight: 19, color: colors.text, marginTop: 4 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     actions: { flexDirection: 'row', gap: 10, marginTop: 12 },

@@ -1,16 +1,24 @@
 import { CORE_API_URL, NLP_API_URL } from '../config/env';
 
-// The dev Azure containers scale to zero when idle and take ~30-60 s to start
-// on the first request. Pinging /health as soon as the app opens wakes them
-// while the user is still typing their email or entering the Microsoft code,
-// so sign-in doesn't sit on "verifying". Fire-and-forget: errors are ignored.
+// The dev Azure containers scale to zero when idle and can take a minute to
+// start on the first request. Pinging /health wakes them while the user is
+// still busy: on app open, and again when sign-in starts (the app may have
+// been open for hours, long enough for the servers to sleep again), so the
+// code arrives while they start. Fire-and-forget: errors are ignored, and a
+// ping still in flight is not repeated.
+let inFlight = false;
+
 export function warmUpApis() {
-  if (typeof fetch !== 'function') return;
-  for (const base of [CORE_API_URL, NLP_API_URL]) {
+  if (typeof fetch !== 'function' || inFlight) return;
+  inFlight = true;
+  const pings = [CORE_API_URL, NLP_API_URL].map((base) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 90000);
-    fetch(`${base}/health`, { signal: controller.signal })
+    return fetch(`${base}/health`, { signal: controller.signal })
       .catch(() => {})
       .finally(() => clearTimeout(timer));
-  }
+  });
+  Promise.all(pings).finally(() => {
+    inFlight = false;
+  });
 }

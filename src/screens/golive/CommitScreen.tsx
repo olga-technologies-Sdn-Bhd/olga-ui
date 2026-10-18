@@ -13,7 +13,7 @@ import { useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { commitErrorMessage, THEIR_CHOICE_LABEL, WHEN_LABELS } from '../../utils/commitText';
 import { MatchSummary } from './LiveMatchesScreen';
 
@@ -87,7 +87,7 @@ export function CommitScreen({ route, navigation }: Props) {
   const remaining = quota?.remaining;
   const noneLeft = remaining === 0;
   const sendLabel =
-    remaining === undefined ? 'Send commit' : noneLeft ? 'No Commits left in this room' : `Send commit · ${remaining} of ${limit} left in this room`;
+    remaining === undefined ? 'Send Commit' : noneLeft ? 'No Commits left in this room' : `Send Commit · ${remaining} of ${limit} left in this room`;
 
   return (
     <Screen>
@@ -137,7 +137,7 @@ export function CommitScreen({ route, navigation }: Props) {
 
           <View style={styles.consequence}>
             <Text style={styles.consequenceText}>
-              They see your role, intent and this plan. Not your name. If they <Text style={styles.bold}>accept</Text>, you
+              They see your role, what you're looking for and this plan. Not your name. If they <Text style={styles.bold}>accept</Text>, you
               both see names at once. If not, nothing happens and you're never told.
               {activeEvent ? ' The request disappears when the room closes.' : ''}
             </Text>
@@ -168,14 +168,14 @@ export function CommitScreen({ route, navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    eyebrow: { flex: 1, fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 4 },
+    eyebrow: { flex: 1, fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text, marginBottom: 4 },
     sub: { fontSize: 12, lineHeight: 18, color: colors.muted, marginTop: 4 },
-    sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 6 },
+    sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold, marginTop: 6 },
     tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     consequence: { backgroundColor: colors.accentSoft, borderRadius: radius.md, padding: 14, marginTop: 6 },
     consequenceText: { fontSize: 12, lineHeight: 18, color: colors.text },
-    bold: { fontWeight: '800' },
+    bold: { fontWeight: semibold },
     error: { fontSize: 12, color: colors.danger, textAlign: 'center' },
   });

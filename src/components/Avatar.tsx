@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 type Size = 'sm' | 'md' | 'list' | 'lg';
 
@@ -25,14 +25,15 @@ export function Avatar({ initials, size = 'md', dark, light }: Props) {
     () =>
       StyleSheet.create({
         base: {
-          backgroundColor: colors.accentSoft,
+          // Initials on a soft brand tint, like iOS contacts.
+          backgroundColor: colors.accentFill,
           alignItems: 'center',
           justifyContent: 'center',
         },
         text: {
           fontFamily: fonts.bodyBold,
-          fontWeight: '800',
-          color: colors.brand,
+          fontWeight: semibold,
+          color: colors.accent,
         },
         dark: { backgroundColor: colors.charcoal },
         light: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },

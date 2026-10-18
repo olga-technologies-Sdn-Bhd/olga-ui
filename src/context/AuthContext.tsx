@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, newIdempotencyKey, setAccessTokenProvider, setMemberIdProvider } from '../api/client';
+import { ApiError, newIdempotencyKey, setAccessTokenProvider, setMemberIdProvider, withRetries } from '../api/client';
 import { clearCache } from '../api/offlineCache';
 import { coreApi } from '../api/core';
+import { clearNearby } from '../nearby/store';
 import {
   activateMember,
   lookupExistingMember,
@@ -41,15 +42,30 @@ type AuthState = {
   // when the email/phone is already registered elsewhere.
   completeOnboarding: (name: string, mobile: string) => Promise<void>;
   logOut: () => Promise<void>;
+  // Files the deletion request with Core, then signs out and forgets this
+  // member on the phone. Throws ApiError on failure (still signed in). Pass
+  // the same idempotencyKey when retrying.
+  deleteAccount: (idempotencyKey: string) => Promise<void>;
+  // One-off message for the sign-in screen (after a deletion request).
+  notice: string | null;
+  clearNotice: () => void;
 };
+
+export const DELETION_NOTICE = 'Your account has been deleted from Ol-ga. We erase your data within 30 days.';
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
+// The reads that decide who signs in are retried while Core wakes up (dev
+// scales to zero), instead of one long wait that can run out.
 const memberApi: MemberApi = {
-  getMyProfile: (memberId) => coreApi.getMyProfile({ headers: { 'X-Member-Id': memberId } }),
+  getMyProfile: (memberId) => withRetries((timeoutMs) => coreApi.getMyProfile({ headers: { 'X-Member-Id': memberId }, timeoutMs })),
   updateMyProfile: (memberId, body, ifMatch) =>
     coreApi.updateMyProfile(body, ifMatch, { headers: { 'X-Member-Id': memberId } }),
-  lookupMember: (email) => coreApi.lookupMember(email),
+  // Lookup changes nothing, so one key for every attempt is enough.
+  lookupMember: (email) => {
+    const idempotencyKey = newIdempotencyKey();
+    return withRetries((timeoutMs) => coreApi.lookupMember(email, { idempotencyKey, timeoutMs }));
+  },
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -65,6 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const registrationKey = useRef<string | null>(null);
   const restoreChecked = useRef(false);
   const [restoreLookup, setRestoreLookup] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const clearNotice = useCallback(() => setNotice(null), []);
 
   const applyMember = useCallback((next: StoredMember | null) => {
     memberRef.current = next;
@@ -171,9 +189,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       let next: StoredMember;
       try {
-        const registered = await coreApi.registerMember(
-          { display_name: enteredName, email, phone: enteredMobile, visibility: 'MEMBERS' },
-          { idempotencyKey: registrationKey.current }
+        // Same key on every attempt, so a retry never creates a second member.
+        const key = registrationKey.current;
+        const registered = await withRetries((timeoutMs) =>
+          coreApi.registerMember({ display_name: enteredName, email, phone: enteredMobile, visibility: 'MEMBERS' }, { idempotencyKey: key, timeoutMs })
         );
         next = await activateMember(
           {
@@ -216,6 +235,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     applyMember(null);
   }, [entraLogOut, applyMember, persist, member?.member_id]);
 
+  const deleteAccount = useCallback(
+    async (idempotencyKey: string) => {
+      const memberId = member?.member_id;
+      if (!memberId || !email) throw new Error('Not signed in');
+      try {
+        await coreApi.requestAccountDeletion({ idempotencyKey });
+      } catch (error) {
+        // Already requested (e.g. from another phone): same outcome, carry on.
+        const alreadyOpen = error instanceof ApiError && error.status === 409 && error.code === 'PRIVACY_REQUEST_ALREADY_OPEN';
+        if (!alreadyOpen) {
+          // Not a member any more: back to sign-up, as at app start.
+          if (error instanceof ApiError && error.status === 404 && error.code === 'MEMBER_NOT_REGISTERED') {
+            await clearCache(memberId);
+            await persist(withoutMember(await loadMemberStore(), email));
+            applyMember(null);
+          }
+          throw error;
+        }
+      }
+      // Requested: nothing of this member stays on the phone.
+      await clearCache(memberId);
+      await clearNearby(memberId);
+      await entraLogOut();
+      const latest = await loadMemberStore();
+      await persist({ ...withoutMember(latest, email), current: null });
+      registrationKey.current = null;
+      setNotice(DELETION_NOTICE);
+      applyMember(null);
+    },
+    [member?.member_id, email, entraLogOut, applyMember, persist]
+  );
+
   const value = useMemo<AuthState>(
     () => ({
       isAuthenticated: Boolean(accessToken),
@@ -232,8 +283,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelEmail,
       completeOnboarding,
       logOut,
+      deleteAccount,
+      notice,
+      clearNotice,
     }),
-    [accessToken, isRestoring, member, email, login, startEmail, submitEmailCode, resendEmailCode, cancelEmail, completeOnboarding, logOut]
+    [
+      accessToken,
+      isRestoring,
+      member,
+      email,
+      login,
+      startEmail,
+      submitEmailCode,
+      resendEmailCode,
+      cancelEmail,
+      completeOnboarding,
+      logOut,
+      deleteAccount,
+      notice,
+      clearNotice,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

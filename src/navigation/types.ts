@@ -10,6 +10,8 @@ export type HomeStackParamList = {
   Home: undefined;
   Profile: undefined;
   ProfileSetup: undefined;
+  DeleteAccount: undefined;
+  HowYouAppear: undefined;
 };
 
 export type GoLiveStackParamList = {

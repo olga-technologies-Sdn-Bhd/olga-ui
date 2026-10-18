@@ -13,7 +13,7 @@ import { useEvents } from '../../context/EventsContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'WhosGoing'>;
 
@@ -35,12 +35,12 @@ export function WhosGoingScreen({ route, navigation }: Props) {
       const code = e instanceof ApiError ? e.code : undefined;
       setError(
         code === 'EVENT_REGISTRATION_REQUIRED'
-          ? "Sign up for this event to see who's going."
+          ? "Register for this event to see who's going."
           : code === 'EVENT_NOT_FOUND'
             ? 'This event is no longer available.'
             : e instanceof ApiError && e.status > 0
               ? `Couldn't load who's going (${e.status})`
-              : "Couldn't reach the server"
+              : "Couldn't connect. Try again."
       );
     }
   }, [route.params.eventId]);
@@ -102,7 +102,7 @@ export function WhosGoingScreen({ route, navigation }: Props) {
           <Button label="Try again" variant="secondary" small onPress={load} />
         </View>
       )}
-      {data && attendees.length === 0 && <Text style={styles.note}>You're among the first to sign up.</Text>}
+      {data && attendees.length === 0 && <Text style={styles.note}>You're among the first to register.</Text>}
 
       {shown.length > 0 && (
         <View style={styles.list}>
@@ -131,7 +131,7 @@ export function WhosGoingScreen({ route, navigation }: Props) {
 // Same number as the event page; the list itself leaves out you (and anyone
 // you've blocked), so say so when they differ.
 function countLine(shown: number, signedUp?: number) {
-  return typeof signedUp === 'number' && signedUp !== shown ? `shown here, of ${signedUp} signed up` : 'signed up';
+  return typeof signedUp === 'number' && signedUp !== shown ? `shown here, of ${signedUp} registered` : 'registered';
 }
 
 // "PRODUCT_MANAGEMENT" -> "Product management"
@@ -147,7 +147,7 @@ const makeStyles = (colors: ThemeColors) =>
     summary: { gap: 6, marginTop: 4 },
     event: { fontSize: 13, color: colors.muted },
     countRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-    count: { fontFamily: fonts.headingBold, fontSize: 34, lineHeight: 38, fontWeight: '800', color: colors.text },
+    count: { fontFamily: fonts.headingBold, fontSize: 34, lineHeight: 38, fontWeight: semibold, color: colors.text },
     countLabel: { flex: 1, fontSize: 14, color: colors.muted },
     privacy: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     privacyText: { flex: 1, fontSize: 12, lineHeight: 17, color: colors.muted },
@@ -162,7 +162,7 @@ const makeStyles = (colors: ThemeColors) =>
       backgroundColor: colors.accentSoft,
     },
     roleText: { fontSize: 12, color: colors.text },
-    roleCount: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.text },
+    roleCount: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: semibold, color: colors.text },
     loading: { marginTop: 24 },
     error: { gap: 10 },
     note: { fontSize: 13, lineHeight: 18, color: colors.muted },
@@ -177,8 +177,8 @@ const makeStyles = (colors: ThemeColors) =>
       borderBottomWidth: 1,
       borderBottomColor: colors.line,
     },
-    headline: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 19, fontWeight: '700', color: colors.text },
+    headline: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 19, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, color: colors.muted, marginTop: 2 },
     more: { alignSelf: 'center', minHeight: 40, justifyContent: 'center', paddingHorizontal: 12 },
-    moreText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text, textDecorationLine: 'underline' },
+    moreText: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text, textDecorationLine: 'underline' },
   });

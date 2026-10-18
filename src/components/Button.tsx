@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 // charcoal: Commit / Accept (navy, white text in both themes).
-type Variant = 'primary' | 'secondary' | 'ghost' | 'charcoal';
+// danger: an action that can't be undone (Delete account).
+type Variant = 'primary' | 'secondary' | 'ghost' | 'charcoal' | 'danger';
 
 type Props = {
   label: string;
@@ -17,9 +18,11 @@ type Props = {
   // For a ghost/secondary button placed on a dark/gradient card, where the
   // normal blue-on-blue text+border would be unreadable — forces white.
   onDark?: boolean;
+  // Overrides the label colour (e.g. red text on an outlined destructive button).
+  labelColor?: string;
 };
 
-export function Button({ label, onPress, variant = 'primary', loading, disabled, small, style, onDark }: Props) {
+export function Button({ label, onPress, variant = 'primary', loading, disabled, small, style, onDark, labelColor }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(
     () =>
@@ -35,13 +38,15 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
         },
         primary: { backgroundColor: colors.brand },
         charcoal: { backgroundColor: colors.charcoal },
+        danger: { backgroundColor: colors.danger },
         secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },
         ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.brand2 },
         ghostOnDark: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
         small: { paddingVertical: 10, paddingHorizontal: 14, minHeight: 44, borderRadius: 999 },
         disabled: { opacity: 0.5 },
-        pressed: { opacity: 0.85 },
-        label: { fontFamily: fonts.bodyBold, fontWeight: '700', fontSize: 14 },
+        // A gentle press-in, like iOS buttons.
+        pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+        label: { fontFamily: fonts.bodyBold, fontWeight: semibold, fontSize: 14 },
         labelPrimary: { color: colors.onBrand },
         labelCharcoal: { color: colors.white },
         labelSecondary: { color: colors.text },
@@ -63,6 +68,7 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
         styles.base,
         variant === 'primary' && styles.primary,
         variant === 'charcoal' && styles.charcoal,
+        variant === 'danger' && styles.danger,
         variant === 'secondary' && styles.secondary,
         variant === 'ghost' && ghostStyle,
         small && styles.small,
@@ -72,16 +78,17 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.onBrand : variant === 'charcoal' ? colors.white : colors.brand} />
+        <ActivityIndicator color={variant === 'primary' ? colors.onBrand : variant === 'charcoal' || variant === 'danger' ? colors.white : colors.brand} />
       ) : (
         <Text
           style={[
             styles.label,
             variant === 'primary' && styles.labelPrimary,
-            variant === 'charcoal' && styles.labelCharcoal,
+            (variant === 'charcoal' || variant === 'danger') && styles.labelCharcoal,
             variant === 'secondary' && styles.labelSecondary,
             variant === 'ghost' && ghostLabelStyle,
             small && styles.labelSmall,
+            !!labelColor && { color: labelColor },
           ]}
         >
           {label}

@@ -18,7 +18,7 @@ import { isOffensive } from '../../chat/moderation';
 import { ChatStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { formatRelativeTime } from '../../utils/chatTime';
 import { getInitials } from '../../utils/initials';
 import { usePollWhileFocused } from '../../utils/usePollWhileFocused';
@@ -206,7 +206,7 @@ function ChatRow({
   return (
     <Pressable
       onPress={onPress}
-      android_ripple={{ color: colors.accentSoft }}
+      android_ripple={{ color: colors.accentFill }}
       style={({ pressed }) => [styles.row, pressed && Platform.OS === 'ios' && styles.rowPressed]}
       accessibilityRole="button"
       accessibilityLabel={`${name}${hasUnread ? `, ${unread} unread` : ''}`}
@@ -247,14 +247,14 @@ const makeStyles = (colors: ThemeColors) =>
     // Edge to edge, like a chat list.
     list: { marginHorizontal: -20, backgroundColor: colors.surface },
     row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: 16 },
-    rowPressed: { backgroundColor: colors.accentSoft },
+    rowPressed: { backgroundColor: colors.accentFill },
     // The divider starts after the avatar.
     rowBody: { flex: 1, gap: 2, paddingVertical: 12, paddingRight: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
     line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
     // As in WhatsApp: a medium-weight name, not heavy bold.
-    name: { flex: 1, fontFamily: fonts.bodyRegular, fontSize: 16, fontWeight: '600', color: colors.text },
+    name: { flex: 1, fontFamily: fonts.bodyRegular, fontSize: 16, fontWeight: semibold, color: colors.text },
     time: { fontSize: 12, color: colors.muted },
-    timeUnread: { color: colors.brand, fontWeight: '700' },
+    timeUnread: { color: colors.accent, fontWeight: semibold },
     preview: { flex: 1, fontSize: 14, lineHeight: 18, color: colors.muted },
     previewUnread: { color: colors.text },
     marks: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -263,11 +263,11 @@ const makeStyles = (colors: ThemeColors) =>
       height: 22,
       borderRadius: 11,
       paddingHorizontal: 6,
-      backgroundColor: colors.ink,
+      backgroundColor: colors.accent,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    badgeText: { color: colors.onInk, fontSize: 12, fontWeight: '800' },
+    badgeText: { color: colors.white, fontSize: 12, fontWeight: semibold },
     empty: { alignItems: 'center', gap: 6, paddingVertical: 40 },
-    emptyTitle: { fontFamily: fonts.headingBold, fontSize: 16, fontWeight: '700', color: colors.text },
+    emptyTitle: { fontFamily: fonts.headingBold, fontSize: 16, fontWeight: semibold, color: colors.text },
   });

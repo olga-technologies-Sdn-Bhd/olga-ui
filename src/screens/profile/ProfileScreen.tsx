@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronRight } from 'lucide-react-native';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BriefcaseBusiness, ChevronRight, Eye, Hash, LogOut, LucideIcon, Mail, Moon, Phone, Search, Server } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
@@ -15,7 +15,8 @@ import { useLive } from '../../context/LiveContext';
 import { HomeStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
+import { showDialog } from '../../components/DialogHost';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Profile'>;
 
@@ -46,7 +47,7 @@ export function ProfileScreen({ navigation }: Props) {
   }, [memberId]);
 
   function confirmLogOut() {
-    Alert.alert('Log out?', 'You can sign back in any time with the same email.', [
+    showDialog('Log out?', 'You can sign back in any time with the same email.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Log out',
@@ -60,12 +61,12 @@ export function ProfileScreen({ navigation }: Props) {
           }
         },
       },
-    ]);
+    ], { icon: LogOut });
   }
 
   return (
     <Screen>
-      <BackHeader onBack={() => navigation.goBack()} title="Profile" />
+      <BackHeader onBack={() => navigation.goBack()} title="Account" />
 
       <View style={styles.identity}>
         <Avatar initials={(name ?? '?').slice(0, 1).toUpperCase()} size="lg" />
@@ -80,9 +81,23 @@ export function ProfileScreen({ navigation }: Props) {
           accessibilityRole="button"
           style={({ pressed }) => [styles.row, pressed && styles.pressed]}
         >
+          <RowIcon icon={BriefcaseBusiness} styles={styles} colors={colors} />
           <View style={styles.rowText}>
             <Text style={styles.label}>Your work and About you</Text>
             <Text style={styles.sub}>What relevant people see first</Text>
+          </View>
+          <ChevronRight size={18} color={colors.muted} />
+        </Pressable>
+        <View style={styles.divider} />
+        <Pressable
+          onPress={() => navigation.navigate('HowYouAppear')}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+        >
+          <RowIcon icon={Eye} styles={styles} colors={colors} />
+          <View style={styles.rowText}>
+            <Text style={styles.label}>How you appear</Text>
+            <Text style={styles.sub}>What people see before you both accept</Text>
           </View>
           <ChevronRight size={18} color={colors.muted} />
         </Pressable>
@@ -93,6 +108,7 @@ export function ProfileScreen({ navigation }: Props) {
           accessibilityRole="button"
           style={({ pressed }) => [styles.row, pressed && styles.pressed]}
         >
+          <RowIcon icon={Search} styles={styles} colors={colors} />
           <View style={styles.rowText}>
             <Text style={styles.label}>What you're looking for</Text>
             <Text style={styles.sub} numberOfLines={2}>
@@ -105,23 +121,24 @@ export function ProfileScreen({ navigation }: Props) {
 
       <Text style={styles.sectionTitle}>Account</Text>
       <Card style={styles.list}>
-        <Row label="Email" value={email} styles={styles} />
+        <Row icon={Mail} label="Email" value={email} styles={styles} colors={colors} />
         <View style={styles.divider} />
-        <Row label="Mobile" value={mobile ?? phoneHint} styles={styles} />
+        <Row icon={Phone} label="Mobile" value={mobile ?? phoneHint} styles={styles} colors={colors} />
         <View style={styles.divider} />
-        <Row label="Member ID" value={memberId} styles={styles} small />
+        <Row icon={Hash} label="Member ID" value={memberId} styles={styles} colors={colors} small />
         {/* Which backend this build talks to. For the team only: production
             builds never show it. */}
         {APP_ENV !== 'prod' && (
           <>
             <View style={styles.divider} />
-            <Row label="Environment" value={APP_ENV} styles={styles} small />
+            <Row icon={Server} label="Environment" value={APP_ENV} styles={styles} colors={colors} small />
           </>
         )}
       </Card>
 
       <Text style={styles.sectionTitle}>Appearance</Text>
       <Card style={styles.row}>
+        <RowIcon icon={Moon} styles={styles} colors={colors} />
         <View style={styles.rowText}>
           <Text style={styles.label}>Dark mode</Text>
           <Text style={styles.sub}>{scheme === 'dark' ? 'On' : 'Off'} — applies across the app</Text>
@@ -130,43 +147,69 @@ export function ProfileScreen({ navigation }: Props) {
       </Card>
 
       <Button label="Log out" variant="secondary" loading={loggingOut} onPress={confirmLogOut} style={styles.logout} />
+      <Pressable
+        onPress={() => navigation.navigate('DeleteAccount')}
+        accessibilityRole="button"
+        hitSlop={8}
+        style={({ pressed }) => [styles.delete, pressed && styles.pressed]}
+      >
+        <Text style={styles.deleteLabel}>Delete account</Text>
+      </Pressable>
     </Screen>
   );
 }
 
 function Row({
+  icon,
   label,
   value,
   styles,
+  colors,
   small,
 }: {
+  icon: LucideIcon;
   label: string;
   value: string | null;
   styles: ReturnType<typeof makeStyles>;
+  colors: ThemeColors;
   small?: boolean;
 }) {
   return (
     <View style={styles.row}>
+      <RowIcon icon={icon} styles={styles} colors={colors} />
       <Text style={styles.label}>{label}</Text>
-      <Text style={[styles.value, small && styles.valueSmall]} numberOfLines={1} selectable>
+      <Text style={[styles.value, small && styles.valueSmall]} numberOfLines={1} ellipsizeMode="middle">
         {value ?? '—'}
       </Text>
     </View>
   );
 }
 
+// A menu row's leading icon, in the brand colour (like a settings list).
+function RowIcon({ icon: Icon, styles, colors }: { icon: LucideIcon; styles: ReturnType<typeof makeStyles>; colors: ThemeColors }) {
+  return (
+    <View style={styles.rowIcon}>
+      <Icon size={19} color={colors.accent} strokeWidth={2} />
+    </View>
+  );
+}
+
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   identity: { alignItems: 'center', gap: 6, marginTop: 4 },
-  h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 8 },
+  h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, marginTop: 8 },
   sub: { fontSize: 12, color: colors.muted },
-  sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 10 },
+  sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold, marginTop: 10 },
   list: { paddingVertical: 4 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 10 },
   rowText: { flex: 1 },
+  rowIcon: { width: 22, alignItems: 'center' },
   pressed: { opacity: 0.7 },
-  label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
-  value: { fontSize: 13, color: colors.muted, flexShrink: 1, textAlign: 'right' },
+  label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text },
+  // Takes the rest of the row, so the label stays beside its icon.
+  value: { flex: 1, fontSize: 13, color: colors.muted, textAlign: 'right' },
   valueSmall: { fontSize: 11 },
-  divider: { height: 1, backgroundColor: colors.line },
+  divider: { height: 1, backgroundColor: colors.line, marginLeft: 34 },
   logout: { marginTop: 8 },
+  delete: { alignSelf: 'center', paddingVertical: 10 },
+  deleteLabel: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.danger },
 });

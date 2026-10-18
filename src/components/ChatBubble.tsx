@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 type Props = {
   from: 'them' | 'me';
@@ -71,7 +71,7 @@ export function ChatBubble({ from, text, person, time, status, deleted, hidden, 
         },
         meta: { fontSize: 9, color: colors.muted, marginTop: 3 },
         metaMe: { textAlign: 'right' },
-        failed: { fontSize: 11, color: colors.danger, marginTop: 4, textAlign: 'right', fontWeight: '700' },
+        failed: { fontSize: 11, color: colors.danger, marginTop: 4, textAlign: 'right', fontWeight: semibold },
       }),
     [colors]
   );

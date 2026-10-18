@@ -1,18 +1,21 @@
+import { CircleAlert, MailX, Phone, UserRound } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
 import { OtpEntry } from '../../components/OtpEntry';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { SocialSignInButton } from '../../components/SocialSignInButton';
+import { warmUpApis } from '../../api/warmup';
 import { MemberRecoveryUnavailableError } from '../../auth/memberSession';
 import { isExpiredSession, isInvalidCode, NativeAuthError } from '../../auth/nativeAuthClient';
 import { EntraProvider, isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
+import { showDialog } from '../../components/DialogHost';
 
 type Step = 'email' | 'verifying' | 'otp' | 'name' | 'mobile' | 'registering';
 
@@ -22,7 +25,7 @@ type Step = 'email' | 'verifying' | 'otp' | 'name' | 'mobile' | 'registering';
 export function SignUpScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { login, startEmail, submitEmailCode, resendEmailCode, cancelEmail, completeOnboarding, logOut, isAuthenticated } =
+  const { login, startEmail, submitEmailCode, resendEmailCode, cancelEmail, completeOnboarding, logOut, isAuthenticated, notice, clearNotice } =
     useAuth();
   // Already signed in to Entra but no Olga member yet (e.g. restored session
   // whose member was removed) -> only name + mobile are needed, no new OTP.
@@ -48,6 +51,8 @@ export function SignUpScreen() {
   async function signIn(options: { loginHint?: string; provider?: EntraProvider }, shown: string) {
     if (inProgress.current) return;
     inProgress.current = true;
+    clearNotice();
+    warmUpApis(); // Core starts while the user signs in with Google/Apple
     setEmail(shown);
     setStep('verifying');
     try {
@@ -61,7 +66,7 @@ export function SignUpScreen() {
       setEmail('');
       setStep('email');
       if (!isUserCancelledLogin(error)) {
-        Alert.alert('Sign-in failed', "Something went wrong signing you in. Please try again.");
+        showDialog('Sign-in failed', 'Something went wrong signing you in. Please try again.', undefined, { icon: CircleAlert, tone: 'danger' });
       }
     } finally {
       inProgress.current = false;
@@ -74,6 +79,8 @@ export function SignUpScreen() {
   async function handleEmailSubmit(value: string) {
     if (inProgress.current) return;
     inProgress.current = true;
+    clearNotice();
+    warmUpApis(); // Core starts while the user fetches the code
     setEmail(value);
     setStep('verifying');
     let result;
@@ -82,11 +89,13 @@ export function SignUpScreen() {
     } catch (error) {
       setEmail('');
       setStep('email');
-      Alert.alert(
+      showDialog(
         "Couldn't send a code",
         error instanceof NativeAuthError && error.code === 'network_error'
           ? 'Check your connection and try again.'
-          : 'Something went wrong. Please try again.'
+          : 'Something went wrong. Please try again.',
+        undefined,
+        { icon: MailX, tone: 'danger' }
       );
       inProgress.current = false;
       return;
@@ -143,7 +152,7 @@ export function SignUpScreen() {
     // Olga.Core only accepts E.164 (+<country code><number>).
     const e164 = value.replace(/[\s\-().]/g, '');
     if (!/^\+[1-9]\d{7,14}$/.test(e164)) {
-      Alert.alert('Check your number', 'Please include your country code, e.g. +60 12 345 6789.');
+      showDialog('Check your number', 'Please include your country code, e.g. +60 12 345 6789.', undefined, { icon: Phone });
       return;
     }
     setMobile(value);
@@ -155,10 +164,9 @@ export function SignUpScreen() {
       if (error instanceof MemberRecoveryUnavailableError) {
         // Registered on another device / before a reinstall; retrying can't
         // help until the backend can look the member up, so sign out.
-        Alert.alert(
-          'Already registered',
-          "This email or number already has an Ol-ga account, but signing back in on a new or reinstalled device isn't available yet. Please contact Ol-ga support."
-        );
+        showDialog('Already registered', 'This email or mobile number is already on Ol-ga. Please contact Ol-ga support.', undefined, {
+          icon: UserRound,
+        });
         await logOut();
         setName('');
         setEmail('');
@@ -166,7 +174,7 @@ export function SignUpScreen() {
         return;
       }
       setStep('mobile');
-      Alert.alert('Could not create your profile', 'Please check your connection and try again.');
+      showDialog("Couldn't create your profile", 'Please check your connection and try again.', undefined, { icon: CircleAlert, tone: 'danger' });
     }
   }
 
@@ -184,6 +192,7 @@ export function SignUpScreen() {
       </Text>
 
       <View style={styles.chatStack}>
+        {notice !== null && step === 'email' && <ChatBubble from="them" text={notice} />}
         <ChatBubble
           from="them"
           text="Hi, I'm Ol-ga. It's lovely to have you here. What's your email? I'll send a one-time code to it. Already with us? The same email brings you right back in."
@@ -207,7 +216,7 @@ export function SignUpScreen() {
         {(step === 'mobile' || step === 'registering') && (
           <ChatBubble
             from="them"
-            text={`Lovely to meet you, ${name}. What's the best number to reach you on? I'll only use it to coordinate your meetups.`}
+            text={`Lovely to meet you, ${name}. What's the best number to reach you on? I'll only use it to arrange your meetings.`}
           />
         )}
         {mobile !== '' && <ChatBubble from="me" text={mobile} />}
@@ -246,16 +255,16 @@ export function SignUpScreen() {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    logo: { fontFamily: fonts.headingExtraBold, fontWeight: '800', letterSpacing: 3, fontSize: 13, color: colors.text },
+    logo: { fontFamily: fonts.headingExtraBold, fontWeight: semibold, letterSpacing: 3, fontSize: 13, color: colors.text },
     eyebrow: {
       fontFamily: fonts.monoBold,
       fontSize: 11,
       letterSpacing: 1.5,
       textTransform: 'uppercase',
       color: colors.muted,
-      fontWeight: '700',
+      fontWeight: semibold,
     },
-    h1: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 8 },
+    h1: { fontFamily: fonts.headingExtraBold, fontSize: 22, fontWeight: semibold, color: colors.text, marginTop: 8 },
     sub: { fontSize: 13, lineHeight: 19, color: colors.muted },
     chatStack: { gap: 10, marginTop: 6 },
     dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },

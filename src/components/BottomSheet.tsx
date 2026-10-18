@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, Vie
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 type Props = {
   visible: boolean;
@@ -73,7 +73,7 @@ const makeStyles = (colors: ThemeColors) =>
       paddingTop: 10,
     },
     handle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.line, marginBottom: 14 },
-    title: { fontFamily: fonts.headingExtraBold, fontSize: 19, fontWeight: '800', color: colors.text },
+    title: { fontFamily: fonts.headingExtraBold, fontSize: 19, fontWeight: semibold, color: colors.text },
     subtitle: { fontSize: 14, lineHeight: 20, color: colors.muted, marginTop: 6 },
     body: { marginTop: 14, gap: 8 },
     option: {
@@ -89,7 +89,7 @@ const makeStyles = (colors: ThemeColors) =>
     },
     optionSelected: { backgroundColor: colors.brandSoft, borderColor: colors.brandSoft },
     optionPressed: { backgroundColor: colors.surface2 },
-    optionText: { fontSize: 15, fontWeight: '600', color: colors.text },
+    optionText: { fontSize: 15, fontWeight: semibold, color: colors.text },
     optionDanger: { color: colors.danger },
-    check: { fontSize: 15, fontWeight: '800', color: colors.text },
+    check: { fontSize: 15, fontWeight: semibold, color: colors.text },
   });

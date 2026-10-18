@@ -22,7 +22,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ChatStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { dayKey, formatClock, formatDayLabel } from '../../utils/chatTime';
 import { getInitials } from '../../utils/initials';
 import { usePollWhileFocused } from '../../utils/usePollWhileFocused';
@@ -823,12 +823,12 @@ const makeStyles = (colors: ThemeColors) =>
       letterSpacing: 1.5,
       textTransform: 'uppercase',
       color: colors.text,
-      fontWeight: '700',
+      fontWeight: semibold,
     },
     h3: {
       fontFamily: fonts.headingBold,
       fontSize: 16,
-      fontWeight: '700',
+      fontWeight: semibold,
       color: colors.text,
     },
     sub: { fontSize: 14, lineHeight: 20, color: colors.muted, marginTop: 6 },
@@ -840,7 +840,7 @@ const makeStyles = (colors: ThemeColors) =>
     dayRow: { alignItems: 'center', marginVertical: 4 },
     dayChip: {
       fontSize: 11,
-      fontWeight: '600',
+      fontWeight: semibold,
       color: colors.muted,
       backgroundColor: colors.surface,
       borderRadius: 8,

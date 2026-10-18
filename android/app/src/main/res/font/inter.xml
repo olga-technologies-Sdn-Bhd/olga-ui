@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Inter (SIL Open Font License, src/assets/fonts/Inter-LICENSE.txt). React Native on Android
+     only tells custom fonts "normal" or "bold", so bold maps to Inter SemiBold: the app's
+     headings and actions use SemiBold (see src/theme/typography.ts). -->
+<font-family xmlns:app="http://schemas.android.com/apk/res-auto">
+    <font app:fontStyle="normal" app:fontWeight="400" app:font="@font/inter_regular" />
+    <font app:fontStyle="normal" app:fontWeight="700" app:font="@font/inter_semibold" />
+</font-family>

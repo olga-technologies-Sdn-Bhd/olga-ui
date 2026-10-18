@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { Button } from './Button';
+import { semibold } from '../theme/typography';
 
 type Props = {
   codeLength: number;
@@ -124,6 +125,6 @@ const makeStyles = (colors: ThemeColors) =>
     sub: { fontSize: 13, color: colors.muted },
     error: { fontSize: 13, color: colors.danger },
     links: { flexDirection: 'row', justifyContent: 'space-between' },
-    link: { fontSize: 13, fontWeight: '600', color: colors.text },
+    link: { fontSize: 13, fontWeight: semibold, color: colors.text },
     linkDisabled: { color: colors.muted },
   });

@@ -3,7 +3,7 @@ import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-nativ
 import Svg, { Circle } from 'react-native-svg';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 import { PulseRings } from './PulseRings';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -111,7 +111,7 @@ export function GoLiveDisc({
           disabled={disabled || locked}
           accessibilityRole="button"
           accessibilityLabel={accessibilityLabel ?? label}
-          accessibilityHint={canHold ? 'Press and hold to go live' : undefined}
+          accessibilityHint={canHold ? 'Press and hold to Go Live' : undefined}
         >
           <Animated.View
             style={[
@@ -148,6 +148,6 @@ const makeStyles = (colors: ThemeColors) =>
       paddingHorizontal: 14,
     },
     pearl: { borderWidth: 1, borderColor: colors.line },
-    label: { fontFamily: fonts.headingExtraBold, fontSize: 20, fontWeight: '800', letterSpacing: 0.5 },
-    caption: { fontFamily: fonts.monoBold, fontSize: 9, letterSpacing: 1.5, fontWeight: '700', marginTop: 4, opacity: 0.85 },
+    label: { fontFamily: fonts.headingExtraBold, fontSize: 20, fontWeight: semibold, letterSpacing: 0.5 },
+    caption: { fontFamily: fonts.monoBold, fontSize: 9, letterSpacing: 1.5, fontWeight: semibold, marginTop: 4, opacity: 0.85 },
   });

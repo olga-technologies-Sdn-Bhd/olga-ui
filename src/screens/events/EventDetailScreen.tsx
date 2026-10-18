@@ -15,7 +15,7 @@ import { usePrefs } from '../../context/PrefsContext';
 import { EventsStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { isEventLive } from './EventsScreen';
 
 type Props = NativeStackScreenProps<EventsStackParamList, 'EventDetail'>;
@@ -108,7 +108,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
       if (e instanceof ApiError && e.code === 'EVENT_NOT_FOUND') {
         setError('This event was cancelled.');
       } else {
-        setError(e instanceof ApiError && e.status > 0 ? `Couldn't register (${e.status})` : "Couldn't reach the server");
+        setError(e instanceof ApiError && e.status > 0 ? `Couldn't register (${e.status})` : "Couldn't connect. Try again.");
       }
       if (e instanceof ApiError) console.warn(`Event registration failed (${e.code}), correlation_id=${e.correlationId}`);
     } finally {
@@ -156,7 +156,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
         <View style={styles.flex}>
           <Text style={styles.goingTitle}>
             {typeof event.attendee_count === 'number'
-              ? `${event.attendee_count.toLocaleString('en-US')} ${event.attendee_count === 1 ? 'professional' : 'professionals'} signed up`
+              ? `${event.attendee_count.toLocaleString('en-US')} ${event.attendee_count === 1 ? 'professional' : 'professionals'} registered`
               : "See who's going"}
           </Text>
           {open && matchCount !== null && matchCount > 0 ? (
@@ -231,21 +231,21 @@ export function EventDetailScreen({ route, navigation }: Props) {
               <Check size={16} color={colors.positive} strokeWidth={3} />
             </View>
             <View style={styles.flex}>
-              <Text style={styles.h3}>{checkedIn ? "You're checked in" : "You're signed up"}</Text>
+              <Text style={styles.h3}>{checkedIn ? "You're checked in" : "You're registered"}</Text>
               <Text style={styles.sub}>
                 {open
                   ? "You stay private until you Go Live in the room."
                   : "You stay private until you Go Live. It opens on the day, once you check in at the badge desk."}
               </Text>
               {awaitingCheckIn && (
-                <Text style={styles.sub}>This event needs check-in: check in at the badge desk before you appear in matches.</Text>
+                <Text style={styles.sub}>Check in at the badge desk to appear to relevant people.</Text>
               )}
             </View>
           </View>
           {open && event.live_mode_enabled && <Button label="Go Live" variant="charcoal" onPress={handleGoLive} />}
         </>
       ) : (
-        <Button label="Sign up for this event" onPress={handleRegister} loading={registering} />
+        <Button label="Register for this event" onPress={handleRegister} loading={registering} />
       )}
     </Screen>
   );
@@ -258,12 +258,12 @@ const makeStyles = (colors: ThemeColors) =>
     pressed: { opacity: 0.7 },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     space: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 21, lineHeight: 26, fontWeight: '800', color: colors.text },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 21, lineHeight: 26, fontWeight: semibold, color: colors.text },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
     section: { gap: 8, marginTop: 8 },
-    sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: '700', color: colors.text },
-    link: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text, textDecorationLine: 'underline' },
+    sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: semibold, color: colors.text },
+    link: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text, textDecorationLine: 'underline' },
     // Attendance: a full-width row between hairlines.
     going: {
       flexDirection: 'row',
@@ -284,9 +284,9 @@ const makeStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    goingTitle: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    goingTitle: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: semibold, color: colors.text },
     goingSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
-    goingMatch: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: '700', color: colors.positive, marginTop: 2 },
+    goingMatch: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: semibold, color: colors.positive, marginTop: 2 },
     description: { lineHeight: 20, color: colors.text, fontSize: 14 },
     editor: { gap: 8 },
     editorActions: { flexDirection: 'row', gap: 8 },
@@ -315,7 +315,7 @@ const makeStyles = (colors: ThemeColors) =>
       padding: 14,
     },
     plus: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center' },
-    intentPrompt: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: '700', color: colors.text },
+    intentPrompt: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: semibold, color: colors.text },
     hint: { fontSize: 11, color: colors.muted },
     error: { color: colors.danger, fontSize: 12 },
     signedUp: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 8 },

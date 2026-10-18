@@ -22,9 +22,12 @@ How it works:
 ## Frontend developers: always run on `dev`
 
 1. `npm install`
-2. Start Metro: `npm start`
-3. Connect an Android phone by USB (or start an emulator), then run `npm run android`.
-   On a physical phone, if the app can't load the bundle, run `adb reverse tcp:8081 tcp:8081`.
+2. Run the app on dev. One command starts Metro for dev and builds and launches the app:
+   - Android phone (USB) or emulator: `npm run android:dev`
+   - iPhone or simulator: `npm run ios:dev` (add `-- --device "My iPhone"` or `-- --simulator "iPhone 17"` to pick one)
+
+   On a physical Android phone, if the app can't load the bundle, run `adb reverse tcp:8081 tcp:8081`.
+3. If Metro is already running on port 8081 (from another terminal), stop it first. The command refuses to start, so a dev app never gets a production bundle.
 4. Sign in. Microsoft handles the email code, Google and Apple (Entra External ID, dev tenant).
 5. Open **Profile** (tap your avatar). The **Environment** row should say `dev`.
 
@@ -37,23 +40,41 @@ Good to know:
 
 Production data is real. Use a production build only for release and for agreed production checks.
 
-**Android**
+**Dev and prod install side by side.** Each has its own app ID, launcher name, login and saved data, so a phone can hold both.
+
+| | Dev | Prod |
+| --- | --- | --- |
+| iOS bundle ID | `com.olga.dev.connect` (name "Ol-ga Dev") | `com.olga.connect` ("Ol-ga") |
+| Android app ID | `com.olga.connect.dev` (name "Ol-ga Dev") | `com.olga.connect` ("Ol-ga") |
+| Run on a device | `npm run ios:dev`, `npm run android:dev` | `npm run ios:prod`, `npm run android:prod` |
+
+Each run command sets `OLGA_ENV`, the app ID and the sign-in scheme together and starts the matching Metro, so there is nothing to edit by hand. Metro and the native build must use the same environment, or sign-in can't return to the app.
+
+**Android release**
 
 | Goal | Command |
 | --- | --- |
-| Debug build against production (needs Metro) | `npm run start:prod`, then in a second terminal `npm run android:prod` |
 | Release bundle (AAB) | `npm run build:android:prod` |
 
-Both commands set `OLGA_ENV=prod` for you. To run Gradle yourself, set the variable first (PowerShell: `$env:OLGA_ENV='prod'`; bash: `export OLGA_ENV=prod`).
+This sets `OLGA_ENV=prod` for you. To run Gradle yourself, set the variable first (PowerShell: `$env:OLGA_ENV='prod'`; bash: `export OLGA_ENV=prod`). A release build must name its environment.
 
-Metro and the native build must use the same environment. If they differ, sign-in can't return to the app. The dev and production builds share one app ID (`com.olga.connect`), so a phone holds one of them at a time.
-
-The release build is still signed with the debug keystore. A store upload needs the real upload keystore, which is not in this repo.
+The release build is signed with the Play upload key when `OLGA_UPLOAD_KEY_PROPERTIES` is set (required for a production release).
 
 **iOS**
 
-- **Release builds (TestFlight, App Store) are always production.** The Release `OLGA_AUTH_SCHEME` is `olga` in the Xcode project, and `ios/.xcode.env` sets `OLGA_ENV=prod` for the Release bundle. There is nothing to set by hand.
-- **Debug builds stay on dev**, with the `olga-dev` scheme, unless you start Metro on production. For a production debug build on a phone, run `npm run start:prod`, set the Debug `OLGA_AUTH_SCHEME` to `olga` in Xcode, and revert both afterwards.
+- **Release builds (TestFlight, App Store)** are production (`com.olga.connect`) when you use Product > Archive in Xcode. The Release `OLGA_AUTH_SCHEME` is `olga` in the Xcode project, and `ios/.xcode.env` sets `OLGA_ENV` from the `OLGA_BUNDLE_ENV` build setting (default `prod`).
+- **Archive commands** (they also open the archive in the Organizer and print what to do next):
+
+  | Command | App | Profile |
+  | --- | --- | --- |
+  | `npm run ios:archive:prod` | `com.olga.connect`, prod servers | `Olga-Prod` |
+  | `npm run ios:archive:dev` | `com.olga.dev.connect` ("Ol-ga Dev"), dev servers | `Olga-Dev-AppStore` |
+
+  Then in the Organizer: **Distribute App, App Store Connect, Upload**. Raise the build number first (`CURRENT_PROJECT_VERSION`); every upload needs a new one. The command stops with a clear message if the profile or the Apple Distribution certificate is missing.
+- **Debug builds** (`ios:dev`, `ios:prod`) run from Metro. The commands pass the bundle ID and sign-in scheme to Xcode (`OLGA_BUNDLE_ID`, `OLGA_AUTH_SCHEME`), so Debug can be either environment without editing the project.
+- **Apple setup:** `com.olga.dev.connect` must be registered as an App ID under the Olga team (developer.apple.com, Identifiers) before it can be signed for a device. It needs no App Store Connect record unless you want dev builds in TestFlight.
+- **No automatic changes to the Apple account.** `ios:dev` and `ios:prod` never pass `-allowProvisioningUpdates`, so they cannot create profiles, certificates or devices. If a Debug build for a real device has no matching profile it fails with a clear message instead. Pressing Run in Xcode on a real device **does** allow it, so use the simulator or TestFlight for dev unless you mean to create a development profile. Set `OLGA_IOS_ALLOW_PROVISIONING=1` to opt in from the command line.
+- **Signing with another team** (for example your own Apple ID on a personal phone): set `OLGA_IOS_TEAM=<team id>` and, if the project's bundle ID is not available to that team, `OLGA_IOS_BUNDLE_ID=<id>`, for example `OLGA_IOS_TEAM=ABCDE12345 OLGA_IOS_BUNDLE_ID=com.example.olga npm run ios:dev`. Nothing is committed.
 - Signing: Release uses manual signing with the Apple Distribution certificate and the `Olga-Prod` App Store profile (team `Y3X4KPFWM9`). Import the shared `.p12` and install the profile first.
 
 **Sign-in in production**

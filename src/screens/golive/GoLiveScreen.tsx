@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronRight } from 'lucide-react-native';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChevronRight, Radio, Sparkles } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { BLE_DISCOVERY_ENABLED } from '../../bluetooth/bleDiscovery';
 import { MatchCard, MatchingError, MatchingFailure } from '../../api/matching';
@@ -21,9 +21,10 @@ import { ConsentPurpose, GoLiveBlocker, useLive } from '../../context/LiveContex
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { topMatches } from './LiveMatchesScreen';
 import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH, NearbyView } from './NearbyView';
+import { showDialog } from '../../components/DialogHost';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'GoLive'>;
 
@@ -35,12 +36,12 @@ const AUTO_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 2000;
 const RETRYABLE: MatchingFailure[] = ['MATCHING_FAILED', 'TIMED_OUT'];
 
-const LIVE_LINE = 'Role and intent only, never your name.';
+const LIVE_LINE = "Your role and what you're looking for. Never your name.";
 
 const BLOCKER_MESSAGES: Record<Exclude<GoLiveBlocker, 'CONSENT_REQUIRED'>, string> = {
-  REGISTRATION_REQUIRED: 'Sign up for this event first, then you can go live.',
+  REGISTRATION_REQUIRED: 'Register for this event first, then you can Go Live.',
   EVENT_NOT_ACTIVE: 'This event has ended.',
-  LIVE_MODE_NOT_ENABLED: "Live Mode isn't available for this event.",
+  LIVE_MODE_NOT_ENABLED: "Go Live isn't available for this event.",
   EVENT_NOT_FOUND: 'This event was cancelled.',
   TAKEN_OFFLINE: "You've been taken offline. Contact support if you think this is a mistake.",
 };
@@ -50,23 +51,23 @@ const MATCHING_MESSAGES: Record<MatchingFailure, string> = {
   INTENT_FAILED: "We couldn't read what you're looking for. Try rephrasing it in your filter.",
   MATCHING_FAILED: "You're live, but matching failed.",
   TIMED_OUT: "You're live, but matching is taking longer than usual.",
-  CONSENT_DENIED: "Matching is off, so we can't find your matches. Go Live again and allow matching to turn it on.",
+  CONSENT_DENIED: 'Matching is off. Go Live again and allow matching.',
 };
 
 // Consent wording is the app's; Core keeps the policy version and hash.
 // MATCHING text is placeholder plain language until the client approves it.
 const CONSENT_PROMPTS: Record<ConsentPurpose, { title: string; body: string }> = {
   LIVE_MODE: {
-    title: 'Allow Live Mode?',
-    body: "While you're live, people at this event who match your intent can see you're here. You can go invisible anytime.",
+    title: 'Allow Go Live?',
+    body: 'Relevant people at this event can see you while you’re live. End it anytime.',
   },
   MATCHING: {
     title: 'Allow matching?',
-    body: "To find your matches, Ol-ga compares what you're looking for with the other people at this event who allowed matching. Your matches see your role and intent, never your name.",
+    body: "Ol-ga finds relevant people at this event. They see your role and what you're looking for, never your name.",
   },
 };
 
-const CHECK_IN_NOTE = 'This event needs check-in: check in at the badge desk before you appear in matches.';
+const CHECK_IN_NOTE = 'Check in at the badge desk to appear to relevant people.';
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -208,8 +209,8 @@ export function GoLiveScreen({ navigation }: Props) {
         unreachable
           ? BLE_DISCOVERY_ENABLED
             ? 'No internet. Switch to Nearby to find people around you over Bluetooth.'
-            : "Couldn't reach the server"
-          : `Couldn't go live (${e instanceof ApiError ? e.status : 0})`
+            : "Couldn't connect. Try again."
+          : `Couldn't Go Live (${e instanceof ApiError ? e.status : 0})`
       );
       return;
     }
@@ -226,22 +227,22 @@ export function GoLiveScreen({ navigation }: Props) {
         setError(
           e instanceof ApiError && e.code === 'CONSENT_POLICY_NOT_ACTIVE'
             ? purpose === 'LIVE_MODE'
-              ? "Live Mode isn't available right now. Please try again later."
+              ? "Go Live isn't available right now. Please try again later."
               : "Matching isn't available right now. Please try again later."
             : e instanceof ApiError && e.status > 0
               ? `Couldn't save your consent (${e.status})`
-              : "Couldn't reach the server"
+              : "Couldn't connect. Try again."
         );
         return;
       }
       if (decision === 'GRANTED') handleGoLive();
       else setError(MATCHING_MESSAGES.CONSENT_DENIED);
     };
-    Alert.alert(CONSENT_PROMPTS[purpose].title, CONSENT_PROMPTS[purpose].body, [
+    showDialog(CONSENT_PROMPTS[purpose].title, CONSENT_PROMPTS[purpose].body, [
       // Not now on Live Mode just closes; on matching it's a recorded decline.
       { text: 'Not now', style: 'cancel', onPress: purpose === 'MATCHING' ? () => save('DENIED') : undefined },
       { text: 'Allow', onPress: () => save('GRANTED') },
-    ]);
+    ], { icon: purpose === 'MATCHING' ? Sparkles : Radio });
   }
 
   async function handleGoInvisible() {
@@ -252,7 +253,7 @@ export function GoLiveScreen({ navigation }: Props) {
       await stopLive();
       setMatchingFailed(false);
     } catch (e) {
-      setError(e instanceof ApiError && e.status > 0 ? `Couldn't go invisible (${e.status})` : "Couldn't reach the server");
+      setError(e instanceof ApiError && e.status > 0 ? `Couldn't end Go Live (${e.status})` : "Couldn't connect. Try again.");
     } finally {
       setStopping(false);
     }
@@ -297,7 +298,7 @@ export function GoLiveScreen({ navigation }: Props) {
         <GoLiveDisc locked label="GO LIVE" caption="OPENS AT CHECK-IN" fill={disc.fill} textColor={disc.text} />
         <Text style={styles.lead}>Nobody can see you.</Text>
         <Card>
-          <Text style={styles.sub}>Sign up for an event. Go Live opens when you check in at the badge desk.</Text>
+          <Text style={styles.sub}>Register for an event. Go Live opens when you check in at the badge desk.</Text>
           <Button label="Find an event" variant="secondary" small style={styles.cardButton} onPress={() => navigation.getParent()?.navigate('EventsTab')} />
         </Card>
         <FilterSummary title="Who you'll see" intent={intentText} filters={filters} onChange={openFilter} />
@@ -415,10 +416,10 @@ export function GoLiveScreen({ navigation }: Props) {
       {isLive && (
         <View style={[styles.visible, searching && styles.dimmed]}>
           <View style={styles.flex}>
-            <Text style={styles.h3}>Visible to your matches</Text>
+            <Text style={styles.h3}>Visible to relevant people</Text>
             <Text style={styles.sub}>{LIVE_LINE}</Text>
           </View>
-          <ToggleSwitch on={!stopping} onToggle={handleGoInvisible} label="Visible to your matches" />
+          <ToggleSwitch on={!stopping} onToggle={handleGoInvisible} label="Visible to relevant people" />
         </View>
       )}
 
@@ -437,7 +438,7 @@ const makeStyles = (colors: ThemeColors) =>
     eventName: {
       fontFamily: fonts.monoBold,
       fontSize: 11,
-      fontWeight: '700',
+      fontWeight: semibold,
       letterSpacing: 1.2,
       textTransform: 'uppercase',
       color: colors.muted,
@@ -446,10 +447,10 @@ const makeStyles = (colors: ThemeColors) =>
     eventNameBox: { marginHorizontal: 74 },
     // On the left, leaving the right-hand end for the wordmark when live.
     status: { position: 'absolute', left: 0 },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 4 },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
-    lead: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'center' },
+    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, marginTop: 4 },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
+    lead: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: semibold, color: colors.text, textAlign: 'center' },
     center: { fontSize: 12, lineHeight: 18, color: colors.muted, textAlign: 'center', marginTop: -6, paddingHorizontal: 8 },
     searching: { fontSize: 13, color: colors.muted, textAlign: 'center' },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
@@ -481,5 +482,5 @@ const makeStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
     },
     foundAvatarNext: { marginLeft: -10 },
-    foundInitials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '600', color: AVATAR_INK },
+    foundInitials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: AVATAR_INK },
   });

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
@@ -35,7 +35,7 @@ const makeStyles = (colors: ThemeColors) =>
     },
     blockSm: { width: 46, height: 50, borderRadius: 12 },
     outlined: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },
-    day: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: '800', color: colors.text, lineHeight: 21 },
+    day: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, lineHeight: 21 },
     daySm: { fontSize: 16, lineHeight: 19 },
-    month: { fontFamily: fonts.monoBold, fontSize: 10, letterSpacing: 1, fontWeight: '700', color: colors.muted },
+    month: { fontFamily: fonts.monoBold, fontSize: 10, letterSpacing: 1, fontWeight: semibold, color: colors.muted },
   });

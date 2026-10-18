@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 type Props = {
   onBack: () => void;
@@ -53,7 +53,7 @@ export function BackHeader({ onBack, title, left, right, chevron }: Props) {
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   fill: { flex: 1 },
-  title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: '700', color: colors.text },
+  title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 17, fontWeight: semibold, color: colors.text },
   // The arrow sits flush left with the content; the tap area stays 38 x 38.
   back: { width: 38, height: 38, marginLeft: -7, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.5 },

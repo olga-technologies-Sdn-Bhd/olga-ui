@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { StatusBar, Text, TextInput } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { warmUpApis } from './src/api/warmup';
+import { DialogHost } from './src/components/DialogHost';
 import { AuthProvider } from './src/context/AuthContext';
 import { EventsProvider } from './src/context/EventsContext';
 import { LiveProvider } from './src/context/LiveContext';
@@ -49,6 +50,8 @@ function ThemedApp() {
                     <RootNavigator />
                   </NavigationContainer>
                 </OfflineChatProvider>
+                {/* Every popup in the app (showDialog), themed. */}
+                <DialogHost />
               </NearbyProvider>
             </LiveProvider>
           </EventsProvider>

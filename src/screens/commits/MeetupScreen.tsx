@@ -10,7 +10,7 @@ import { Screen } from '../../components/Screen';
 import { ChatStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 import { WHEN_LABELS, whereLabel } from '../../utils/commitText';
 import { getInitials } from '../../utils/initials';
 
@@ -22,7 +22,7 @@ export function MeetupScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { name, headline, where, when, eventName, picker } = route.params;
-  const who = name || 'your match';
+  const who = name || 'your connection';
 
   return (
     <Screen>
@@ -36,7 +36,7 @@ export function MeetupScreen({ route, navigation }: Props) {
       <Card style={styles.row}>
         <Avatar initials={name ? getInitials(name) : '?'} size="lg" />
         <View style={styles.flex}>
-          <Text style={styles.h3}>{name ?? 'Your match'}</Text>
+          <Text style={styles.h3}>{name ?? 'Your connection'}</Text>
           {headline && <Text style={styles.sub}>{headline}</Text>}
         </View>
       </Card>
@@ -68,13 +68,13 @@ export function MeetupScreen({ route, navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginBottom: 4 },
-    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, lineHeight: 22, fontWeight: '800', color: colors.text },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
+    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold, marginBottom: 4 },
+    h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, lineHeight: 22, fontWeight: semibold, color: colors.text },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
     sub: { fontSize: 12, lineHeight: 18, color: colors.muted, marginTop: 4 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     plan: { backgroundColor: colors.positiveSoft, borderRadius: radius.md, padding: 16 },
-    label: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.positive, fontWeight: '700' },
+    label: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.positive, fontWeight: semibold },
     planRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-    planText: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: '700', color: colors.positive },
+    planText: { fontFamily: fonts.headingBold, fontSize: 15, fontWeight: semibold, color: colors.positive },
   });

@@ -5,6 +5,7 @@ import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
 import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
+import com.facebook.react.common.assets.ReactFontManager
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.olgamobile.ble.OlgaBlePackage
 
@@ -23,6 +24,8 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+    // Inter with all its weights (res/font/inter.xml), used as fontFamily "Inter".
+    ReactFontManager.getInstance().addCustomFont(this, "Inter", R.font.inter)
     loadReactNative(this)
   }
 }

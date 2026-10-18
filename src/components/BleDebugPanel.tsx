@@ -1,11 +1,13 @@
+import { RotateCcw } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { APP_ENV } from '../config/env';
 import { useOfflineChat } from '../context/OfflineChatContext';
 import { useNearby } from '../context/NearbyContext';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
+import { showDialog } from './DialogHost';
 
 // Development only: what Bluetooth discovery is doing, for testing two or
 // more phones side by side. Never in a production build, whether or not
@@ -21,17 +23,22 @@ function Panel() {
   const { ble, people, resetForTesting } = useNearby();
   const chat = useOfflineChat();
   const confirmReset = () =>
-    Alert.alert('Reset Nearby on this phone?', "Forgets this member's Nearby consent, Commits, passes and Bluetooth chats on this phone, and goes invisible. Ol-ga's own data isn't touched.", [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Reset',
-        style: 'destructive',
-        onPress: () => {
-          resetForTesting();
-          chat.resetForTesting();
+    showDialog(
+      'Reset Nearby on this phone?',
+      "Forgets this member's Nearby consent, Commits, passes and Bluetooth chats on this phone, and goes invisible. Ol-ga's own data isn't touched.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: () => {
+            resetForTesting();
+            chat.resetForTesting();
+          },
         },
-      },
-    ]);
+      ],
+      { icon: RotateCcw, tone: 'danger' }
+    );
   // Ages tick once a second while the list is showing.
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -84,13 +91,13 @@ const makeStyles = (colors: ThemeColors) =>
       padding: 12,
       gap: 4,
     },
-    title: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: colors.muted, marginBottom: 2 },
+    title: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: semibold, letterSpacing: 1.2, color: colors.muted, marginBottom: 2 },
     row: { flexDirection: 'row', justifyContent: 'space-between' },
     label: { fontSize: 12, color: colors.text },
-    value: { fontFamily: fonts.monoBold, fontSize: 12, fontWeight: '700' },
+    value: { fontFamily: fonts.monoBold, fontSize: 12, fontWeight: semibold },
     on: { color: colors.positive },
     off: { color: colors.muted },
-    reset: { fontSize: 11, fontWeight: '700', color: colors.danger },
+    reset: { fontSize: 11, fontWeight: semibold, color: colors.danger },
     note: { fontSize: 11, color: colors.muted, marginTop: 2 },
     error: { fontSize: 11, color: colors.danger },
     device: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line, paddingTop: 4 },

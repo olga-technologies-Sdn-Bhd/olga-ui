@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Ol-ga</string>
+	<string>Ol-ga$(OLGA_NAME_SUFFIX)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -68,6 +68,8 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>Outfit-Bold.ttf</string>
+		<string>Inter-Regular.ttf</string>
+		<string>Inter-SemiBold.ttf</string>
 		<string>IBMPlexMono-Bold.ttf</string>
 		<string>IBMPlexMono-Medium.ttf</string>
 		<string>IBMPlexMono-Regular.ttf</string>

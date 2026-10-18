@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
+import { fonts, semibold } from '../theme/typography';
 
 type Tone = 'default' | 'active' | 'soft' | 'positive' | 'white';
 
@@ -34,7 +34,7 @@ export function Pill({ label, tone = 'default', onPress }: Props) {
         positive: { backgroundColor: colors.positiveSoft, borderColor: colors.positiveSoft },
         // On a tinted ground (a conversation's quick replies).
         white: { backgroundColor: colors.surface, borderColor: colors.line },
-        label: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: '700', color: colors.muted },
+        label: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: semibold, color: colors.muted },
         labelActive: { color: colors.text },
         labelSoft: { color: colors.brand },
         labelPositive: { color: colors.positive },

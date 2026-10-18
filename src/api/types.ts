@@ -387,6 +387,20 @@ export type ConnectionRequestResponse = {
   expires_at: string;
 };
 
+// POST /v1/me/privacy-requests. A DELETE request takes the member out of
+// Ol-ga at once (Core ends Live Mode and hides them from matches, events and
+// Commits); the data is erased within 30 days. A second open one is 409
+// PRIVACY_REQUEST_ALREADY_OPEN.
+export type PrivacyRequestType = 'DELETE';
+export type PrivacyRequestCreate = { request_type: PrivacyRequestType };
+export type PrivacyRequestResponse = {
+  privacy_request_id: string;
+  request_type: PrivacyRequestType;
+  status: string;
+  created_at: string;
+  due_at: string;
+};
+
 // GET /v1/sync/changes: what changed for this member, oldest first.
 export type SyncItem = {
   sequence: number;

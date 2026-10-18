@@ -16,7 +16,7 @@ import type { NearbyCard, NearbyRequest } from '../../nearby/types';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 const NEARBY_CONSENT = {
   title: 'Allow Nearby?',
@@ -42,7 +42,7 @@ export function NearbyAvatar({ card, size = 40 }: { card: NearbyCard; size?: num
 
 const avatarStyles = StyleSheet.create({
   avatar: { alignItems: 'center', justifyContent: 'center' },
-  initials: { fontFamily: fonts.bodyBold, fontWeight: '600', color: AVATAR_INK },
+  initials: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: AVATAR_INK },
 });
 
 // "This event | Nearby", when the member has an event to go live in.
@@ -351,11 +351,11 @@ const makeStyles = (colors: ThemeColors) =>
     pressed: { opacity: 0.7 },
     dimmed: { opacity: 0.5 },
     header: { minHeight: 30, justifyContent: 'center', alignItems: 'center' },
-    eventName: { fontFamily: fonts.monoBold, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, color: colors.muted },
+    eventName: { fontFamily: fonts.monoBold, fontSize: 11, fontWeight: semibold, letterSpacing: 1.2, color: colors.muted },
     status: { position: 'absolute', left: 0 },
-    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700' },
-    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: '700', color: colors.text },
-    lead: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'center' },
+    eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold },
+    h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },
+    lead: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: semibold, color: colors.text, textAlign: 'center' },
     leadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'center' },
     // The hint: a white bubble with a hairline, pointing up at the line above.
     hintWrap: { alignItems: 'center', marginTop: -4 },
@@ -431,7 +431,7 @@ const makeStyles = (colors: ThemeColors) =>
     switch: { flexDirection: 'row', alignSelf: 'center', height: SWITCH_HEIGHT, backgroundColor: colors.surface2, borderRadius: 999, padding: 3 },
     switchOption: { justifyContent: 'center', paddingHorizontal: 16, borderRadius: 999 },
     switchOn: { backgroundColor: colors.surface },
-    switchText: { fontSize: 12, fontWeight: '600', color: colors.muted },
+    switchText: { fontSize: 12, fontWeight: semibold, color: colors.muted },
     switchTextOff: { opacity: 0.45 },
     switchTextOn: { color: colors.text },
   });
