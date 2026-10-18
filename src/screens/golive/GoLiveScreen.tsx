@@ -1,3 +1,4 @@
+import Slider from '@react-native-community/slider';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, Radio, Sparkles } from 'lucide-react-native';
@@ -38,12 +39,12 @@ const RETRY_DELAY_MS = 2000;
 const RETRYABLE: MatchingFailure[] = ['MATCHING_FAILED', 'TIMED_OUT'];
 
 // GOL-02: 30/60/90/120 min or until the event ends; default 60 (prefs).
-const LIVE_DURATIONS: { value: LiveDuration; label: string }[] = [
-  { value: 30, label: '30 min' },
-  { value: 60, label: '1 hr' },
-  { value: 90, label: '1.5 hr' },
-  { value: 120, label: '2 hr' },
-  { value: 'event', label: 'Until it ends' },
+const LIVE_DURATIONS: { value: LiveDuration; label: string; short: string }[] = [
+  { value: 30, label: '30 min', short: '30m' },
+  { value: 60, label: '1 hr', short: '1h' },
+  { value: 90, label: '1.5 hr', short: '1.5h' },
+  { value: 120, label: '2 hr', short: '2h' },
+  { value: 'event', label: 'Until the event ends', short: 'End' },
 ];
 
 const LIVE_LINE = "Your role and what you're looking for. Never your name.";
@@ -115,6 +116,7 @@ export function GoLiveScreen({ navigation }: Props) {
     prefs: { liveDuration },
     setLiveDuration,
   } = usePrefs();
+  const durationIndex = Math.max(0, LIVE_DURATIONS.findIndex((d) => d.value === liveDuration));
   const [now, setNow] = useState(() => Date.now());
   const [searching, setSearching] = useState(false);
   const [matchingFailed, setMatchingFailed] = useState(false);
@@ -444,10 +446,27 @@ export function GoLiveScreen({ navigation }: Props) {
       {/* How long to stay live (GOL-02), chosen before going live. */}
       {!isLive && (
         <View style={styles.duration}>
-          <Text style={styles.durationTitle}>Stay live for</Text>
-          <View style={styles.durationRow}>
-            {LIVE_DURATIONS.map((d) => (
-              <Pill key={String(d.value)} label={d.label} tone={liveDuration === d.value ? 'active' : 'default'} onPress={() => setLiveDuration(d.value)} />
+          <View style={styles.durationHead}>
+            <Text style={styles.durationTitle}>Stay live for</Text>
+            <Text style={styles.durationValue}>{LIVE_DURATIONS[durationIndex].label}</Text>
+          </View>
+          {/* A seekbar that snaps to the five stops, labelled underneath. */}
+          <Slider
+            minimumValue={0}
+            maximumValue={LIVE_DURATIONS.length - 1}
+            step={1}
+            value={durationIndex}
+            onValueChange={(i) => setLiveDuration(LIVE_DURATIONS[Math.round(i)].value)}
+            minimumTrackTintColor={colors.brand}
+            maximumTrackTintColor={colors.track}
+            thumbTintColor={colors.brand}
+            accessibilityLabel="Stay live for"
+          />
+          <View style={styles.durationStops}>
+            {LIVE_DURATIONS.map((d, i) => (
+              <Text key={String(d.value)} style={[styles.durationStop, i === durationIndex && styles.durationStopOn]}>
+                {d.short}
+              </Text>
             ))}
           </View>
         </View>
@@ -491,7 +510,12 @@ const makeStyles = (colors: ThemeColors) =>
     visible: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 4, paddingVertical: 4 },
     duration: { gap: 8, paddingHorizontal: 4 },
     durationTitle: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text },
-    durationRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    durationHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    durationValue: { fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: semibold, color: colors.text },
+    // Labels line up under the slider's stops (the track is inset by the thumb's half-width).
+    durationStops: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 6, marginTop: -4 },
+    durationStop: { width: 34, textAlign: 'center', fontSize: 11, color: colors.muted },
+    durationStopOn: { color: colors.text, fontWeight: semibold },
     dimmed: { opacity: 0.5 },
     found: {
       flexDirection: 'row',
