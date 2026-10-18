@@ -2,13 +2,12 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BellOff } from 'lucide-react-native';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { coreApi } from '../../api/core';
 import type { Conversation } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { CHAT_INBOX_POLL_MS } from '../../config/env';
@@ -115,120 +114,150 @@ export function ChatsPanel() {
       {/* No internet isn't an error here: chats on the phone still work. */}
       {error && !error.startsWith('No connection') && <Text style={styles.error}>{error}</Text>}
       {items === null && !error && <ActivityIndicator color={colors.brand} style={styles.loading} />}
-      {(() => {
-        const listed = new Set((items ?? []).map((c) => c.member_id));
-        const extra = chat.peers.filter((p) => !listed.has(p.memberId));
-        return extra.map((p) => {
-          const last = chat.messagesWith(p.memberId).slice(-1)[0];
-          return (
-            <Pressable
-              key={p.memberId}
-              onPress={() =>
-                navigation.navigate('Conversation', p.conversationId ? { conversationId: p.conversationId, memberId: p.memberId } : { memberId: p.memberId })
-              }
-              accessibilityRole="button"
-              accessibilityLabel={p.name || FALLBACK_NAME}
-            >
-              <Card style={styles.row}>
-                <Avatar initials={p.name ? getInitials(p.name) : p.initials ?? '?'} />
-                <View style={styles.rowBody}>
-                  <View style={styles.space}>
-                    <Text style={styles.h3} numberOfLines={1}>
-                      {p.name || FALLBACK_NAME}
-                    </Text>
-                    {inRange[p.memberId] && <Pill label="Nearby" tone="positive" />}
-                  </View>
-                  {p.headline && (
-                    <Text style={styles.headline} numberOfLines={1}>
-                      {p.headline}
-                    </Text>
-                  )}
-                  <Text style={[styles.sub, styles.preview]} numberOfLines={1}>
-                    {last
+      <View style={styles.list}>
+        {/* People reached only over Bluetooth (no Ol-ga conversation listed yet). */}
+        {(() => {
+          const listed = new Set((items ?? []).map((c) => c.member_id));
+          return chat.peers
+            .filter((p) => !listed.has(p.memberId))
+            .map((p) => {
+              const last = chat.messagesWith(p.memberId).slice(-1)[0];
+              return (
+                <ChatRow
+                  key={p.memberId}
+                  name={p.name || FALLBACK_NAME}
+                  initials={p.name ? getInitials(p.name) : p.initials ?? '?'}
+                  time={last ? formatRelativeTime(last.sentAt) : undefined}
+                  preview={
+                    last
                       ? last.from === 'them' && isOffensive(last.body)
                         ? 'Message hidden'
                         : `${last.from === 'me' ? 'You: ' : ''}${last.body}`
-                      : p.conversationId ? 'Say hello 👋' : 'Connected nearby. Say hello 👋'}
-                  </Text>
-                </View>
-              </Card>
-            </Pressable>
-          );
-        });
-      })()}
+                      : p.conversationId
+                        ? 'Say hello 👋'
+                        : 'Connected nearby. Say hello 👋'
+                  }
+                  nearby={Boolean(inRange[p.memberId])}
+                  onPress={() =>
+                    navigation.navigate('Conversation', p.conversationId ? { conversationId: p.conversationId, memberId: p.memberId } : { memberId: p.memberId })
+                  }
+                  styles={styles}
+                  colors={colors}
+                />
+              );
+            });
+        })()}
+
+        {items?.map((c) => (
+          <ChatRow
+            key={c.conversation_id}
+            name={c.display_name || FALLBACK_NAME}
+            initials={c.display_name ? getInitials(c.display_name) : '?'}
+            time={formatRelativeTime(c.last_activity_at)}
+            preview={preview(c, myId)}
+            unread={c.unread_count}
+            muted={Boolean(c.muted_until)}
+            nearby={Boolean(inRange[c.member_id])}
+            onPress={() => navigation.navigate('Conversation', { conversationId: c.conversation_id, memberId: c.member_id })}
+            styles={styles}
+            colors={colors}
+          />
+        ))}
+      </View>
 
       {items?.length === 0 && chat.peers.length === 0 && (
-        <Card>
-          <Text style={styles.h3}>No chats yet</Text>
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>No chats yet</Text>
           <Text style={styles.sub}>When a Commit is accepted, your chat opens here.</Text>
-        </Card>
+        </View>
       )}
-
-      {items?.map((c) => {
-        const name = c.display_name || FALLBACK_NAME;
-        const unread = c.unread_count > 0;
-        return (
-          <Pressable
-            key={c.conversation_id}
-            onPress={() => navigation.navigate('Conversation', { conversationId: c.conversation_id, memberId: c.member_id })}
-            accessibilityRole="button"
-            accessibilityLabel={`${name}${unread ? `, ${c.unread_count} unread` : ''}`}
-          >
-            <Card style={styles.row}>
-              <Avatar initials={c.display_name ? getInitials(c.display_name) : '?'} />
-              <View style={styles.rowBody}>
-                <View style={styles.space}>
-                  <View style={styles.nameRow}>
-                    <Text style={styles.h3} numberOfLines={1}>
-                      {name}
-                    </Text>
-                    {c.muted_until && <BellOff size={14} color={colors.muted} accessibilityLabel="Muted" />}
-                    {inRange[c.member_id] && <Pill label="Nearby" tone="positive" />}
-                  </View>
-                  <Text style={styles.time}>{formatRelativeTime(c.last_activity_at)}</Text>
-                </View>
-                {c.headline && (
-                  <Text style={styles.headline} numberOfLines={1}>
-                    {c.headline}
-                  </Text>
-                )}
-                <View style={styles.space}>
-                  <Text style={[styles.sub, styles.preview, unread && styles.previewUnread]} numberOfLines={1}>
-                    {preview(c, myId)}
-                  </Text>
-                  {unread && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{c.unread_count > 99 ? '99+' : c.unread_count}</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </Card>
-          </Pressable>
-        );
-      })}
 
       {hasMore && <Button label="Load more" variant="secondary" small loading={loadingMore} onPress={loadMore} />}
     </Screen>
   );
 }
 
+// One chat in the list, as in WhatsApp: avatar, name and time on top, the
+// last message and an unread count below, hairline divider after the avatar.
+function ChatRow({
+  name,
+  initials,
+  time,
+  preview: text,
+  unread = 0,
+  muted,
+  nearby,
+  onPress,
+  styles,
+  colors,
+}: {
+  name: string;
+  initials: string;
+  time?: string;
+  preview: string;
+  unread?: number;
+  muted?: boolean;
+  nearby?: boolean;
+  onPress: () => void;
+  styles: ReturnType<typeof makeStyles>;
+  colors: ThemeColors;
+}) {
+  const hasUnread = unread > 0;
+  return (
+    <Pressable
+      onPress={onPress}
+      android_ripple={{ color: colors.accentSoft }}
+      style={({ pressed }) => [styles.row, pressed && Platform.OS === 'ios' && styles.rowPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${name}${hasUnread ? `, ${unread} unread` : ''}`}
+    >
+      <Avatar initials={initials} size="list" />
+      <View style={styles.rowBody}>
+        <View style={styles.line}>
+          <Text style={styles.name} numberOfLines={1}>
+            {name}
+          </Text>
+          {!!time && <Text style={[styles.time, hasUnread && styles.timeUnread]}>{time}</Text>}
+        </View>
+        <View style={styles.line}>
+          <Text style={[styles.preview, hasUnread && styles.previewUnread]} numberOfLines={1}>
+            {text}
+          </Text>
+          <View style={styles.marks}>
+            {nearby && <Pill label="Nearby" tone="positive" />}
+            {muted && <BellOff size={15} color={colors.muted} accessibilityLabel="Muted" />}
+            {hasUnread && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unread > 99 ? '99+' : unread}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    panel: { paddingTop: 12 },
-    h3: { fontFamily: fonts.headingBold, fontSize: 16, fontWeight: '700', color: colors.text, flexShrink: 1 },
+    panel: { paddingTop: 4 },
     sub: { fontSize: 14, lineHeight: 20, color: colors.muted },
-    sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: '700', marginTop: 12 },
     error: { fontSize: 14, color: colors.danger },
     loading: { marginTop: 24 },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    rowBody: { flex: 1, gap: 2 },
-    space: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
-    time: { fontSize: 13, color: colors.muted },
-    headline: { fontSize: 13, color: colors.muted },
-    preview: { flex: 1 },
-    previewUnread: { color: colors.text, fontWeight: '700' },
+    // Edge to edge, like a chat list.
+    list: { marginHorizontal: -20, backgroundColor: colors.surface },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: 16 },
+    rowPressed: { backgroundColor: colors.accentSoft },
+    // The divider starts after the avatar.
+    rowBody: { flex: 1, gap: 2, paddingVertical: 12, paddingRight: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
+    line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+    // As in WhatsApp: a medium-weight name, not heavy bold.
+    name: { flex: 1, fontFamily: fonts.bodyRegular, fontSize: 16, fontWeight: '600', color: colors.text },
+    time: { fontSize: 12, color: colors.muted },
+    timeUnread: { color: colors.brand, fontWeight: '700' },
+    preview: { flex: 1, fontSize: 14, lineHeight: 18, color: colors.muted },
+    previewUnread: { color: colors.text },
+    marks: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     badge: {
       minWidth: 22,
       height: 22,
@@ -239,4 +268,6 @@ const makeStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
     },
     badgeText: { color: colors.onInk, fontSize: 12, fontWeight: '800' },
+    empty: { alignItems: 'center', gap: 6, paddingVertical: 40 },
+    emptyTitle: { fontFamily: fonts.headingBold, fontSize: 16, fontWeight: '700', color: colors.text },
   });

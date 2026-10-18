@@ -45,7 +45,9 @@ const DOODLES: LucideIcon[] = [
   MessageCircle,
 ];
 
-const CELL = 34; // one doodle per cell, nudged around inside it
+// One doodle per cell, nudged around inside it. Sized and spaced like the
+// WhatsApp default wallpaper: about 20px line icons, clearly visible but soft.
+const CELL = 46;
 // Room left clear in the middle for the Ol-ga mark.
 const CLEAR_W = 230;
 const CLEAR_H = 110;
@@ -70,7 +72,7 @@ export function ChatWallpaper() {
     const out: { Icon: LucideIcon; left: number; top: number; size: number; rotate: string; key: string }[] = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const iconSize = 9 + Math.round(random() * 4);
+        const iconSize = 18 + Math.round(random() * 6);
         const Icon = DOODLES[Math.floor(random() * DOODLES.length)];
         const left = c * CELL + random() * (CELL - iconSize);
         const top = r * CELL + random() * (CELL - iconSize);
@@ -93,7 +95,7 @@ export function ChatWallpaper() {
     <View style={styles.fill} pointerEvents="none" onLayout={onLayout}>
       {doodles.map(({ Icon, left, top, size: iconSize, rotate, key }) => (
         <View key={key} style={[styles.doodle, { left, top, transform: [{ rotate }] }]}>
-          <Icon size={iconSize} color={colors.text} strokeWidth={1.5} opacity={0.24} />
+          <Icon size={iconSize} color={colors.text} strokeWidth={1.3} opacity={0.3} />
         </View>
       ))}
     </View>

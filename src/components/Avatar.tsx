@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { fonts } from '../theme/typography';
 
-type Size = 'sm' | 'md' | 'lg';
+type Size = 'sm' | 'md' | 'list' | 'lg';
 
 type Props = {
   initials: string;
@@ -14,8 +14,9 @@ type Props = {
   light?: boolean;
 };
 
-const SIZES: Record<Size, number> = { sm: 34, md: 42, lg: 58 };
-const FONT_SIZES: Record<Size, number> = { sm: 12, md: 15, lg: 18 };
+// list: a row in the Chats list (WhatsApp-sized).
+const SIZES: Record<Size, number> = { sm: 34, md: 42, list: 50, lg: 58 };
+const FONT_SIZES: Record<Size, number> = { sm: 12, md: 15, list: 16, lg: 18 };
 
 export function Avatar({ initials, size = 'md', dark, light }: Props) {
   const dimension = SIZES[size];
