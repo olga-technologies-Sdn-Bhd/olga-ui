@@ -25,6 +25,7 @@ import { fonts, semibold } from '../../theme/typography';
 import { topMatches } from './LiveMatchesScreen';
 import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH, NearbyView } from './NearbyView';
 import { showDialog } from '../../components/DialogHost';
+import { LiveDuration, usePrefs } from '../../context/PrefsContext';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'GoLive'>;
 
@@ -35,6 +36,15 @@ const MIN_SEARCH_MS = 3000;
 const AUTO_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 2000;
 const RETRYABLE: MatchingFailure[] = ['MATCHING_FAILED', 'TIMED_OUT'];
+
+// GOL-02: 30/60/90/120 min or until the event ends; default 60 (prefs).
+const LIVE_DURATIONS: { value: LiveDuration; label: string }[] = [
+  { value: 30, label: '30 min' },
+  { value: 60, label: '1 hr' },
+  { value: 90, label: '1.5 hr' },
+  { value: 120, label: '2 hr' },
+  { value: 'event', label: 'Until it ends' },
+];
 
 const LIVE_LINE = "Your role and what you're looking for. Never your name.";
 
@@ -90,6 +100,7 @@ export function GoLiveScreen({ navigation }: Props) {
     activeEvent,
     setActiveEvent,
     isLive,
+    activeUntil,
     goLive,
     checkConsent,
     recordConsentDecision,
@@ -100,6 +111,10 @@ export function GoLiveScreen({ navigation }: Props) {
     filters,
     intentText,
   } = useLive();
+  const {
+    prefs: { liveDuration },
+    setLiveDuration,
+  } = usePrefs();
   const [now, setNow] = useState(() => Date.now());
   const [searching, setSearching] = useState(false);
   const [matchingFailed, setMatchingFailed] = useState(false);
@@ -417,9 +432,24 @@ export function GoLiveScreen({ navigation }: Props) {
         <View style={[styles.visible, searching && styles.dimmed]}>
           <View style={styles.flex}>
             <Text style={styles.h3}>Visible to relevant people</Text>
-            <Text style={styles.sub}>{LIVE_LINE}</Text>
+            <Text style={styles.sub}>
+              {activeUntil ? `Live until ${String(activeUntil.getHours()).padStart(2, '0')}:${String(activeUntil.getMinutes()).padStart(2, '0')}. ` : ''}
+              {LIVE_LINE}
+            </Text>
           </View>
           <ToggleSwitch on={!stopping} onToggle={handleGoInvisible} label="Visible to relevant people" />
+        </View>
+      )}
+
+      {/* How long to stay live (GOL-02), chosen before going live. */}
+      {!isLive && (
+        <View style={styles.duration}>
+          <Text style={styles.durationTitle}>Stay live for</Text>
+          <View style={styles.durationRow}>
+            {LIVE_DURATIONS.map((d) => (
+              <Pill key={String(d.value)} label={d.label} tone={liveDuration === d.value ? 'active' : 'default'} onPress={() => setLiveDuration(d.value)} />
+            ))}
+          </View>
         </View>
       )}
 
@@ -459,6 +489,9 @@ const makeStyles = (colors: ThemeColors) =>
     cardButton: { alignSelf: 'flex-start', marginTop: 12 },
     widen: { alignSelf: 'center' },
     visible: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 4, paddingVertical: 4 },
+    duration: { gap: 8, paddingHorizontal: 4 },
+    durationTitle: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text },
+    durationRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     dimmed: { opacity: 0.5 },
     found: {
       flexDirection: 'row',

@@ -34,17 +34,22 @@ export const DEFAULT_FILTERS: MatchFilters = {
 // never comes back.
 export type TipKey = 'wentLive' | 'savedFilter' | 'confirmedMeeting';
 
+// How long Go Live lasts (GOL-02): minutes, or until the event ends.
+export type LiveDuration = 30 | 60 | 90 | 120 | 'event';
+
 export type MemberPrefs = {
   goLiveColor: GoLiveColorKey;
+  liveDuration: LiveDuration;
   filters: MatchFilters;
   tipsDone: Partial<Record<TipKey, true>>;
 };
 
-const DEFAULT_PREFS: MemberPrefs = { goLiveColor: 'charcoal', filters: DEFAULT_FILTERS, tipsDone: {} };
+const DEFAULT_PREFS: MemberPrefs = { goLiveColor: 'charcoal', liveDuration: 60, filters: DEFAULT_FILTERS, tipsDone: {} };
 
 type PrefsState = {
   prefs: MemberPrefs;
   setGoLiveColor: (color: GoLiveColorKey) => void;
+  setLiveDuration: (duration: LiveDuration) => void;
   setFilters: (filters: MatchFilters) => void;
   completeTip: (tip: TipKey) => void;
 };
@@ -111,6 +116,7 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
     () => ({
       prefs,
       setGoLiveColor: (goLiveColor: GoLiveColorKey) => update((p) => ({ ...p, goLiveColor })),
+      setLiveDuration: (liveDuration: LiveDuration) => update((p) => ({ ...p, liveDuration })),
       setFilters: (filters: MatchFilters) =>
         update((p) => ({ ...p, filters, tipsDone: { ...p.tipsDone, savedFilter: true } })),
       completeTip: (tip: TipKey) =>

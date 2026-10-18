@@ -131,7 +131,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<LiveModeSession | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const {
-    prefs: { filters },
+    prefs: { filters, liveDuration },
     setFilters,
     completeTip,
   } = usePrefs();
@@ -260,7 +260,12 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const goLive = useCallback(async (): Promise<GoLiveBlocker | null> => {
     if (!activeEvent) return 'EVENT_NOT_FOUND';
     try {
-      const started = await coreApi.startLiveMode(activeEvent.eventId, { duration_minutes: LIVE_MODE_DURATION_MINUTES });
+      // The member's choice (GOL-02). 'Until it ends' asks for the time left in
+      // the event; the server also caps every session at the event's end.
+      const chosen = liveDuration ?? LIVE_MODE_DURATION_MINUTES;
+      const untilEnd = Math.ceil((new Date(activeEvent.endsAt).getTime() - Date.now()) / 60000);
+      const minutes = chosen === 'event' ? Math.min(240, Math.max(5, untilEnd)) : chosen;
+      const started = await coreApi.startLiveMode(activeEvent.eventId, { duration_minutes: minutes });
       applySession(started);
       completeTip('wentLive');
       return null;
@@ -273,7 +278,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       if (blocker) return blocker;
       throw e;
     }
-  }, [activeEvent, applySession, markGone, completeTip]);
+  }, [activeEvent, applySession, markGone, completeTip, liveDuration]);
 
   const checkConsent = useCallback(async (purpose: ConsentPurpose): Promise<ConsentStatus> => {
     if (decisions.current[purpose] === 'GRANTED') return 'GRANTED';
