@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
-import { BriefcaseBusiness, ChevronRight, Hash, LucideIcon, Mail, Moon, Phone, Search, Server } from 'lucide-react-native';
+import { BriefcaseBusiness, ChevronRight, Eye, Hash, LucideIcon, Mail, Moon, Phone, Search, Server } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
@@ -93,6 +93,7 @@ export function ProfileScreen({ navigation }: Props) {
           accessibilityRole="button"
           style={({ pressed }) => [styles.row, pressed && styles.pressed]}
         >
+          <RowIcon icon={Eye} styles={styles} colors={colors} />
           <View style={styles.rowText}>
             <Text style={styles.label}>How you appear</Text>
             <Text style={styles.sub}>What people see before you both accept</Text>
