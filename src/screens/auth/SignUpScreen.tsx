@@ -162,7 +162,7 @@ export function SignUpScreen() {
         // help until the backend can look the member up, so sign out.
         Alert.alert(
           'Already registered',
-          'This email or mobile number already belongs to an Ol-ga account. Sign in with the email you used before, or contact Ol-ga support.'
+          'This email or mobile number is already on Ol-ga. Please contact Ol-ga support.'
         );
         await logOut();
         setName('');

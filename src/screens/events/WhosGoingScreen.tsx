@@ -40,7 +40,7 @@ export function WhosGoingScreen({ route, navigation }: Props) {
             ? 'This event is no longer available.'
             : e instanceof ApiError && e.status > 0
               ? `Couldn't load who's going (${e.status})`
-              : "Couldn't reach Ol-ga. Check your connection."
+              : "Couldn't connect. Try again."
       );
     }
   }, [route.params.eventId]);

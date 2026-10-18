@@ -108,7 +108,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
       if (e instanceof ApiError && e.code === 'EVENT_NOT_FOUND') {
         setError('This event was cancelled.');
       } else {
-        setError(e instanceof ApiError && e.status > 0 ? `Couldn't register (${e.status})` : "Couldn't reach Ol-ga. Check your connection.");
+        setError(e instanceof ApiError && e.status > 0 ? `Couldn't register (${e.status})` : "Couldn't connect. Try again.");
       }
       if (e instanceof ApiError) console.warn(`Event registration failed (${e.code}), correlation_id=${e.correlationId}`);
     } finally {
@@ -238,7 +238,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
                   : "You stay private until you Go Live. It opens on the day, once you check in at the badge desk."}
               </Text>
               {awaitingCheckIn && (
-                <Text style={styles.sub}>This event needs check-in. Check in at the badge desk to appear to relevant people.</Text>
+                <Text style={styles.sub}>Check in at the badge desk to appear to relevant people.</Text>
               )}
             </View>
           </View>

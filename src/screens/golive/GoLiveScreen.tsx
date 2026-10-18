@@ -50,7 +50,7 @@ const MATCHING_MESSAGES: Record<MatchingFailure, string> = {
   INTENT_FAILED: "We couldn't read what you're looking for. Try rephrasing it in your filter.",
   MATCHING_FAILED: "You're live, but matching failed.",
   TIMED_OUT: "You're live, but matching is taking longer than usual.",
-  CONSENT_DENIED: "Matching is off, so we can't find relevant people. Go Live again and allow matching to turn it on.",
+  CONSENT_DENIED: 'Matching is off. Go Live again and allow matching.',
 };
 
 // Consent wording is the app's; Core keeps the policy version and hash.
@@ -58,15 +58,15 @@ const MATCHING_MESSAGES: Record<MatchingFailure, string> = {
 const CONSENT_PROMPTS: Record<ConsentPurpose, { title: string; body: string }> = {
   LIVE_MODE: {
     title: 'Allow Go Live?',
-    body: "While you're live, people at this event who match what you're looking for can see you're here. You can end it anytime.",
+    body: 'Relevant people at this event can see you while you’re live. End it anytime.',
   },
   MATCHING: {
     title: 'Allow matching?',
-    body: "To find relevant people, Ol-ga compares what you're looking for with others at this event who allowed matching. They see your role and what you're looking for, never your name.",
+    body: "Ol-ga finds relevant people at this event. They see your role and what you're looking for, never your name.",
   },
 };
 
-const CHECK_IN_NOTE = 'This event needs check-in. Check in at the badge desk to appear to relevant people.';
+const CHECK_IN_NOTE = 'Check in at the badge desk to appear to relevant people.';
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -208,7 +208,7 @@ export function GoLiveScreen({ navigation }: Props) {
         unreachable
           ? BLE_DISCOVERY_ENABLED
             ? 'No internet. Switch to Nearby to find people around you over Bluetooth.'
-            : "Couldn't reach Ol-ga. Check your connection."
+            : "Couldn't connect. Try again."
           : `Couldn't Go Live (${e instanceof ApiError ? e.status : 0})`
       );
       return;
@@ -230,7 +230,7 @@ export function GoLiveScreen({ navigation }: Props) {
               : "Matching isn't available right now. Please try again later."
             : e instanceof ApiError && e.status > 0
               ? `Couldn't save your consent (${e.status})`
-              : "Couldn't reach Ol-ga. Check your connection."
+              : "Couldn't connect. Try again."
         );
         return;
       }
@@ -252,7 +252,7 @@ export function GoLiveScreen({ navigation }: Props) {
       await stopLive();
       setMatchingFailed(false);
     } catch (e) {
-      setError(e instanceof ApiError && e.status > 0 ? `Couldn't end your live session (${e.status})` : "Couldn't reach Ol-ga. Check your connection.");
+      setError(e instanceof ApiError && e.status > 0 ? `Couldn't end Go Live (${e.status})` : "Couldn't connect. Try again.");
     } finally {
       setStopping(false);
     }

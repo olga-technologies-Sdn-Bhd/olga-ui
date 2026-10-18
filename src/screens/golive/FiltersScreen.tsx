@@ -128,7 +128,7 @@ export function FiltersScreen({ navigation }: Props) {
         <View style={styles.toggleRow}>
           <View style={styles.flex}>
             <Text style={styles.h3}>Allow requests below {minMatch}%</Text>
-            <Text style={styles.hint}>When off, only people above your minimum match can send you a Commit.</Text>
+            <Text style={styles.hint}>When off, only people above your minimum can send a Commit.</Text>
           </View>
           <ToggleSwitch on={allowNearMatches} onToggle={() => setAllowNearMatches((v) => !v)} />
         </View>

@@ -19,7 +19,7 @@ import { fonts } from '../../theme/typography';
 
 const NEARBY_CONSENT = {
   title: 'Allow Nearby?',
-  body: "While you're live nearby, Ol-ga members close to you can see your role and what you're looking for over Bluetooth, even without internet. Never your name. You can end it anytime.",
+  body: "Ol-ga members close by see your role and what you're looking for over Bluetooth, even offline. Never your name. End it anytime.",
 };
 
 const VISIBLE_LINE = "Your role and what you're looking for. Never your name.";
