@@ -10,6 +10,8 @@
 //
 // Local overrides for iOS (not committed), for a developer who has to sign with
 // a team other than the project's: OLGA_IOS_TEAM=<team id>, OLGA_IOS_BUNDLE_ID=<id>.
+// These commands do not let Xcode create profiles, certificates or devices in the Apple
+// account (no -allowProvisioningUpdates). Set OLGA_IOS_ALLOW_PROVISIONING=1 to allow it.
 const { spawn } = require('child_process');
 const http = require('http');
 const net = require('net');
@@ -39,7 +41,9 @@ if (!['ios', 'android'].includes(platform) || !ENVIRONMENTS[envName]) {
 }
 
 function iosParams() {
-  const params = ['-allowProvisioningUpdates', ...ENVIRONMENTS[envName].ios];
+  // Never let a run command create profiles, certificates or devices in the Apple account.
+  // Opt in on purpose with OLGA_IOS_ALLOW_PROVISIONING=1.
+  const params = [...(process.env.OLGA_IOS_ALLOW_PROVISIONING === '1' ? ['-allowProvisioningUpdates'] : []), ...ENVIRONMENTS[envName].ios];
   const bundleId = process.env.OLGA_IOS_BUNDLE_ID;
   if (bundleId) {
     params[params.findIndex((p) => p.startsWith('OLGA_BUNDLE_ID='))] = `OLGA_BUNDLE_ID=${bundleId}`;
