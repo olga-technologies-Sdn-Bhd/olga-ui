@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { ApiError, newIdempotencyKey, setAccessTokenProvider, setMemberIdProvider, withRetries } from '../api/client';
 import { clearCache } from '../api/offlineCache';
 import { coreApi } from '../api/core';
+import { clearNearby } from '../nearby/store';
 import {
   activateMember,
   lookupExistingMember,
@@ -41,7 +42,16 @@ type AuthState = {
   // when the email/phone is already registered elsewhere.
   completeOnboarding: (name: string, mobile: string) => Promise<void>;
   logOut: () => Promise<void>;
+  // Files the deletion request with Core, then signs out and forgets this
+  // member on the phone. Throws ApiError on failure (still signed in). Pass
+  // the same idempotencyKey when retrying.
+  deleteAccount: (idempotencyKey: string) => Promise<void>;
+  // One-off message for the sign-in screen (after a deletion request).
+  notice: string | null;
+  clearNotice: () => void;
 };
+
+export const DELETION_NOTICE = 'Your account has been deleted from Ol-ga. We erase your data within 30 days.';
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
@@ -71,6 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const registrationKey = useRef<string | null>(null);
   const restoreChecked = useRef(false);
   const [restoreLookup, setRestoreLookup] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const clearNotice = useCallback(() => setNotice(null), []);
 
   const applyMember = useCallback((next: StoredMember | null) => {
     memberRef.current = next;
@@ -223,6 +235,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     applyMember(null);
   }, [entraLogOut, applyMember, persist, member?.member_id]);
 
+  const deleteAccount = useCallback(
+    async (idempotencyKey: string) => {
+      const memberId = member?.member_id;
+      if (!memberId || !email) throw new Error('Not signed in');
+      try {
+        await coreApi.requestAccountDeletion({ idempotencyKey });
+      } catch (error) {
+        // Already requested (e.g. from another phone): same outcome, carry on.
+        const alreadyOpen = error instanceof ApiError && error.status === 409 && error.code === 'PRIVACY_REQUEST_ALREADY_OPEN';
+        if (!alreadyOpen) {
+          // Not a member any more: back to sign-up, as at app start.
+          if (error instanceof ApiError && error.status === 404 && error.code === 'MEMBER_NOT_REGISTERED') {
+            await clearCache(memberId);
+            await persist(withoutMember(await loadMemberStore(), email));
+            applyMember(null);
+          }
+          throw error;
+        }
+      }
+      // Requested: nothing of this member stays on the phone.
+      await clearCache(memberId);
+      await clearNearby(memberId);
+      await entraLogOut();
+      const latest = await loadMemberStore();
+      await persist({ ...withoutMember(latest, email), current: null });
+      registrationKey.current = null;
+      setNotice(DELETION_NOTICE);
+      applyMember(null);
+    },
+    [member?.member_id, email, entraLogOut, applyMember, persist]
+  );
+
   const value = useMemo<AuthState>(
     () => ({
       isAuthenticated: Boolean(accessToken),
@@ -239,8 +283,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelEmail,
       completeOnboarding,
       logOut,
+      deleteAccount,
+      notice,
+      clearNotice,
     }),
-    [accessToken, isRestoring, member, email, login, startEmail, submitEmailCode, resendEmailCode, cancelEmail, completeOnboarding, logOut]
+    [
+      accessToken,
+      isRestoring,
+      member,
+      email,
+      login,
+      startEmail,
+      submitEmailCode,
+      resendEmailCode,
+      cancelEmail,
+      completeOnboarding,
+      logOut,
+      deleteAccount,
+      notice,
+      clearNotice,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

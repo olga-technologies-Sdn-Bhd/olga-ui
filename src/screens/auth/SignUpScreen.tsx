@@ -23,7 +23,7 @@ type Step = 'email' | 'verifying' | 'otp' | 'name' | 'mobile' | 'registering';
 export function SignUpScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { login, startEmail, submitEmailCode, resendEmailCode, cancelEmail, completeOnboarding, logOut, isAuthenticated } =
+  const { login, startEmail, submitEmailCode, resendEmailCode, cancelEmail, completeOnboarding, logOut, isAuthenticated, notice, clearNotice } =
     useAuth();
   // Already signed in to Entra but no Olga member yet (e.g. restored session
   // whose member was removed) -> only name + mobile are needed, no new OTP.
@@ -49,6 +49,7 @@ export function SignUpScreen() {
   async function signIn(options: { loginHint?: string; provider?: EntraProvider }, shown: string) {
     if (inProgress.current) return;
     inProgress.current = true;
+    clearNotice();
     warmUpApis(); // Core starts while the user signs in with Google/Apple
     setEmail(shown);
     setStep('verifying');
@@ -76,6 +77,7 @@ export function SignUpScreen() {
   async function handleEmailSubmit(value: string) {
     if (inProgress.current) return;
     inProgress.current = true;
+    clearNotice();
     warmUpApis(); // Core starts while the user fetches the code
     setEmail(value);
     setStep('verifying');
@@ -187,6 +189,7 @@ export function SignUpScreen() {
       </Text>
 
       <View style={styles.chatStack}>
+        {notice !== null && step === 'email' && <ChatBubble from="them" text={notice} />}
         <ChatBubble
           from="them"
           text="Hi, I'm Ol-ga. It's lovely to have you here. What's your email? I'll send a one-time code to it. Already with us? The same email brings you right back in."

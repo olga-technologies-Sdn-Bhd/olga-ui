@@ -25,6 +25,8 @@ import type {
   MemberLookupBody,
   MemberLookupRequest,
   PresenceRequest,
+  PrivacyRequestCreate,
+  PrivacyRequestResponse,
   ProfileBody,
   RegisterMemberBody,
   RegisterMemberRequest,
@@ -121,4 +123,9 @@ export const coreApi = {
   // This member's change feed (requests sent to them, new connections).
   getChanges: (cursor?: string) =>
     client.get<SyncPage>(`/v1/sync/changes?limit=200${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`),
+
+  // Files a request to delete this member's account (202). Pass the same
+  // idempotencyKey when retrying the same request.
+  requestAccountDeletion: (options: RequestOptions) =>
+    client.post<PrivacyRequestResponse>('/v1/me/privacy-requests', { request_type: 'DELETE' } satisfies PrivacyRequestCreate, options),
 };
