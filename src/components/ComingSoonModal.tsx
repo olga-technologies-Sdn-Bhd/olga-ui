@@ -1,90 +1,21 @@
-import { LucideIcon } from 'lucide-react-native';
-import { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { radius, ThemeColors } from '../theme/colors';
-import { useTheme } from '../theme/ThemeContext';
-import { fonts } from '../theme/typography';
-import { Button } from './Button';
+import { LucideIcon, Sparkles } from 'lucide-react-native';
+import { Dialog } from './Dialog';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
   title?: string;
   message?: string;
-  icon?: string;
-  // A line icon (shown in the accent colour) instead of the emoji.
-  iconComponent?: LucideIcon;
+  icon?: LucideIcon;
 };
 
+// "Coming soon" for a feature that isn't built yet, drawn by the app's one Dialog.
 export function ComingSoonModal({
   visible,
   onClose,
   title = 'Coming soon!',
-  message = "We're building this next — check back shortly.",
-  icon = '💬',
-  iconComponent: Icon,
+  message = "We're building this next. Check back shortly.",
+  icon = Sparkles,
 }: Props) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const scale = useRef(new Animated.Value(0.85)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (!visible) return;
-    scale.setValue(0.85);
-    opacity.setValue(0);
-    Animated.parallel([
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 7, tension: 90 }),
-      Animated.timing(opacity, { toValue: 1, duration: 180, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-    ]).start();
-  }, [visible, scale, opacity]);
-
-  return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Animated.View style={[styles.card, { opacity, transform: [{ scale }] }]}>
-          <Pressable onPress={() => {}}>
-            <View style={styles.iconWrap}>
-              {Icon ? <Icon size={28} color={colors.accent} strokeWidth={2} /> : <Text style={styles.icon}>{icon}</Text>}
-            </View>
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.message}>{message}</Text>
-            <Button label="Got it" onPress={onClose} style={styles.button} />
-          </Pressable>
-        </Animated.View>
-      </Pressable>
-    </Modal>
-  );
+  return <Dialog visible={visible} icon={icon} title={title} message={message} actions={[{ label: 'Got it', onPress: onClose }]} onDismiss={onClose} />;
 }
-
-const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15,12,20,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 320,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: 26,
-    alignItems: 'center',
-  },
-  iconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.accentFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-    alignSelf: 'center',
-  },
-  icon: { fontSize: 22 },
-  title: { fontFamily: fonts.headingExtraBold, fontSize: 16, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  message: { fontSize: 13, lineHeight: 19, color: colors.muted, textAlign: 'center', marginTop: 8 },
-  button: { alignSelf: 'stretch', marginTop: 20 },
-});

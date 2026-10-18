@@ -322,10 +322,9 @@ export function HomeScreen({ navigation }: Props) {
       <ComingSoonModal
         visible={indexSoon}
         onClose={() => setIndexSoon(false)}
-        iconComponent={UsersRound}
+        icon={UsersRound}
         title="Your Social Capital Graph"
         message="Your graph is coming soon. For now, this card shows your confirmed relationships."
-        icon="◎"
       />
     </Screen>
   );

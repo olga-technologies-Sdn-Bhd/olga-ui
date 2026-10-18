@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
-import { BriefcaseBusiness, ChevronRight, Eye, Hash, LucideIcon, Mail, Moon, Phone, Search, Server } from 'lucide-react-native';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BriefcaseBusiness, ChevronRight, Eye, Hash, LogOut, LucideIcon, Mail, Moon, Phone, Search, Server } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
@@ -16,6 +16,7 @@ import { HomeStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
+import { showDialog } from '../../components/DialogHost';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Profile'>;
 
@@ -46,7 +47,7 @@ export function ProfileScreen({ navigation }: Props) {
   }, [memberId]);
 
   function confirmLogOut() {
-    Alert.alert('Log out?', 'You can sign back in any time with the same email.', [
+    showDialog('Log out?', 'You can sign back in any time with the same email.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Log out',
@@ -60,7 +61,7 @@ export function ProfileScreen({ navigation }: Props) {
           }
         },
       },
-    ]);
+    ], { icon: LogOut });
   }
 
   return (

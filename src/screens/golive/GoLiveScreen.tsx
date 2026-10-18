@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronRight } from 'lucide-react-native';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChevronRight, Radio, Sparkles } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { BLE_DISCOVERY_ENABLED } from '../../bluetooth/bleDiscovery';
 import { MatchCard, MatchingError, MatchingFailure } from '../../api/matching';
@@ -24,6 +24,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
 import { topMatches } from './LiveMatchesScreen';
 import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH, NearbyView } from './NearbyView';
+import { showDialog } from '../../components/DialogHost';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'GoLive'>;
 
@@ -237,11 +238,11 @@ export function GoLiveScreen({ navigation }: Props) {
       if (decision === 'GRANTED') handleGoLive();
       else setError(MATCHING_MESSAGES.CONSENT_DENIED);
     };
-    Alert.alert(CONSENT_PROMPTS[purpose].title, CONSENT_PROMPTS[purpose].body, [
+    showDialog(CONSENT_PROMPTS[purpose].title, CONSENT_PROMPTS[purpose].body, [
       // Not now on Live Mode just closes; on matching it's a recorded decline.
       { text: 'Not now', style: 'cancel', onPress: purpose === 'MATCHING' ? () => save('DENIED') : undefined },
       { text: 'Allow', onPress: () => save('GRANTED') },
-    ]);
+    ], { icon: purpose === 'MATCHING' ? Sparkles : Radio });
   }
 
   async function handleGoInvisible() {

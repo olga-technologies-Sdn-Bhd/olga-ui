@@ -55,6 +55,7 @@ export const lightColors = {
   selected: '#1B2A41',
   onSelected: '#ffffff',
   danger: '#D64555',
+  dangerSoft: 'rgba(214,69,85,0.12)',
   // Apple-style tint for active states (selected tab, its pill, menu icons):
   // a brighter navy-blue from the brand family, so selection reads alive, not grey.
   accent: '#24508F',
@@ -106,6 +107,7 @@ export const darkColors = {
   selected: '#F2F3F4',
   onSelected: '#121314',
   danger: '#ff7a86',
+  dangerSoft: 'rgba(255,122,134,0.16)',
   accent: '#8EB4F0',
   accentFill: 'rgba(142,180,240,0.18)',
   white: '#ffffff',

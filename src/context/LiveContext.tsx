@@ -1,5 +1,6 @@
+import { ShieldAlert } from 'lucide-react-native';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
+import {  } from 'react-native';
 import { ApiError } from '../api/client';
 import { coreApi } from '../api/core';
 import { findMatches, MatchCard, MatchingError } from '../api/matching';
@@ -12,6 +13,7 @@ import {
 import { useAuth } from './AuthContext';
 import { useEvents } from './EventsContext';
 import { MatchFilters, usePrefs } from './PrefsContext';
+import { showDialog } from '../components/DialogHost';
 
 type ActiveEvent = { eventId: string; name: string; endsAt: string; liveCount?: number } | null;
 
@@ -191,7 +193,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const takeOffline = useCallback(() => {
     applySession(null);
     setMatches(null);
-    Alert.alert('Taken offline', TAKEN_OFFLINE_MESSAGE);
+    showDialog('Taken offline', TAKEN_OFFLINE_MESSAGE, undefined, { icon: ShieldAlert, tone: 'warning' });
   }, [applySession]);
 
   // The server ended this member's live session before active_until:

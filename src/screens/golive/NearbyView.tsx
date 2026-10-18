@@ -1,7 +1,7 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronRight } from 'lucide-react-native';
+import { Bluetooth, ChevronRight, Search } from 'lucide-react-native';
 import { useCallback, useMemo, useRef } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BleDebugPanel } from '../../components/BleDebugPanel';
 import { FilterSummary } from '../../components/FilterSummary';
 import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase, useCountUp } from '../../components/GoLiveRadar';
@@ -16,6 +16,7 @@ import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/typography';
+import { showDialog } from '../../components/DialogHost';
 
 const NEARBY_CONSENT = {
   title: 'Allow Nearby?',
@@ -86,12 +87,12 @@ export function NearbyView({ navigation, onSwitchToEvent }: Props) {
   async function goAvailable() {
     const result = await setAvailable(true);
     if (result === 'NEED_INTENT') {
-      Alert.alert('Add what you’re looking for', 'So people nearby who match it can find you.', [
+      showDialog('Add what you’re looking for', 'So people nearby who match it can find you.', [
         { text: 'Not now', style: 'cancel' },
         { text: 'Add it', onPress: openFilter },
-      ]);
+      ], { icon: Search });
     } else if (result === 'NEED_CONSENT') {
-      Alert.alert(NEARBY_CONSENT.title, NEARBY_CONSENT.body, [
+      showDialog(NEARBY_CONSENT.title, NEARBY_CONSENT.body, [
         { text: 'Not now', style: 'cancel' },
         {
           text: 'Allow',
@@ -101,7 +102,7 @@ export function NearbyView({ navigation, onSwitchToEvent }: Props) {
             setTimeout(() => setAvailable(true), 0);
           },
         },
-      ]);
+      ], { icon: Bluetooth });
     }
   }
   const holdRef = useRef(goAvailable);
