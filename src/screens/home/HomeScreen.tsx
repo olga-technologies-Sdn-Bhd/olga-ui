@@ -237,7 +237,7 @@ export function HomeScreen({ navigation }: Props) {
         style={({ pressed }) => [styles.capital, pressed && styles.pressed]}
         onPress={() => setIndexSoon(true)}
         accessibilityRole="button"
-        accessibilityLabel="Your Social Capital Graph"
+        accessibilityLabel="Your Social Capital Index"
       >
         <LinearGradient
           colors={[colors.cardFrom, colors.cardTo]}
@@ -247,7 +247,8 @@ export function HomeScreen({ navigation }: Props) {
         />
         <View style={styles.capitalTop}>
           <Text style={styles.capitalTitle} numberOfLines={1}>
-            {firstName ? `${firstName}'s Social Capital` : 'My Social Capital'}
+            {/* Sree: "Your", not the member's name. */}
+            Your Social Capital Index
           </Text>
           <View style={styles.month}>
             <Text style={styles.monthText}>
