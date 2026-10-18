@@ -162,7 +162,7 @@ export function SignUpScreen() {
         // help until the backend can look the member up, so sign out.
         Alert.alert(
           'Already registered',
-          "This email or number already has an Ol-ga account, but signing back in on a new or reinstalled device isn't available yet. Please contact Ol-ga support."
+          'This email or mobile number already belongs to an Ol-ga account. Sign in with the email you used before, or contact Ol-ga support.'
         );
         await logOut();
         setName('');
@@ -171,7 +171,7 @@ export function SignUpScreen() {
         return;
       }
       setStep('mobile');
-      Alert.alert('Could not create your profile', 'Please check your connection and try again.');
+      Alert.alert("Couldn't create your profile", 'Please check your connection and try again.');
     }
   }
 
@@ -213,7 +213,7 @@ export function SignUpScreen() {
         {(step === 'mobile' || step === 'registering') && (
           <ChatBubble
             from="them"
-            text={`Lovely to meet you, ${name}. What's the best number to reach you on? I'll only use it to coordinate your meetups.`}
+            text={`Lovely to meet you, ${name}. What's the best number to reach you on? I'll only use it to arrange your meetings.`}
           />
         )}
         {mobile !== '' && <ChatBubble from="me" text={mobile} />}

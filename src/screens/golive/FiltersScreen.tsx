@@ -81,7 +81,7 @@ export function FiltersScreen({ navigation }: Props) {
       <Text style={styles.hint}>
         {canEditIntent
           ? 'You can change this once while live. This will find you new relevant people.'
-          : "You've changed this once in this session. It opens again next time you go live."}
+          : "You've changed this once in this session. It opens again next time you Go Live."}
       </Text>
 
       <View style={styles.divider} />
@@ -128,7 +128,7 @@ export function FiltersScreen({ navigation }: Props) {
         <View style={styles.toggleRow}>
           <View style={styles.flex}>
             <Text style={styles.h3}>Allow requests below {minMatch}%</Text>
-            <Text style={styles.hint}>Off: only people above your bar can send you a Commit.</Text>
+            <Text style={styles.hint}>When off, only people above your minimum match can send you a Commit.</Text>
           </View>
           <ToggleSwitch on={allowNearMatches} onToggle={() => setAllowNearMatches((v) => !v)} />
         </View>
@@ -136,7 +136,7 @@ export function FiltersScreen({ navigation }: Props) {
         <View style={styles.toggleRow}>
           <View style={styles.flex}>
             <Text style={styles.h3}>Share changes to what you're looking for</Text>
-            <Text style={styles.hint}>Off: edits stay private to your matching.</Text>
+            <Text style={styles.hint}>When off, your changes stay private.</Text>
           </View>
           <ToggleSwitch on={shareIntentChanges} onToggle={() => setShareIntentChanges((v) => !v)} />
         </View>

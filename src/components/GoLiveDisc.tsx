@@ -111,7 +111,7 @@ export function GoLiveDisc({
           disabled={disabled || locked}
           accessibilityRole="button"
           accessibilityLabel={accessibilityLabel ?? label}
-          accessibilityHint={canHold ? 'Press and hold to go live' : undefined}
+          accessibilityHint={canHold ? 'Press and hold to Go Live' : undefined}
         >
           <Animated.View
             style={[

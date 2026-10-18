@@ -94,7 +94,7 @@ export function NearbyRequestScreen({ route, navigation }: Props) {
                 : request.sync.outcome === 'not-allowed'
                   ? "Ol-ga couldn't save this one."
                   : 'Saved to Ol-ga.'
-              : 'Saved on your phone; Ol-ga gets it when you’re online.'}
+              : 'Saved on your phone. It reaches Ol-ga when you’re back online.'}
           </Text>
         </View>
       )}

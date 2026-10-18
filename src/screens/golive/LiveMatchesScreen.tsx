@@ -68,10 +68,10 @@ export function LiveMatchesScreen({ navigation }: Props) {
           e.reason === 'TIMED_OUT'
             ? 'Still matching. Try again in a moment.'
             : e.reason === 'CONSENT_DENIED'
-              ? "Matching is off, so we can't find your matches."
+              ? "Matching is off, so we can't find relevant people."
               : "Couldn't find relevant people right now."
         );
-      else setError(e instanceof ApiError && e.status > 0 ? `Couldn't load matches (${e.status})` : "Couldn't reach the server");
+      else setError(e instanceof ApiError && e.status > 0 ? `Couldn't load matches (${e.status})` : "Couldn't reach Ol-ga. Check your connection.");
     }
   }, [activeEvent, runMatching, navigation]);
 

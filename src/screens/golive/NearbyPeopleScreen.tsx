@@ -63,7 +63,7 @@ export function NearbyPeopleScreen({ navigation }: Props) {
 
       {shown.length === 0 && (
         <Card>
-          <Text style={styles.sub}>Nobody nearby right now. People appear here as they come close and go available.</Text>
+          <Text style={styles.sub}>Nobody nearby right now. People appear here as they come close and go live.</Text>
         </Card>
       )}
 

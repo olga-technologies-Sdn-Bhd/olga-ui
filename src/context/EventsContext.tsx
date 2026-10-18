@@ -83,7 +83,7 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
         console.warn(`Events load failed (${e.code}): ${e.message}, correlation_id=${e.correlationId ?? 'none'}`);
       }
       if (seq !== loadSeq.current) return;
-      setError(e instanceof ApiError && e.status > 0 ? `Couldn't load events (${e.status})` : "Couldn't reach the server");
+      setError(e instanceof ApiError && e.status > 0 ? `Couldn't load events (${e.status})` : "Couldn't reach Ol-ga. Check your connection.");
       setEvents((prev) => prev ?? []);
     }
   }, [applyEvents]);

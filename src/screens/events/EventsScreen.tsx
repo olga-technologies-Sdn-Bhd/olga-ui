@@ -67,7 +67,7 @@ export function EventsScreen({ navigation }: Props) {
           ? 'That event was cancelled.'
           : e instanceof ApiError && e.status > 0
             ? `Couldn't register you (${e.status})`
-            : "Couldn't reach the server"
+            : "Couldn't reach Ol-ga. Check your connection."
       );
     } finally {
       setRegistering(null);
