@@ -295,7 +295,7 @@ export function HomeScreen({ navigation }: Props) {
       <View style={styles.list}>
         {shown.map((u) => (
           <Pressable key={u.key} onPress={u.onPress} disabled={!u.onPress} style={styles.row} accessibilityRole={u.onPress ? 'button' : undefined}>
-            <View style={[styles.icon, u.key === 'tip-confirmedMeeting' && styles.iconAmber]}>{u.icon}</View>
+            <View style={[styles.icon, u.kind === 'network' && styles.iconPerson, u.key === 'tip-confirmedMeeting' && styles.iconAmber]}>{u.icon}</View>
             <View style={styles.flex}>
               <Text style={styles.meta}>{u.meta}</Text>
               <Text style={styles.body}>
@@ -385,8 +385,10 @@ const makeStyles = (colors: ThemeColors) =>
       borderBottomColor: colors.line,
     },
     icon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+    // People's initials on the soft brand tint (as Avatar).
+    iconPerson: { backgroundColor: colors.accentFill },
     iconAmber: { backgroundColor: colors.amberSoft },
-    initials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.text },
+    initials: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: '700', color: colors.accent },
     meta: { fontSize: 12, color: colors.muted },
     body: { fontSize: 14, lineHeight: 20, color: colors.text, marginTop: 1 },
     bodyBold: { fontFamily: fonts.bodyBold, fontWeight: '700' },

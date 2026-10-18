@@ -140,14 +140,14 @@ function TabButton({
             <Icon size={ICON_SIZE} color={idle} strokeWidth={tab.strong ? 2.4 : 1.8} />
           </Animated.View>
           <Animated.View style={[styles.layer, { opacity: on }]}>
-            <Icon size={ICON_SIZE} color={colors.brand} strokeWidth={2.4} />
+            <Icon size={ICON_SIZE} color={colors.accent} strokeWidth={2.4} />
           </Animated.View>
         </View>
         <View>
           <Animated.Text style={[styles.label, { color: idle, opacity: off }]} numberOfLines={1}>
             {tab.label}
           </Animated.Text>
-          <Animated.Text style={[styles.label, styles.layer, { color: colors.brand, opacity: on }]} numberOfLines={1}>
+          <Animated.Text style={[styles.label, styles.layer, { color: colors.accent, opacity: on }]} numberOfLines={1}>
             {tab.label}
           </Animated.Text>
         </View>
@@ -195,7 +195,7 @@ const makeStyles = (colors: ThemeColors) =>
       top: PILL_INSET,
       bottom: PILL_INSET,
       borderRadius: (TAB_BAR_HEIGHT - PILL_INSET * 2) / 2,
-      backgroundColor: colors.brandSoft,
+      backgroundColor: colors.accentFill,
     },
     tab: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'center' },
     tabInner: { alignItems: 'center', gap: 2 },

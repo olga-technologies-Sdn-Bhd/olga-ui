@@ -175,7 +175,7 @@ function Row({
 function RowIcon({ icon: Icon, styles, colors }: { icon: LucideIcon; styles: ReturnType<typeof makeStyles>; colors: ThemeColors }) {
   return (
     <View style={styles.rowIcon}>
-      <Icon size={19} color={colors.brand} strokeWidth={2} />
+      <Icon size={19} color={colors.accent} strokeWidth={2} />
     </View>
   );
 }
