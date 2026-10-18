@@ -9,6 +9,7 @@ import type { IncomingCommit, Meeting, OutgoingCommit } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { ListGroup, ListRow } from '../../components/ListGroup';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { Silhouette } from '../../components/Silhouette';
@@ -174,67 +175,66 @@ export function CommitsPanel() {
       {meetings.length > 0 && (
         <>
           <Text style={styles.sectionTitle}>Meeting</Text>
-          {meetings.map((m) => (
-            <Pressable
-              key={m.conversation_id}
-              accessibilityRole="button"
-              onPress={() =>
-                m.plan &&
-                navigation.navigate('Meetup', { name: m.display_name, headline: m.headline, where: m.plan.where, when: m.plan.when })
-              }
-            >
-              <Card style={styles.row}>
-                <Avatar initials={m.display_name ? getInitials(m.display_name) : '?'} />
-                <View style={styles.flex}>
-                  <Text style={styles.h3}>{m.display_name ?? 'Your meeting'}</Text>
-                  {m.headline && <Text style={styles.sub}>{m.headline}</Text>}
-                  {m.plan && (
+          <ListGroup>
+            {meetings.map((m) => (
+              <ListRow
+                key={m.conversation_id}
+                leading={<Avatar initials={m.display_name ? getInitials(m.display_name) : '?'} />}
+                title={m.display_name ?? 'Your meeting'}
+                subtitle={m.headline}
+                detail={
+                  m.plan && (
                     <View style={styles.planRow}>
-                      <Check size={14} color={colors.positive} strokeWidth={2.6} />
+                      <Check size={13} color={colors.positive} strokeWidth={2.6} />
                       <Text style={styles.planText}>{planLine(m.plan)}</Text>
                     </View>
-                  )}
-                </View>
-                <Text style={styles.small}>{formatTime(m.last_activity_at)}</Text>
-              </Card>
-            </Pressable>
-          ))}
+                  )
+                }
+                trailing={<Text style={styles.time}>{formatTime(m.last_activity_at)}</Text>}
+                onPress={
+                  m.plan
+                    ? () => navigation.navigate('Meetup', { name: m.display_name, headline: m.headline, where: m.plan!.where, when: m.plan!.when })
+                    : undefined
+                }
+              />
+            ))}
+          </ListGroup>
         </>
       )}
 
       {outgoing.length > 0 && (
         <>
           <Text style={styles.sectionTitle}>Sent</Text>
-          {outgoing.map((o) => {
-            const accepted = o.status === 'ACCEPTED';
-            return (
-              <Pressable
-                key={o.request_id}
-                disabled={!accepted}
-                onPress={() =>
-                  navigation.navigate('Meetup', {
-                    name: o.recipient.display_name,
-                    headline: o.recipient.headline,
-                    where: o.plan.where,
-                    when: o.plan.when,
-                    eventName: o.event.name,
-                    picker: 'them',
-                  })
-                }
-              >
-                <Card style={styles.row}>
-                  {accepted && o.recipient.display_name ? <Avatar initials={getInitials(o.recipient.display_name)} /> : <Silhouette />}
-                  <View style={styles.flex}>
-                    {/* The name appears only once they accept. */}
-                    <Text style={styles.h3}>{accepted && o.recipient.display_name ? o.recipient.display_name : o.recipient.headline || 'Attendee'}</Text>
-                    {accepted && o.recipient.headline && <Text style={styles.sub}>{o.recipient.headline}</Text>}
-                    <Text style={styles.small}>{planLine(o.plan)}</Text>
-                  </View>
-                  <Pill label={STATUS_LABELS[o.status]} tone={accepted ? 'positive' : 'default'} />
-                </Card>
-              </Pressable>
-            );
-          })}
+          <ListGroup>
+            {outgoing.map((o) => {
+              const accepted = o.status === 'ACCEPTED';
+              const named = accepted && !!o.recipient.display_name;
+              return (
+                <ListRow
+                  key={o.request_id}
+                  leading={named ? <Avatar initials={getInitials(o.recipient.display_name!)} /> : <Silhouette />}
+                  // The name appears only once they accept.
+                  title={named ? o.recipient.display_name! : o.recipient.headline || 'Attendee'}
+                  subtitle={named ? o.recipient.headline : planLine(o.plan)}
+                  detail={named ? <Text style={styles.detail}>{planLine(o.plan)}</Text> : undefined}
+                  trailing={<Pill label={STATUS_LABELS[o.status]} tone={accepted ? 'positive' : 'default'} />}
+                  onPress={
+                    accepted
+                      ? () =>
+                          navigation.navigate('Meetup', {
+                            name: o.recipient.display_name,
+                            headline: o.recipient.headline,
+                            where: o.plan.where,
+                            when: o.plan.when,
+                            eventName: o.event.name,
+                            picker: 'them',
+                          })
+                      : undefined
+                  }
+                />
+              );
+            })}
+          </ListGroup>
         </>
       )}
     </Screen>
@@ -255,6 +255,8 @@ const makeStyles = (colors: ThemeColors) =>
     row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
     actions: { flexDirection: 'row', gap: 10, marginTop: 12 },
-    planRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
+    planRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+    time: { fontSize: 12, color: colors.muted },
+    detail: { fontSize: 12, color: colors.muted },
     planText: { fontFamily: fonts.bodyBold, fontSize: 12, fontWeight: semibold, color: colors.positive },
   });

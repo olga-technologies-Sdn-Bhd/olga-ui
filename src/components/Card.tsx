@@ -18,8 +18,9 @@ export function Card({ children, soft, style }: Props) {
       StyleSheet.create({
         base: {
           backgroundColor: colors.surface,
-          borderRadius: radius.lg,
-          padding: 16,
+          // The app's standard box: same radius as ListGroup, compact padding.
+          borderRadius: radius.md,
+          padding: 14,
           // A hairline, never an elevation shadow: on Android the shadow turns
           // into a square-cornered box behind the card while screens animate.
           borderWidth: 1,
