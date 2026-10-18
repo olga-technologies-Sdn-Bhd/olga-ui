@@ -368,10 +368,11 @@ const makeStyles = (colors: ThemeColors) =>
     sub: { fontSize: 12, color: colors.muted },
     // Filters as text tabs with an underline, edge to edge above the list.
     tabs: { flexDirection: 'row', marginHorizontal: -20, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
-    tab: { flex: 1, alignItems: 'center', paddingTop: 8, minHeight: 44 },
-    tabText: { fontSize: 14, color: colors.muted, paddingBottom: 9 },
+    // The underline sits on the divider (no gap below it); 40 still makes a comfortable tap target.
+    tab: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingTop: 6, minHeight: 40 },
+    tabText: { fontSize: 14, color: colors.muted, paddingBottom: 7 },
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: '700', color: colors.text },
-    tabLine: { height: 3, width: 44, borderRadius: 2, backgroundColor: 'transparent' },
+    tabLine: { height: 3, width: 44, borderRadius: 2, backgroundColor: 'transparent', marginBottom: -1 },
     tabLineActive: { backgroundColor: colors.selected },
     // Rows run edge to edge, split by hairlines.
     list: { marginHorizontal: -20 },
