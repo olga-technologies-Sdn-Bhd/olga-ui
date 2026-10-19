@@ -70,7 +70,8 @@ export async function activateMember(member: StoredMember, api: MemberApi): Prom
 export type RefreshResult =
   | { status: 'active'; member: StoredMember } // confirmed by the server
   | { status: 'offline'; member: StoredMember } // couldn't check; keep the cached member
-  | { status: 'stale' }; // server doesn't know this member any more
+  | { status: 'stale' } // server doesn't know this member any more
+  | { status: 'not_active' }; // 403 MEMBER_NOT_ACTIVE: e.g. waiting for deletion
 
 // Checks a cached member against GET /v1/me/profile. Only a definite
 // "not registered" drops the member; network errors and 5xx never force
@@ -80,7 +81,9 @@ export async function refreshMember(member: StoredMember, api: MemberApi): Promi
   try {
     profile = await api.getMyProfile(member.member_id);
   } catch (error) {
-    return isStaleMemberError(error) ? { status: 'stale' } : { status: 'offline', member };
+    if (isStaleMemberError(error)) return { status: 'stale' };
+    if (error instanceof ApiError && error.status === 403 && error.code === 'MEMBER_NOT_ACTIVE') return { status: 'not_active' };
+    return { status: 'offline', member };
   }
   let next: StoredMember = {
     ...member,
@@ -98,7 +101,33 @@ export async function refreshMember(member: StoredMember, api: MemberApi): Promi
 export type LookupResult =
   | { status: 'found'; member: StoredMember }
   | { status: 'not_registered' } // 404 MEMBER_NOT_REGISTERED: a new user
-  | { status: 'unavailable'; correlationId?: string }; // offline, 5xx, or a server without the route
+  | { status: 'unavailable'; correlationId?: string } // offline, 5xx, or a server without the route
+  | { status: 'deletion_pending'; dueAt?: string }; // 409 MEMBER_DELETION_PENDING: the member asked to be deleted
+
+// The member behind this email asked to delete their account; they can't sign
+// in or register again until the deletion completes (due_at).
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Shown on the sign-in screen when a member waiting for deletion signs in.
+export function deletionPendingNotice(dueAt?: string): string {
+  const due = dueAt ? new Date(dueAt) : null;
+  const when = due && !isNaN(due.getTime()) ? ` after ${due.getDate()} ${MONTHS[due.getMonth()]} ${due.getFullYear()}` : ' once it is erased';
+  return `This account is being deleted. You can join again with this email${when}.`;
+}
+
+export class AccountDeletionPendingError extends Error {
+  dueAt?: string;
+  constructor(dueAt?: string) {
+    super('This account is being deleted');
+    this.name = 'AccountDeletionPendingError';
+    this.dueAt = dueAt;
+  }
+}
+
+export function deletionDueAt(error: ApiError): string | undefined {
+  const due = error.details?.due_at;
+  return typeof due === 'string' ? due : undefined;
+}
 
 // POST /v1/members/lookup for a verified email. A found DRAFT member is
 // activated silently (same needs_activation retry rule as registration).
@@ -111,6 +140,9 @@ export async function lookupExistingMember(email: string, api: MemberApi): Promi
   } catch (error) {
     if (error instanceof ApiError && error.status === 404 && error.code === 'MEMBER_NOT_REGISTERED') {
       return { status: 'not_registered' };
+    }
+    if (error instanceof ApiError && error.status === 409 && error.code === 'MEMBER_DELETION_PENDING') {
+      return { status: 'deletion_pending', dueAt: deletionDueAt(error) };
     }
     return { status: 'unavailable', correlationId: error instanceof ApiError ? error.correlationId : undefined };
   }
@@ -137,12 +169,19 @@ export async function resolveLogin(
   if (!cached) {
     // Nothing on this device (reinstall, cleared data, new phone): ask Core.
     const lookup = await lookupExistingMember(key, api);
+    if (lookup.status === 'deletion_pending') throw new AccountDeletionPendingError(lookup.dueAt);
     if (lookup.status !== 'found') return { store: base, member: null, lookup };
     return { store: withMember(base, key, lookup.member), member: lookup.member, lookup };
   }
 
   const result = await refreshMember(cached, api);
   if (result.status === 'stale') return { store: withoutMember(base, key), member: null };
+  if (result.status === 'not_active') {
+    // Ask the lookup why: a pending deletion carries its date.
+    const lookup = await lookupExistingMember(key, api);
+    if (lookup.status === 'deletion_pending') throw new AccountDeletionPendingError(lookup.dueAt);
+    return { store: base, member: cached };
+  }
   return { store: withMember(base, key, result.member), member: result.member };
 }
 
@@ -163,6 +202,7 @@ export class MemberRecoveryUnavailableError extends Error {
 export async function recoverExistingMember(email: string, conflict: ApiError, api: MemberApi): Promise<StoredMember> {
   const lookup = await lookupExistingMember(email, api);
   if (lookup.status === 'found') return lookup.member;
+  if (lookup.status === 'deletion_pending') throw new AccountDeletionPendingError(lookup.dueAt);
   throw new MemberRecoveryUnavailableError(
     (lookup.status === 'unavailable' ? lookup.correlationId : undefined) ?? conflict.correlationId
   );

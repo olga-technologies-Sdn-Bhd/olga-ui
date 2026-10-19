@@ -10,6 +10,8 @@ export type ApiErrorBody = {
   message: string;
   correlation_id: string;
   field_errors?: Record<string, string[]>;
+  // Extra facts for some codes, e.g. 409 MEMBER_DELETION_PENDING: { due_at }.
+  details?: Record<string, unknown>;
 };
 
 // Core/NLP serialize `ETag` as `e_tag` in bodies (also sent as the ETag
