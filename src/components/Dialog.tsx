@@ -10,7 +10,7 @@ import { Button } from './Button';
 // danger: red (something that can't be undone).
 export type DialogTone = 'info' | 'warning' | 'danger';
 
-// primary: the navy button (listed first); secondary: outlined; destructive:
+// primary: the ink button (listed first); secondary: outlined; destructive:
 // outlined with red text (the action that can't be undone).
 export type DialogAction = { label: string; onPress: () => void; kind?: 'primary' | 'secondary' | 'destructive' };
 

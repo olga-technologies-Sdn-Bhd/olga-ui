@@ -19,7 +19,7 @@ type Props = BottomTabBarProps & { tabs: Record<string, GlassTab>; hidden?: bool
 
 // A floating glass capsule. The active tab sits on a soft pill that glides to
 // the next tab with a liquid stretch (it widens in flight, then settles), and
-// the icons cross-fade between grey and navy. Everything runs on the native
+// the icons cross-fade between grey and ink. Everything runs on the native
 // animation driver, so it stays smooth while JS is busy.
 export function GlassTabBar({ state, navigation, tabs, hidden }: Props) {
   const { colors } = useTheme();
@@ -110,7 +110,7 @@ function TabButton({
   colors: ThemeColors;
 }) {
   // A small lift when a tab becomes active, a press-in squeeze, and the
-  // grey and navy versions cross-fading.
+  // grey and ink versions cross-fading.
   const scale = useRef(new Animated.Value(1)).current;
   const on = useRef(new Animated.Value(focused ? 1 : 0)).current;
   const wasFocused = useRef(focused);
@@ -143,7 +143,7 @@ function TabButton({
             <Icon size={ICON_SIZE} color={idle} strokeWidth={tab.strong ? 2.4 : 1.8} />
           </Animated.View>
           <Animated.View style={[styles.layer, { opacity: on }]}>
-            <Icon size={ICON_SIZE} color={colors.accent} strokeWidth={2.4} />
+            <Icon size={ICON_SIZE} color={colors.accent} strokeWidth={2.2} />
           </Animated.View>
         </View>
         <View>
@@ -173,7 +173,7 @@ const makeStyles = (colors: ThemeColors) =>
       // A soft lift on iOS; Android draws elevation shadows through
       // translucent fills, so it goes without.
       ...Platform.select({
-        ios: { shadowColor: '#0B1220', shadowOpacity: 0.12, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } },
+        ios: { shadowColor: '#1A1410', shadowOpacity: 0.12, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } },
         default: {},
       }),
     },
@@ -198,7 +198,8 @@ const makeStyles = (colors: ThemeColors) =>
       top: PILL_INSET,
       bottom: PILL_INSET,
       borderRadius: (TAB_BAR_HEIGHT - PILL_INSET * 2) / 2,
-      backgroundColor: colors.accentFill,
+      // The selected tab: a light caramel pill, its icon and label in espresso.
+      backgroundColor: colors.accentWash,
     },
     tab: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'center' },
     tabInner: { alignItems: 'center', gap: 2 },

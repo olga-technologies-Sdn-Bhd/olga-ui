@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react
 import { useTheme } from '../theme/ThemeContext';
 import { fonts, semibold } from '../theme/typography';
 
-// charcoal: Commit / Accept (navy, white text in both themes).
+// charcoal: Commit / Accept (ink, white text in both themes).
 // danger: an action that can't be undone (Delete account).
 type Variant = 'primary' | 'secondary' | 'ghost' | 'charcoal' | 'danger';
 

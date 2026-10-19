@@ -13,6 +13,8 @@ export type HomeStackParamList = {
   DeleteAccount: undefined;
   HowYouAppear: undefined;
   BlockedMembers: undefined;
+  // The Olga agent (a preview); prompt: sent as the first message.
+  OlgaAgent: { prompt?: string } | undefined;
 };
 
 export type GoLiveStackParamList = {

@@ -1,0 +1,8 @@
+Home hero photos, by time of day. All from Unsplash, under the Unsplash License
+(https://unsplash.com/license): free for commercial use, no attribution required.
+Each is cropped to portrait (1080 x 1384), lightly toned and compressed.
+
+home-morning.jpg  https://unsplash.com/photos/the-sun-is-setting-over-the-hills-and-trees-imO5ksMjXGs
+home-noon.jpg     https://unsplash.com/photos/sunlight-streams-through-clouds-onto-a-green-mountain-valley-TS9F8wEM82Q
+home-evening.jpg  https://unsplash.com/photos/sunset-over-silhouetted-mountain-ranges-hrIQN3E1ZTY
+home-night.jpg    https://unsplash.com/photos/the-night-sky-with-stars-above-a-mountain-O71npBgVnsI

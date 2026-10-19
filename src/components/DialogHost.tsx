@@ -11,8 +11,8 @@ import { Dialog, DialogAction, DialogTone } from './Dialog';
 //     { text: 'Log out', style: 'destructive', onPress: logOut },
 //   ], { icon: LogOut });
 //
-// Order on screen: the safe choice is the navy button on top. With a
-// destructive button, Cancel is the navy one; otherwise the main action is,
+// Order on screen: the safe choice is the ink button on top. With a
+// destructive button, Cancel is the ink one; otherwise the main action is,
 // and Cancel sits below it. Tapping outside or Back counts as Cancel.
 export type DialogButton = { text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void };
 export type DialogOptions = { icon?: LucideIcon; tone?: DialogTone };
