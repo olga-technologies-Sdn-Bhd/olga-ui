@@ -72,6 +72,10 @@ type LiveState = {
   // Records a decision for the active policy version. Throws ApiError.
   recordConsentDecision: (purpose: ConsentPurpose, decision: Exclude<ConsentDecision, 'WITHDRAWN'>) => Promise<void>;
   stopLive: () => Promise<void>;
+  // GOL-02: adds minutes to the live session (same matches). Resolves with
+  // 'EXTENDED', 'AT_EVENT_END' (already runs to the event's end, so nothing
+  // changed) or 'ENDED' (the session had already finished). Throws otherwise.
+  extendLive: (minutes: number) => Promise<'EXTENDED' | 'AT_EVENT_END' | 'ENDED'>;
   // What the member is looking for (Home "Your intent"); saved as the WANT
   // intent for the active event when matching runs.
   intentText: string;
@@ -329,6 +333,27 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     applySession(null);
   }, [applySession]);
 
+  const extendLive = useCallback(
+    async (minutes: number) => {
+      const current = sessionRef.current;
+      if (!current) return 'ENDED' as const;
+      try {
+        const next = await coreApi.extendLiveMode(current.event_id, minutes);
+        const moved = new Date(next.active_until).getTime() > new Date(current.active_until).getTime();
+        applySession(next);
+        return moved ? ('EXTENDED' as const) : ('AT_EVENT_END' as const);
+      } catch (e) {
+        if (e instanceof ApiError && e.code === 'LIVE_MODE_NOT_ACTIVE') {
+          applySession(null);
+          return 'ENDED' as const;
+        }
+        logApiError('Extend Live Mode', e);
+        throw e;
+      }
+    },
+    [applySession]
+  );
+
   const runMatching = useCallback(async (next?: { intentText?: string; minMatch?: number }) => {
     if (!activeEvent) return [];
     if (decisions.current.MATCHING === 'DENIED') throw new MatchingError('CONSENT_DENIED');
@@ -358,6 +383,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       checkConsent,
       recordConsentDecision,
       stopLive,
+      extendLive,
       intentText,
       setIntentText,
       matches,
@@ -375,7 +401,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     }),
     // activeUntil is derived from session; listing session keeps it stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeEvent, isLive, session, goLive, checkConsent, recordConsentDecision, stopLive, intentText, matches, runMatching, filters, setFilters, intentEditSession, passedIds, committedIds]
+    [activeEvent, isLive, session, goLive, checkConsent, recordConsentDecision, stopLive, extendLive, intentText, matches, runMatching, filters, setFilters, intentEditSession, passedIds, committedIds]
   );
 
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;

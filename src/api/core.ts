@@ -99,6 +99,11 @@ export const coreApi = {
   startLiveMode: async (eventId: string, body: LiveModeRequest, options?: RequestOptions): Promise<LiveModeSession> => {
     return client.post<LiveModeSession>(`/v1/events/${eventId}/live-mode`, body, options);
   },
+  // GOL-02: more time on the same session (same matches, no new search),
+  // never past the event's end. 409 LIVE_MODE_NOT_ACTIVE once it has ended.
+  extendLiveMode: async (eventId: string, durationMinutes: number, options?: RequestOptions): Promise<LiveModeSession> => {
+    return client.post<LiveModeSession>(`/v1/events/${eventId}/live-mode/extend`, { duration_minutes: durationMinutes }, options);
+  },
   // 404 LIVE_MODE_NOT_ACTIVE means already stopped/expired — treat as success.
   stopLiveMode: async (eventId: string, options?: RequestOptions) => {
     return client.del<void>(`/v1/events/${eventId}/live-mode`, options);
