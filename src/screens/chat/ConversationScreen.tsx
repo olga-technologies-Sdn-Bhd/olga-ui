@@ -9,7 +9,7 @@ import { coreApi } from '../../api/core';
 import type { ChatMessage, Conversation, ReportCategory } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
-import { BottomSheet, SheetChoices, SheetOption } from '../../components/BottomSheet';
+import { BottomSheet, SheetChoices, SheetGroup, SheetOption } from '../../components/BottomSheet';
 import { Button } from '../../components/Button';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
@@ -686,7 +686,9 @@ export function ConversationScreen({ route, navigation }: Props) {
 
       <BottomSheet visible={sheet !== null} onClose={closeSheet} title={sheetTitle(sheet, name)} subtitle={sheetSubtitle(sheet, name)}>
         {sheet?.kind === 'mine' && (
-          <SheetOption label="Delete message" danger onPress={() => openSheet({ kind: 'confirmDelete', message: sheet.message })} />
+          <SheetGroup>
+            <SheetOption label="Delete message" danger onPress={() => openSheet({ kind: 'confirmDelete', message: sheet.message })} />
+          </SheetGroup>
         )}
         {sheet?.kind === 'confirmDelete' && (
           <>
@@ -695,10 +697,10 @@ export function ConversationScreen({ route, navigation }: Props) {
           </>
         )}
         {sheet?.kind === 'theirs' && (
-          <>
+          <SheetGroup>
             <SheetOption label="Report message" onPress={() => openSheet({ kind: 'report', message: sheet.message })} />
             <SheetOption label={`Block ${firstName ?? 'this member'}`} danger onPress={() => openSheet({ kind: 'confirmBlock' })} />
-          </>
+          </SheetGroup>
         )}
         {sheet?.kind === 'report' && (
           <>
@@ -734,7 +736,7 @@ export function ConversationScreen({ route, navigation }: Props) {
           </>
         )}
         {sheet?.kind === 'menu' && (
-          <>
+          <SheetGroup>
             {conversation && !networkDown && <SheetOption label="Mute notifications" onPress={() => openSheet({ kind: 'mute' })} />}
             {peerId && (
               <SheetOption
@@ -747,15 +749,15 @@ export function ConversationScreen({ route, navigation }: Props) {
               />
             )}
             <SheetOption label={`Block ${firstName ?? 'this member'}`} danger onPress={() => openSheet({ kind: 'confirmBlock' })} />
-          </>
+          </SheetGroup>
         )}
         {sheet?.kind === 'mute' && (
-          <>
+          <SheetGroup>
             {MUTE_OPTIONS.map((o) => (
               <SheetOption key={o.label} label={o.label} onPress={() => mute(o.ms)} />
             ))}
             {conversation?.muted_until && <SheetOption label="Unmute" onPress={() => mute(null)} />}
-          </>
+          </SheetGroup>
         )}
         {sheetError && <Text style={styles.error}>{sheetError}</Text>}
       </BottomSheet>

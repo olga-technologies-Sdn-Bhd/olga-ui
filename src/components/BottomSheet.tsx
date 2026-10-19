@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react-native';
-import { useMemo } from 'react';
+import { Children, Fragment, isValidElement, useMemo } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, ThemeColors } from '../theme/colors';
@@ -45,7 +45,8 @@ type OptionProps = {
   selected?: boolean;
 };
 
-// One full-width row in a sheet (actions, mute options, report categories).
+// One slim row in a sheet's option group (actions, mute options). Put rows in
+// a SheetGroup so they sit together like the report reasons.
 export function SheetOption({ label, onPress, danger, selected }: OptionProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -59,6 +60,24 @@ export function SheetOption({ label, onPress, danger, selected }: OptionProps) {
       <Text style={[styles.optionText, danger && styles.optionDanger]}>{label}</Text>
       {selected && <Text style={styles.check}>✓</Text>}
     </Pressable>
+  );
+}
+
+// A sheet's options as one rounded group with hairline dividers, the same
+// look as SheetChoices.
+export function SheetGroup({ children }: { children: React.ReactNode }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const rows = Children.toArray(children).filter(isValidElement);
+  return (
+    <View style={styles.choices}>
+      {rows.map((row, i) => (
+        <Fragment key={row.key ?? i}>
+          {i > 0 && <View style={styles.groupDivider} />}
+          {row}
+        </Fragment>
+      ))}
+    </View>
   );
 }
 
@@ -115,21 +134,19 @@ const makeStyles = (colors: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      borderWidth: 1,
-      borderColor: colors.line,
-      borderRadius: radius.md,
-      paddingVertical: 14,
-      paddingHorizontal: 16,
+      height: 42,
+      paddingHorizontal: 14,
       backgroundColor: colors.surface,
     },
     // Selected: no fill, just the red tick.
     optionSelected: {},
     optionPressed: { backgroundColor: colors.surface2 },
-    optionText: { fontSize: 15, fontWeight: semibold, color: colors.text },
+    optionText: { fontSize: 14.5, color: colors.text },
     optionDanger: { color: colors.danger },
     check: { fontSize: 15, fontWeight: semibold, color: colors.danger },
     choices: { borderWidth: 1, borderColor: colors.line, borderRadius: radius.md, overflow: 'hidden' },
-    choice: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 40, paddingHorizontal: 14 },
+    choice: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 42, paddingHorizontal: 14 },
+    groupDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
     choiceDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
     choiceText: { fontSize: 14.5, color: colors.text },
   });
