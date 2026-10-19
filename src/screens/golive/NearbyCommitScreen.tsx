@@ -5,6 +5,7 @@ import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Screen } from '../../components/Screen';
+import { ReportMemberLink, ReportMemberSheet } from '../../components/ReportMemberSheet';
 import { useNearby } from '../../context/NearbyContext';
 import { GoLiveStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
@@ -29,6 +30,7 @@ export function NearbyCommitScreen({ route, navigation }: Props) {
     requests.find((r) => r.direction === 'out' && r.peer.m === memberId && r.status === 'pending');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reporting, setReporting] = useState(false);
   const shown = person ?? (sent ? { card: sent.peer, score: 0, scoreSource: 'estimate' as const } : undefined);
 
   async function send() {
@@ -58,7 +60,10 @@ export function NearbyCommitScreen({ route, navigation }: Props) {
       </View>
 
       {shown ? (
-        <Card>{person ? <NearbyPersonSummary person={person} /> : <NearbyPersonSummary person={shown} />}</Card>
+        <Card>
+          {person ? <NearbyPersonSummary person={person} /> : <NearbyPersonSummary person={shown} />}
+          <ReportMemberLink onPress={() => setReporting(true)} />
+        </Card>
       ) : (
         <Text style={styles.sub}>This person is no longer nearby.</Text>
       )}
@@ -94,6 +99,7 @@ export function NearbyCommitScreen({ route, navigation }: Props) {
       ) : (
         <Button label="Send Commit" variant="charcoal" loading={sending} disabled={!person} onPress={send} />
       )}
+      <ReportMemberSheet visible={reporting} onClose={() => setReporting(false)} target={{ memberId }} />
     </Screen>
   );
 }

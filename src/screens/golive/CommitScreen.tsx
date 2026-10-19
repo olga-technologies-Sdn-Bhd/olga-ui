@@ -8,6 +8,7 @@ import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
+import { ReportMemberLink, ReportMemberSheet } from '../../components/ReportMemberSheet';
 import { Screen } from '../../components/Screen';
 import { useLive } from '../../context/LiveContext';
 import { GoLiveStackParamList } from '../../navigation/types';
@@ -31,6 +32,7 @@ export function CommitScreen({ route, navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { activeEvent, matches, committedIds, markCommitted } = useLive();
   const { memberId } = route.params;
+  const [reporting, setReporting] = useState(false);
   const card = matches?.find((m) => m.match.member_id === memberId);
   const eventId = activeEvent?.eventId;
   const [spots, setSpots] = useState<MeetingSpot[]>([]);
@@ -107,6 +109,7 @@ export function CommitScreen({ route, navigation }: Props) {
       {card ? (
         <Card>
           <MatchSummary card={card} />
+          <ReportMemberLink onPress={() => setReporting(true)} />
         </Card>
       ) : (
         <Text style={styles.sub}>This person is no longer available.</Text>
@@ -163,6 +166,7 @@ export function CommitScreen({ route, navigation }: Props) {
           onPress={send}
         />
       )}
+      <ReportMemberSheet visible={reporting} onClose={() => setReporting(false)} target={{ memberId }} who={card?.profile?.headline} />
     </Screen>
   );
 }

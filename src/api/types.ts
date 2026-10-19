@@ -483,6 +483,19 @@ export type SendMessageRequest = {
 
 export type ReportCategory = 'SPAM' | 'HARASSMENT' | 'INAPPROPRIATE' | 'SCAM' | 'OTHER';
 
+// POST /v1/members/{memberId}/report (SAF-01). resource: what the report is
+// about, if more than the member's profile (a Commit request or a message they
+// sent you). 409 REPORT_ALREADY_OPEN while an earlier report is still open.
+export type MemberReportCategory = 'SPAM' | 'HARASSMENT' | 'INAPPROPRIATE' | 'FAKE_PROFILE' | 'OTHER';
+export type MemberReportRequest = {
+  category: MemberReportCategory;
+  description?: string; // max 2000 chars
+  resource_type?: 'PROFILE' | 'REQUEST' | 'MESSAGE';
+  resource_id?: string;
+};
+// Never carries the reported member's name or details.
+export type MemberReportResponse = { report_id: string; category: MemberReportCategory; status: string; created_at: string };
+
 export type MessageReportRequest = {
   category: ReportCategory;
   description?: string; // max 2000 chars

@@ -1,6 +1,6 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Check } from 'lucide-react-native';
+import { Ban, Check } from 'lucide-react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { newIdempotencyKey } from '../../api/client';
@@ -11,6 +11,8 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { ListGroup, ListRow } from '../../components/ListGroup';
 import { Pill } from '../../components/Pill';
+import { ReportMemberLink, ReportMemberSheet } from '../../components/ReportMemberSheet';
+import { showDialog } from '../../components/DialogHost';
 import { Screen } from '../../components/Screen';
 import { Silhouette } from '../../components/Silhouette';
 import { useLive } from '../../context/LiveContext';
@@ -21,6 +23,10 @@ import { fonts, semibold } from '../../theme/typography';
 import { commitErrorMessage, expiresIn, planLine, roleLabel, WHEN_LABELS, whereLabel } from '../../utils/commitText';
 import { getInitials } from '../../utils/initials';
 import { haptics } from '../../utils/haptics';
+
+// Report and Block on an incoming Commit (SAF-01, by request ID): built and
+// working on dev, hidden for now at the client's request. true shows them.
+const SHOW_COMMIT_SAFETY = false;
 
 // Incoming Commits have no push yet, so refresh while the screen is open.
 const REFRESH_MS = 15000;
@@ -50,6 +56,8 @@ export function CommitsPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
+  // SAF-01: the incoming Commit whose (anonymous) sender is being reported.
+  const [reporting, setReporting] = useState<IncomingCommit | null>(null);
   // One key per answer, reused if that same answer is retried.
   const answerKeys = useRef<Record<string, string>>({});
 
@@ -124,6 +132,34 @@ export function CommitsPanel() {
     }
   }
 
+  // Block the sender without ever learning who they are (by request ID).
+  function confirmBlock(commit: IncomingCommit) {
+    showDialog(
+      'Block this person?',
+      "They won't be able to send you Commits or message you, and they won't be told.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Block', style: 'destructive', onPress: () => block(commit) },
+      ],
+      { icon: Ban }
+    );
+  }
+
+  async function block(commit: IncomingCommit) {
+    setBusy(commit.request_id);
+    setRowErrors(({ [commit.request_id]: _, ...rest }) => rest);
+    try {
+      await coreApi.blockCommitSender(commit.request_id);
+      setIncoming((list) => (list ?? []).filter((c) => c.request_id !== commit.request_id));
+      setNotice("Blocked. They won't be told.");
+    } catch (e) {
+      setRowErrors((r) => ({ ...r, [commit.request_id]: commitErrorMessage(e, "Couldn't block") }));
+      load();
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <Screen glow={false} onRefresh={load} contentStyle={styles.panel}>
       <View>
@@ -169,6 +205,12 @@ export function CommitsPanel() {
             <Button label="Accept" variant="charcoal" small style={styles.flex} loading={busy === c.request_id} disabled={busy !== null} onPress={() => accept(c)} />
             <Button label="Decline" variant="secondary" small style={styles.flex} disabled={busy !== null} onPress={() => decline(c)} />
           </View>
+          {SHOW_COMMIT_SAFETY && (
+            <View style={styles.safety}>
+              <ReportMemberLink onPress={() => setReporting(c)} />
+              <ReportMemberLink label="Block" icon={Ban} onPress={() => confirmBlock(c)} />
+            </View>
+          )}
           {rowErrors[c.request_id] && <Text style={styles.error}>{rowErrors[c.request_id]}</Text>}
           <Text style={styles.small}>Accept reveals both names at the same moment. Decline is silent: they're never told.</Text>
         </Card>
@@ -241,12 +283,20 @@ export function CommitsPanel() {
           </ListGroup>
         </>
       )}
+      <ReportMemberSheet
+        visible={reporting !== null}
+        onClose={() => setReporting(null)}
+        target={{ commitRequestId: reporting?.request_id ?? '' }}
+        who={reporting?.sender.headline}
+      />
     </Screen>
   );
 }
 
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
+    // Report and Block, quiet, under Accept and Decline.
+    safety: { flexDirection: 'row', justifyContent: 'flex-end', gap: 18 },
     flex: { flex: 1 },
     panel: { paddingTop: 12 },
     h3: { fontFamily: fonts.headingBold, fontSize: 14, fontWeight: semibold, color: colors.text },

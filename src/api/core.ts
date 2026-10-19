@@ -3,6 +3,8 @@ import { makeApiClient, RequestOptions, withEtag } from './client';
 import { cached } from './offlineCache';
 import type {
   AcceptCommitResponse,
+  MemberReportRequest,
+  MemberReportResponse,
   BlockedMember,
   CommitQuota,
   Connection,
@@ -116,6 +118,13 @@ export const coreApi = {
   getOutgoingCommits: () => cached('commits-out', () => client.get<OutgoingCommit[]>('/v1/me/commits/outgoing')),
   acceptCommit: (requestId: string, options?: RequestOptions) =>
     client.patch<AcceptCommitResponse>(`/v1/connection-requests/${encodeURIComponent(requestId)}`, { decision: 'ACCEPT' }, options),
+  // SAF-01 by request ID: the sender of a Commit sent to me stays anonymous.
+  // Report: 201 (never names them), 409 REPORT_ALREADY_OPEN. Block: 204, also
+  // when already blocked; a pending Commit is declined silently. Both 404
+  // COMMIT_NOT_FOUND for anyone but the recipient.
+  reportCommitSender: (requestId: string, body: Pick<MemberReportRequest, 'category' | 'description'>) =>
+    client.post<MemberReportResponse>(`/v1/me/commits/incoming/${encodeURIComponent(requestId)}/report`, body),
+  blockCommitSender: (requestId: string) => client.post<void>(`/v1/me/commits/incoming/${encodeURIComponent(requestId)}/block`),
   // 204, nothing changes for the sender.
   declineCommit: (requestId: string, options?: RequestOptions) =>
     client.patch<void>(`/v1/connection-requests/${encodeURIComponent(requestId)}`, { decision: 'DECLINE' }, options),
@@ -159,6 +168,8 @@ export const coreApi = {
   reportMessage: (messageId: string, body: MessageReportRequest) =>
     client.post<MessageReportResponse>(`${messagePath(messageId)}/report`, body),
   blockMember: (memberId: string) => client.post<void>('/v1/members/block', { member_id: memberId }),
+  reportMember: (memberId: string, body: MemberReportRequest) =>
+    client.post<MemberReportResponse>(`/v1/members/${encodeURIComponent(memberId)}/report`, body),
   listBlockedMembers: () => client.get<BlockedMember[]>('/v1/me/blocks'),
   // 404 BLOCK_NOT_FOUND: not blocked (any more).
   unblockMember: (memberId: string) => client.del<void>(`/v1/members/block/${encodeURIComponent(memberId)}`),
