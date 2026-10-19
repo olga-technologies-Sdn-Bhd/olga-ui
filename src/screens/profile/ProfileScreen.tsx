@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
-import { BriefcaseBusiness, ChevronRight, Eye, Hash, LogOut, LucideIcon, Mail, Moon, Phone, Search, Server } from 'lucide-react-native';
+import { Ban, BriefcaseBusiness, ChevronRight, Eye, Hash, LogOut, LucideIcon, Mail, Moon, Phone, Search, Server } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
@@ -134,6 +134,22 @@ export function ProfileScreen({ navigation }: Props) {
             <Row icon={Server} label="Environment" value={APP_ENV} styles={styles} colors={colors} small />
           </>
         )}
+      </Card>
+
+      <Text style={styles.sectionTitle}>Safety</Text>
+      <Card style={styles.list}>
+        <Pressable
+          onPress={() => navigation.navigate('BlockedMembers')}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+        >
+          <RowIcon icon={Ban} styles={styles} colors={colors} />
+          <View style={styles.rowText}>
+            <Text style={styles.label}>Blocked members</Text>
+            <Text style={styles.sub}>See who you blocked, or unblock them</Text>
+          </View>
+          <ChevronRight size={18} color={colors.muted} />
+        </Pressable>
       </Card>
 
       <Text style={styles.sectionTitle}>Appearance</Text>
