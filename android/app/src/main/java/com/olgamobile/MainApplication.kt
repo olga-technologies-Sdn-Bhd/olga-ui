@@ -26,6 +26,7 @@ class MainApplication : Application(), ReactApplication {
     super.onCreate()
     // Inter with all its weights (res/font/inter.xml), used as fontFamily "Inter".
     ReactFontManager.getInstance().addCustomFont(this, "Inter", R.font.inter)
+    ReactFontManager.getInstance().addCustomFont(this, "InstrumentSerif", R.font.instrument_serif)
     loadReactNative(this)
   }
 }

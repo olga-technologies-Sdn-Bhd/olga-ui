@@ -8,7 +8,7 @@ type Props = {
   tone?: DialogTone;
   title: string;
   message: string;
-  // The safe choice: the navy button on top.
+  // The safe choice: the ink button on top.
   primaryLabel: string;
   onPrimary: () => void;
   secondaryLabel: string;

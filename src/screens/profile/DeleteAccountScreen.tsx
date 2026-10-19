@@ -83,7 +83,7 @@ export function DeleteAccountScreen({ navigation }: Props) {
       <Button label={error ? 'Try again' : 'Delete account'} variant="danger" loading={deleting} onPress={confirm} />
       <Button label="Keep my account" variant="secondary" disabled={deleting} onPress={() => navigation.goBack()} />
 
-      {/* The safe choice is the navy button; deleting is the quiet one below it. */}
+      {/* The safe choice is the ink button; deleting is the quiet one below it. */}
       <ConfirmDialog
         visible={asking}
         icon={Trash2}

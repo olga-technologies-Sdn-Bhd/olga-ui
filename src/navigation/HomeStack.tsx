@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from '../screens/home/HomeScreen';
+import { OlgaAgentScreen } from '../screens/home/OlgaAgentScreen';
 import { DeleteAccountScreen } from '../screens/profile/DeleteAccountScreen';
 import { HowYouAppearScreen } from '../screens/profile/HowYouAppearScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -17,6 +18,8 @@ export function HomeStack() {
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
       <Stack.Screen name="HowYouAppear" component={HowYouAppearScreen} />
+      {/* Olga rises from the bottom, like a sheet you close with X. */}
+      <Stack.Screen name="OlgaAgent" component={OlgaAgentScreen} options={{ animation: 'slide_from_bottom' }} />
     </Stack.Navigator>
   );
 }

@@ -49,9 +49,9 @@ export function MainTabs() {
         // Screens cross-fade on a tab switch (native), as the pill glides.
         screenOptions={{ headerShown: false, animation: 'fade' }}
         tabBar={props => {
-          // A conversation is full screen (its composer sits where the bar would).
-          const inConversation = getFocusedRouteNameFromRoute(props.state.routes[props.state.index]) === 'Conversation';
-          if (inConversation) return null;
+          // A conversation and the Olga agent are full screen (their composer sits where the bar would).
+          const focused = getFocusedRouteNameFromRoute(props.state.routes[props.state.index]);
+          if (focused === 'Conversation' || focused === 'OlgaAgent') return null;
           return (
             <>
               {/* Content fades out under the floating bar instead of being cut off. */}

@@ -75,7 +75,7 @@ const ORBIT_MS = 110000; // one very slow turn of the room
 
 // Soft pastels; the same person always gets the same one.
 const PASTELS = ['#DCE8F8', '#E6DFF5', '#DDF0E3', '#F8E3D4', '#F6DCE6', '#F5EDC9'];
-export const AVATAR_INK = '#1B2A41';
+export const AVATAR_INK = '#2A2622';
 
 function hash(text: string) {
   let h = 2166136261;

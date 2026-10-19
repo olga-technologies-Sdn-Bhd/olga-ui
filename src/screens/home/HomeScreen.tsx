@@ -2,10 +2,9 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { Check, ChevronRight, SlidersHorizontal, Ticket, UsersRound } from 'lucide-react-native';
+import { Check, ChevronRight, Mic, SlidersHorizontal, Ticket, UsersRound } from 'lucide-react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { Animated, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import type { Meeting } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
@@ -20,7 +19,8 @@ import { TipKey, usePrefs } from '../../context/PrefsContext';
 import { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { fonts, semibold } from '../../theme/typography';
+import { display, fonts, semibold } from '../../theme/typography';
+import { OLGA_PROMPTS, OlgaMark } from './OlgaAgentScreen';
 
 type Props = CompositeScreenProps<NativeStackScreenProps<HomeStackParamList, 'Home'>, BottomTabScreenProps<MainTabParamList>>;
 
@@ -227,7 +227,6 @@ export function HomeScreen({ navigation }: Props) {
     // Only the updates list scrolls; the header, card and tabs stay put.
     <Screen scroll={false} style={styles.page} contentStyle={styles.fixed}>
       <View style={styles.header}>
-        <View style={styles.headerSpacer} />
         <Text style={styles.brand}>Ol-ga</Text>
         <Pressable onPress={() => navigation.navigate('Profile')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Your account">
           <Avatar initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" dark />
@@ -286,16 +285,42 @@ export function HomeScreen({ navigation }: Props) {
           >
             {/* Clipped, so the slower drift slides under the edge, never over the tabs. */}
             <Animated.View style={[styles.collapsibleInner, { transform: [{ translateY: headParallax }] }]}>
-              {/* Sree: a simple "Hey <first name>", no time-of-day wishes; the date on the right. */}
-              <View style={styles.hello}>
-                <Text style={styles.greeting} numberOfLines={1}>
-                  Hey {firstName || 'there'}
-                </Text>
-                <Text style={styles.date}>
-                  {/* Short and calm, as in Calendar or Mail: "Sun, 18 Oct". */}
-                  {WEEKDAYS[today.getDay()].slice(0, 3)}, {today.getDate()} {MONTHS[today.getMonth()].slice(0, 3)}
-                </Text>
-              </View>
+              {/* Short and calm, as in Calendar or Mail: "Sun, 18 Oct". */}
+              <Text style={styles.date}>
+                {WEEKDAYS[today.getDay()].slice(0, 3)}, {today.getDate()} {MONTHS[today.getMonth()].slice(0, 3)}
+              </Text>
+              {/* Sree: a simple "Hey <first name>", no time-of-day wishes. */}
+              <Text style={styles.greeting} numberOfLines={1} adjustsFontSizeToFit>
+                Hey {firstName || 'there'},
+              </Text>
+              <Text style={styles.achieve}>What do you want to achieve today?</Text>
+
+              {/* The Olga agent (a preview for now). */}
+              <Pressable
+                onPress={() => navigation.navigate('OlgaAgent')}
+                accessibilityRole="button"
+                accessibilityLabel="Ask Ol-ga anything"
+                style={({ pressed }) => [styles.ask, pressed && styles.pressed]}
+              >
+                <OlgaMark size={32} colors={colors} />
+                <Text style={styles.askText}>Ask Ol-ga anything…</Text>
+                <View style={styles.askMic}>
+                  <Mic size={18} color={colors.onInk} strokeWidth={2} />
+                </View>
+              </Pressable>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsBleed} contentContainerStyle={styles.chips}>
+                {OLGA_PROMPTS.map(({ icon: Icon, label }) => (
+                  <Pressable
+                    key={label}
+                    onPress={() => navigation.navigate('OlgaAgent', { prompt: label })}
+                    accessibilityRole="button"
+                    style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+                  >
+                    <Icon size={15} color={colors.text} strokeWidth={1.8} />
+                    <Text style={styles.chipText}>{label}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
 
               <Pressable
                 onPress={() => navigation.navigate('ProfileSetup')}
@@ -313,27 +338,27 @@ export function HomeScreen({ navigation }: Props) {
                 accessibilityRole="button"
                 accessibilityLabel="Your Social Capital Index"
               >
-                <LinearGradient
-                  colors={[colors.cardFrom, colors.cardTo]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={styles.capitalTop}>
+                {/* Soft overlapping rings: the member's circles of people. */}
+                <View style={styles.rings}>
+                  <View style={[styles.ring, styles.ringOuter]} />
+                  <View style={[styles.ring, styles.ringMid]} />
+                  <View style={[styles.ring, styles.ringInner]} />
+                </View>
+                <View style={styles.flex}>
+                  {/* Sree: "Your", not the member's name. */}
                   <Text style={styles.capitalTitle} numberOfLines={1}>
-                    {/* Sree: "Your", not the member's name. */}
                     Your Social Capital Index
                   </Text>
-                  <View style={styles.month}>
-                    <Text style={styles.monthText}>
-                      {MONTHS[today.getMonth()]} {today.getFullYear()}
+                  <View style={styles.countRow}>
+                    <Text style={styles.count}>{relationships === null ? '–' : relationships.toLocaleString('en-US')}</Text>
+                    <Text style={styles.month}>
+                      {MONTHS[today.getMonth()].slice(0, 3)} {today.getFullYear()}
                     </Text>
                   </View>
-                </View>
-                <Text style={styles.count}>{relationships === null ? '–' : relationships.toLocaleString('en-US')}</Text>
-                <View style={styles.capitalFoot}>
                   <Text style={styles.countLabel}>Confirmed professional relationships</Text>
-                  <ChevronRight size={22} color={colors.white} />
+                </View>
+                <View style={styles.capitalGo}>
+                  <ChevronRight size={18} color={colors.text} />
                 </View>
               </Pressable>
             </Animated.View>
@@ -387,37 +412,76 @@ export function HomeScreen({ navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    page: { backgroundColor: colors.surface },
+    page: { backgroundColor: colors.bg },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-    // Same width as the avatar, so the wordmark sits in the true centre.
-    headerSpacer: { width: 34 },
-    brand: { flex: 1, textAlign: 'center', fontSize: 21, color: colors.text },
-    date: { fontSize: 13, color: colors.muted },
-    greeting: { fontFamily: fonts.headingBold, fontSize: 24, lineHeight: 28, fontWeight: semibold, color: colors.text, marginTop: 1 },
-    hello: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
+    brand: { fontFamily: display, fontSize: 30, lineHeight: 34, color: colors.text },
+    date: { fontSize: 12, letterSpacing: 0.3, color: colors.muted, marginTop: 4 },
+    // The display serif, large, as in Req1.
+    greeting: { fontFamily: display, fontSize: 46, lineHeight: 50, color: colors.text, marginTop: -8 },
+    achieve: { fontSize: 16, lineHeight: 22, color: colors.muted, marginTop: -10 },
+    // Ask Olga: a white pill with Olga's mark and a round ink mic.
+    ask: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      height: 56,
+      marginTop: 6,
+      paddingLeft: 12,
+      paddingRight: 8,
+      borderRadius: 999,
+      backgroundColor: colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.line,
+      shadowColor: '#3A2A1A',
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 2,
+    },
+    askText: { flex: 1, fontSize: 15, color: colors.muted },
+    askMic: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+    // Prompts scroll sideways, edge to edge.
+    chipsBleed: { marginHorizontal: -20, marginTop: -2 },
+    chips: { gap: 8, paddingHorizontal: 20 },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+      height: 36,
+      paddingHorizontal: 13,
+      borderRadius: 999,
+      backgroundColor: colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.line,
+    },
+    chipText: { fontSize: 13, color: colors.text },
     // A quiet line, not a call to action: no box, small muted text.
-    // Tucked under the greeting (the screen's 12 gap is too much here).
-    setup: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 22, marginTop: -11, alignSelf: 'flex-start' },
+    setup: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 22, marginTop: -2, alignSelf: 'flex-start' },
     // No font padding and a fixed line height, so the chevron sits on the text's centre.
     setupText: { fontSize: 13, lineHeight: 16, includeFontPadding: false, textAlignVertical: 'center', color: colors.muted },
-    // The one large dark element on the screen, the same in both themes.
+    // A light card with soft rings (Req1), not a dark block.
     capital: {
-      backgroundColor: colors.charcoal,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      backgroundColor: colors.surface,
       borderRadius: radius.xl,
-      padding: 18,
-      marginHorizontal: 0,
-      marginTop: 2,
+      padding: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.line,
       overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.08)',
     },
-    capitalTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    capitalTitle: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, fontWeight: semibold, color: colors.champagne },
-    month: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10 },
-    monthText: { fontFamily: fonts.bodyBold, fontSize: 10, fontWeight: semibold, color: colors.white },
-    count: { fontFamily: fonts.headingBold, fontSize: 40, lineHeight: 44, fontWeight: semibold, color: colors.white, marginTop: 6 },
-    capitalFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 2 },
-    countLabel: { flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.78)' },
+    rings: { width: 60, height: 60 },
+    ring: { position: 'absolute', borderRadius: 999, borderWidth: 1.5 },
+    ringOuter: { left: 0, top: 4, width: 54, height: 54, borderColor: colors.glowRing, backgroundColor: colors.glowSoft },
+    ringMid: { left: 7, top: 0, width: 52, height: 52, borderColor: colors.glowRing2 },
+    ringInner: { left: 14, top: 11, width: 36, height: 36, borderColor: colors.glowRing },
+    capitalTitle: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text },
+    countRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+    count: { fontFamily: display, fontSize: 44, lineHeight: 50, color: colors.text },
+    month: { fontSize: 12, color: colors.muted },
+    countLabel: { fontSize: 12, color: colors.muted, marginTop: -2 },
+    capitalGo: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
     pressed: { opacity: 0.85 },
     // The screen's 12 gap is too loose here: the title sits close to the card, its tabs and the list.
     updatesHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginTop: 2, marginBottom: -8 },
@@ -442,7 +506,7 @@ const makeStyles = (colors: ThemeColors) =>
     list: { flex: 1, marginHorizontal: -20 },
     listContent: { paddingBottom: FLOATING_TAB_SPACE },
     // Over the list; its background hides the rows scrolling under it.
-    head: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: colors.surface },
+    head: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: colors.bg },
     collapsible: { marginBottom: COLLAPSIBLE_GAP, overflow: 'hidden' },
     collapsibleInner: { gap: 12 },
     row: {
@@ -455,7 +519,16 @@ const makeStyles = (colors: ThemeColors) =>
       borderBottomWidth: 1,
       borderBottomColor: colors.line,
     },
-    icon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+    icon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.line,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     // People's initials on the soft brand tint (as Avatar).
     iconPerson: { backgroundColor: colors.accentFill },
     iconAmber: { backgroundColor: colors.amberSoft },
