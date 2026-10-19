@@ -868,6 +868,7 @@ const makeStyles = (colors: ThemeColors) =>
     noteSmall: { fontSize: 10, color: colors.muted, textAlign: 'center' },
     lock: { paddingLeft: 3, transform: [{ translateY: 1 }] },
     noteInput: {
+      backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.line,
       borderRadius: radius.md,

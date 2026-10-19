@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { fonts, semibold } from '../theme/typography';
+import { OlgaMark } from './OlgaMark';
+import { semibold } from '../theme/typography';
 
 type Props = {
   from: 'them' | 'me';
   text: string;
-  // Conversation extras (sign-up uses none of these).
+  // A conversation with another member (no Ol-ga mark beside their bubbles).
   person?: boolean;
   time?: string; // the prototype's `.chat-time` line under the bubble
   status?: 'pending' | 'failed';
@@ -18,8 +19,8 @@ type Props = {
   onRetry?: () => void;
 };
 
-// Ol-ga's messages sit on the left with her avatar; the member's on the right.
-// In a conversation (person), the other member's bubbles have no avatar.
+// Ol-ga's messages sit on the left with her sparkle mark; the member's on the
+// right. In a conversation (person), the other member's bubbles have no avatar.
 export function ChatBubble({ from, text, person, time, status, deleted, hidden, onPress, onLongPress, onRetry }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(
@@ -29,38 +30,25 @@ export function ChatBubble({ from, text, person, time, status, deleted, hidden, 
         wrapMe: { alignSelf: 'flex-end' },
         row: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, maxWidth: '92%' },
         bubble: { flexShrink: 1 },
-        // Ol-ga's avatar is her wordmark: black on white, in both themes.
-        olga: {
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          backgroundColor: '#FFFFFF',
-          borderWidth: 1,
-          borderColor: colors.line,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        olgaText: { fontFamily: fonts.bodyRegular, fontSize: 11, fontWeight: '400', color: '#000000' },
+        // One chat look across the app (conversations, sign-up, your
+        // introduction, the Olga agent): theirs and Ol-ga's on light grey with a
+        // tail on the left, mine on sand with a tail on the right.
         text: {
-          paddingVertical: 12,
+          paddingVertical: 10,
           paddingHorizontal: 14,
-          borderRadius: 18,
-          fontSize: 13,
-          lineHeight: 18,
+          borderRadius: 20,
+          fontSize: 15,
+          lineHeight: 21,
           overflow: 'hidden',
         },
-        textThem: { backgroundColor: colors.surface, color: colors.text },
-        // Same accent hue as the rest of the app, at its lightest tint.
-        textMe: { backgroundColor: colors.accentSoft, color: colors.text },
-        // In a conversation: WhatsApp-style tails, sand for mine, white for theirs.
-        personMe: { backgroundColor: colors.bubbleMe, color: colors.onBubbleMe, borderBottomRightRadius: 6 },
-        personThem: {
+        them: {
           backgroundColor: colors.bubbleThem,
           color: colors.text,
           borderWidth: 1,
           borderColor: colors.bubbleThemLine,
           borderBottomLeftRadius: 6,
         },
+        me: { backgroundColor: colors.bubbleMe, color: colors.onBubbleMe, borderBottomRightRadius: 6 },
         textPending: { opacity: 0.6 },
         textDeleted: {
           backgroundColor: 'transparent',
@@ -79,10 +67,8 @@ export function ChatBubble({ from, text, person, time, status, deleted, hidden, 
   if (from === 'them' && !person) {
     return (
       <View style={styles.row}>
-        <View style={styles.olga}>
-          <Text style={styles.olgaText}>Ol-ga</Text>
-        </View>
-        <Text style={[styles.text, styles.textThem, styles.bubble]}>{text}</Text>
+        <OlgaMark size={32} />
+        <Text style={[styles.text, styles.them, styles.bubble]}>{text}</Text>
       </View>
     );
   }
@@ -93,7 +79,7 @@ export function ChatBubble({ from, text, person, time, status, deleted, hidden, 
         <Text
           style={[
             styles.text,
-            from === 'me' ? (person ? styles.personMe : styles.textMe) : person ? styles.personThem : styles.textThem,
+            from === 'me' ? styles.me : styles.them,
             status === 'pending' && styles.textPending,
             (deleted || hidden) && styles.textDeleted,
           ]}

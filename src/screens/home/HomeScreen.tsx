@@ -23,7 +23,8 @@ import { HomeStackParamList, MainTabParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
-import { OLGA_PROMPTS, OlgaMark } from './OlgaAgentScreen';
+import { OlgaMark } from '../../components/OlgaMark';
+import { OLGA_PROMPTS } from './OlgaAgentScreen';
 
 type Props = CompositeScreenProps<NativeStackScreenProps<HomeStackParamList, 'Home'>, BottomTabScreenProps<MainTabParamList>>;
 
@@ -554,7 +555,7 @@ export function HomeScreen({ navigation }: Props) {
             accessibilityLabel="Ask Ol-ga anything"
             style={({ pressed }) => [styles.ask, pressed && styles.pressed]}
           >
-            <OlgaMark size={32} colors={colors} />
+            <OlgaMark size={32} />
             <Text style={styles.askText}>Ask Ol-ga anything…</Text>
             <View style={styles.askMic}>
               <Mic size={18} color={colors.onInk} strokeWidth={2} />
