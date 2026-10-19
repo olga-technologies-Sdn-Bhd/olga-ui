@@ -24,6 +24,10 @@ import { commitErrorMessage, expiresIn, planLine, roleLabel, WHEN_LABELS, whereL
 import { getInitials } from '../../utils/initials';
 import { haptics } from '../../utils/haptics';
 
+// Report and Block on an incoming Commit (SAF-01, by request ID): built and
+// working on dev, hidden for now at the client's request. true shows them.
+const SHOW_COMMIT_SAFETY = false;
+
 // Incoming Commits have no push yet, so refresh while the screen is open.
 const REFRESH_MS = 15000;
 
@@ -201,10 +205,12 @@ export function CommitsPanel() {
             <Button label="Accept" variant="charcoal" small style={styles.flex} loading={busy === c.request_id} disabled={busy !== null} onPress={() => accept(c)} />
             <Button label="Decline" variant="secondary" small style={styles.flex} disabled={busy !== null} onPress={() => decline(c)} />
           </View>
-          <View style={styles.safety}>
-            <ReportMemberLink onPress={() => setReporting(c)} />
-            <ReportMemberLink label="Block" icon={Ban} onPress={() => confirmBlock(c)} />
-          </View>
+          {SHOW_COMMIT_SAFETY && (
+            <View style={styles.safety}>
+              <ReportMemberLink onPress={() => setReporting(c)} />
+              <ReportMemberLink label="Block" icon={Ban} onPress={() => confirmBlock(c)} />
+            </View>
+          )}
           {rowErrors[c.request_id] && <Text style={styles.error}>{rowErrors[c.request_id]}</Text>}
           <Text style={styles.small}>Accept reveals both names at the same moment. Decline is silent: they're never told.</Text>
         </Card>
