@@ -52,7 +52,7 @@ export function ChatBubble({ from, text, person, time, status, deleted, hidden, 
         textThem: { backgroundColor: colors.surface, color: colors.text },
         // Same accent hue as the rest of the app, at its lightest tint.
         textMe: { backgroundColor: colors.accentSoft, color: colors.text },
-        // In a conversation: WhatsApp-style tails, ink for mine, white for theirs.
+        // In a conversation: WhatsApp-style tails, sand for mine, white for theirs.
         personMe: { backgroundColor: colors.bubbleMe, color: colors.onBubbleMe, borderBottomRightRadius: 6 },
         personThem: {
           backgroundColor: colors.bubbleThem,
