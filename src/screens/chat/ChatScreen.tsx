@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../components/Avatar';
 import { SlidingUnderline } from '../../components/SlidingUnderline';
+import { TopGlow } from '../../components/TopGlow';
 import { useTopInset } from '../../components/Screen';
 import { CHAT_COMING_SOON } from '../../config/env';
 import { useAuth } from '../../context/AuthContext';
@@ -38,6 +39,7 @@ export function ChatScreen({ navigation, route }: Props) {
   return (
     <View style={styles.container}>
       <View style={[styles.top, { paddingTop: 12 + topInset }]}>
+        <TopGlow />
         <View style={styles.header}>
           <Text style={styles.title}>Chat</Text>
           <Pressable
@@ -85,7 +87,7 @@ export function ChatScreen({ navigation, route }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.bg },
-    top: { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.line },
+    top: { backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: colors.line },
     header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 },
     title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 18, fontWeight: semibold, color: colors.text },
     tabs: { flexDirection: 'row', marginTop: 10 },

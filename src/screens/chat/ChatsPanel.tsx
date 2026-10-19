@@ -110,7 +110,7 @@ export function ChatsPanel() {
   }
 
   return (
-    <Screen onRefresh={handlePullRefresh} contentStyle={styles.panel}>
+    <Screen glow={false} onRefresh={handlePullRefresh} contentStyle={styles.panel}>
       {/* No internet isn't an error here: chats on the phone still work. */}
       {error && !error.startsWith('No connection') && <Text style={styles.error}>{error}</Text>}
       {items === null && !error && <ActivityIndicator color={colors.brand} style={styles.loading} />}

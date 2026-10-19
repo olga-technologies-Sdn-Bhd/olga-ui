@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StatusBar, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
+import { TopGlow } from './TopGlow';
 
 type Props = {
   children: React.ReactNode;
@@ -9,7 +10,11 @@ type Props = {
   style?: ViewStyle;
   // Extra content padding/layout, e.g. a chat screen with a pinned composer.
   contentStyle?: StyleProp<ViewStyle>;
+  // Drawn behind the content; every screen gets the warm top glow unless it
+  // passes its own (or sets its own ground through style).
   background?: React.ReactNode;
+  // false: no glow, for a panel embedded under another screen's header.
+  glow?: boolean;
   // Pull-to-refresh (scrolling screens only).
   onRefresh?: () => Promise<void>;
 };
@@ -54,7 +59,7 @@ export function usePullToRefresh(onRefresh?: () => Promise<void>) {
   return { refreshing, handleRefresh };
 }
 
-export function Screen({ children, scroll = true, style, contentStyle, background, onRefresh }: Props) {
+export function Screen({ children, scroll = true, style, contentStyle, background, glow = true, onRefresh }: Props) {
   const { refreshing, handleRefresh } = usePullToRefresh(onRefresh);
   const topInset = useTopInset();
   const { colors } = useTheme();
@@ -62,14 +67,14 @@ export function Screen({ children, scroll = true, style, contentStyle, backgroun
     () =>
       StyleSheet.create({
         flex: { flex: 1 },
-        container: { flex: 1, backgroundColor: colors.bg },
-        transparent: { backgroundColor: 'transparent' },
+        page: { flex: 1, backgroundColor: colors.bg },
+        container: { flex: 1, backgroundColor: 'transparent' },
         content: { paddingHorizontal: 20, paddingBottom: FLOATING_TAB_SPACE, gap: 12 },
       }),
     [colors]
   );
   const content = [styles.content, { paddingTop: 12 + topInset }, contentStyle];
-  const containerStyle = [styles.container, background ? styles.transparent : null, style];
+  const containerStyle = [styles.container, style];
 
   const body = scroll ? (
     <ScrollView
@@ -85,8 +90,8 @@ export function Screen({ children, scroll = true, style, contentStyle, backgroun
   );
 
   return (
-    <View style={styles.flex}>
-      {background}
+    <View style={styles.page}>
+      {background ?? (glow ? <TopGlow height={300} /> : null)}
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

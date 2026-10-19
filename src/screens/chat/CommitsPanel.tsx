@@ -123,7 +123,7 @@ export function CommitsPanel() {
   }
 
   return (
-    <Screen onRefresh={load} contentStyle={styles.panel}>
+    <Screen glow={false} onRefresh={load} contentStyle={styles.panel}>
       <View>
         <Pressable
           onPress={() => navigation.getParent()?.navigate('GoLiveTab', { screen: 'Filters' })}

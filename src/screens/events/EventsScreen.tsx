@@ -8,6 +8,7 @@ import { ApiError } from '../../api/client';
 import { CoreEvent } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { SlidingUnderline } from '../../components/SlidingUnderline';
+import { TopGlow } from '../../components/TopGlow';
 import { Button } from '../../components/Button';
 import { DateBlock } from '../../components/DateBlock';
 import { FLOATING_TAB_SPACE, usePullToRefresh, useTopInset } from '../../components/Screen';
@@ -140,6 +141,7 @@ export function EventsScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={[styles.top, { paddingTop: 12 + topInset }]}>
+        <TopGlow />
         <View style={styles.header}>
           <Text style={styles.title}>Events</Text>
           <Pressable

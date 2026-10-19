@@ -21,10 +21,3 @@ export const fonts = {
 // "normal" or "bold", and res/font/inter.xml maps bold to Inter SemiBold; iOS
 // picks SemiBold from 600 directly. Use this instead of a number.
 export const semibold = Platform.OS === 'ios' ? ('600' as const) : ('700' as const);
-
-// Display face for a few large headings only (the Home greeting, the Social
-// Capital number, Olga's title): Instrument Serif (SIL Open Font License,
-// src/assets/fonts/InstrumentSerif-LICENSE.txt). One weight; never bold it.
-// Android registers it as a font family (res/font/instrument_serif.xml); iOS
-// looks it up by its PostScript name.
-export const display = Platform.OS === 'ios' ? 'InstrumentSerif-Regular' : 'InstrumentSerif';

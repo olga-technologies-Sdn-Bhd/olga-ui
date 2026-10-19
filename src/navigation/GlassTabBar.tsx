@@ -143,7 +143,7 @@ function TabButton({
             <Icon size={ICON_SIZE} color={idle} strokeWidth={tab.strong ? 2.4 : 1.8} />
           </Animated.View>
           <Animated.View style={[styles.layer, { opacity: on }]}>
-            <Icon size={ICON_SIZE} color={colors.accent} strokeWidth={2.4} />
+            <Icon size={ICON_SIZE} color={colors.accent} strokeWidth={2.2} />
           </Animated.View>
         </View>
         <View>
@@ -198,7 +198,8 @@ const makeStyles = (colors: ThemeColors) =>
       top: PILL_INSET,
       bottom: PILL_INSET,
       borderRadius: (TAB_BAR_HEIGHT - PILL_INSET * 2) / 2,
-      backgroundColor: colors.accentFill,
+      // The selected tab: a light caramel pill, its icon and label in espresso.
+      backgroundColor: colors.accentWash,
     },
     tab: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'center' },
     tabInner: { alignItems: 'center', gap: 2 },

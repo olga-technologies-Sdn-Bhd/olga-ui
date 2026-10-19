@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { HomeStackParamList } from '../../navigation/types';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { display } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'OlgaAgent'>;
 
@@ -186,7 +186,7 @@ const makeStyles = (colors: ThemeColors) =>
     screen: { flex: 1, gap: 0 },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8 },
     titleWrap: { alignItems: 'center' },
-    wordmark: { fontFamily: display, fontSize: 28, lineHeight: 32, color: colors.text },
+    wordmark: { fontFamily: fonts.bodyBold, fontSize: 21, fontWeight: semibold, color: colors.text },
     preview: { fontSize: 11, color: colors.muted, letterSpacing: 0.4 },
     thread: { gap: 14, paddingTop: 10, paddingBottom: 16 },
     olgaRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingRight: 28 },
