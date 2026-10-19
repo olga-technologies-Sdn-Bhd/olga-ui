@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ComponentRef, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { coreApi } from '../../api/core';
 import type { Profile } from '../../api/types';
@@ -8,6 +8,7 @@ import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
+import { ChatWallpaper } from '../../components/ChatWallpaper';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { HomeStackParamList } from '../../navigation/types';
@@ -93,56 +94,60 @@ export function ProfileSetupScreen({ navigation }: Props) {
   const askedSummary = step === 'summary' || step === 'saving' || step === 'done';
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} style={styles.ground}>
       <BackHeader onBack={() => navigation.goBack()} title="Your introduction" />
 
-      <ScrollView
-        ref={scroller}
-        style={styles.flex}
-        contentContainerStyle={styles.chatStack}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        onContentSizeChange={() => scroller.current?.scrollToEnd({ animated: true })}
-      >
-        <ChatBubble
-          from="them"
-          text={`${firstName ? `${firstName}, let` : 'Let'} me help you with your introduction. Two quick questions, and relevant people will know who they're meeting.`}
-        />
-        {step === 'loading' && <ChatBubble from="them" text="One moment while I find what you've told me so far…" />}
-        {step === 'unavailable' && (
-          <ChatBubble from="them" text="I'm having trouble reaching your introduction right now. Please come back to this in a moment." />
-        )}
-
-        {profile && (
+      {/* The app's one chat look: the white wallpaper behind the messages. */}
+      <View style={styles.thread}>
+        <ChatWallpaper />
+        <ScrollView
+          ref={scroller}
+          style={styles.flex}
+          contentContainerStyle={styles.chatStack}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => scroller.current?.scrollToEnd({ animated: true })}
+        >
           <ChatBubble
             from="them"
-            text={
-              currentHeadline
-                ? `First, your work. Right now it says “${currentHeadline}”. Send me a new line, or keep it as it is.`
-                : "First, your work. What's your role, and what do you work on?"
-            }
+            text={`${firstName ? `${firstName}, let` : 'Let'} me help you with your introduction. Two quick questions, and relevant people will know who they're meeting.`}
           />
-        )}
-        {headline !== null && <ChatBubble from="me" text={headline} />}
+          {step === 'loading' && <ChatBubble from="them" text="One moment while I find what you've told me so far…" />}
+          {step === 'unavailable' && (
+            <ChatBubble from="them" text="I'm having trouble reaching your introduction right now. Please come back to this in a moment." />
+          )}
 
-        {askedSummary && (
-          <ChatBubble
-            from="them"
-            text={
-              currentSummary
-                ? `Lovely. Now a little about you. I have “${currentSummary.replace(/[.!?]+$/, "")}”. Send me a new version, or keep it.`
-                : 'Lovely. Now tell me a little about you: what you do, and who you help.'
-            }
-          />
-        )}
-        {summary !== null && <ChatBubble from="me" text={summary} />}
+          {profile && (
+            <ChatBubble
+              from="them"
+              text={
+                currentHeadline
+                  ? `First, your work. Right now it says “${currentHeadline}”. Send me a new line, or keep it as it is.`
+                  : "First, your work. What's your role, and what do you work on?"
+              }
+            />
+          )}
+          {headline !== null && <ChatBubble from="me" text={headline} />}
 
-        {failed && <ChatBubble from="them" text="That needs another try. Please check your connection and send it again." />}
-        {step === 'saving' && <ChatBubble from="them" text="Saving that for you…" />}
-        {step === 'done' && (
-          <ChatBubble from="them" text="All set. That's what relevant people will see. Your name stays private until you both accept a Commit." />
-        )}
-      </ScrollView>
+          {askedSummary && (
+            <ChatBubble
+              from="them"
+              text={
+                currentSummary
+                  ? `Lovely. Now a little about you. I have “${currentSummary.replace(/[.!?]+$/, "")}”. Send me a new version, or keep it.`
+                  : 'Lovely. Now tell me a little about you: what you do, and who you help.'
+              }
+            />
+          )}
+          {summary !== null && <ChatBubble from="me" text={summary} />}
+
+          {failed && <ChatBubble from="them" text="That needs another try. Please check your connection and send it again." />}
+          {step === 'saving' && <ChatBubble from="them" text="Saving that for you…" />}
+          {step === 'done' && (
+            <ChatBubble from="them" text="All set. That's what relevant people will see. Your name stays private until you both accept a Commit." />
+          )}
+        </ScrollView>
+      </View>
 
       {step === 'headline' && (
         <>
@@ -165,6 +170,8 @@ export function ProfileSetupScreen({ navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    chatStack: { gap: 10, paddingVertical: 6 },
+    ground: { backgroundColor: colors.chatGround },
+    thread: { flex: 1, marginHorizontal: -20 },
+    chatStack: { gap: 10, paddingVertical: 6, paddingHorizontal: 20 },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted },
   });

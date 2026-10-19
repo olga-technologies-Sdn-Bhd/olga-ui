@@ -155,7 +155,10 @@ const makeStyles = (colors: ThemeColors) =>
     label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text, marginTop: 4 },
     hint: { fontSize: 11, lineHeight: 16, color: colors.muted, marginTop: 2 },
     intent: {
-      backgroundColor: colors.accentSoft,
+      // Every text box in the app is white, with a hairline edge.
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.line,
       borderRadius: radius.md,
       padding: 14,
       minHeight: 84,
