@@ -8,6 +8,7 @@ import { MATCH_LIMIT } from '../../config/env';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
+import { ReportMemberLink, ReportMemberSheet } from '../../components/ReportMemberSheet';
 import { Screen } from '../../components/Screen';
 import { Silhouette } from '../../components/Silhouette';
 import { useLive } from '../../context/LiveContext';
@@ -54,6 +55,8 @@ export function LiveMatchesScreen({ navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { activeEvent, activeUntil, matches, runMatching, passedIds, pass, committedIds } = useLive();
   const [error, setError] = useState<string | null>(null);
+  // The member being reported (SAF-01), if any.
+  const [reporting, setReporting] = useState<MatchCard | null>(null);
   const shown = topMatches(matches, passedIds);
 
   // Go Live already ran matching; only run it here when there's nothing yet.
@@ -115,10 +118,18 @@ export function LiveMatchesScreen({ navigation }: Props) {
             />
             <Button label="Pass" variant="secondary" small style={styles.flex} onPress={() => pass(card.match.member_id)} />
           </View>
+          <ReportMemberLink onPress={() => setReporting(card)} />
         </Card>
       ))}
 
       {shown.length > 0 && <Text style={styles.footer}>Passing is silent. They're never told.</Text>}
+
+      <ReportMemberSheet
+        visible={reporting !== null}
+        onClose={() => setReporting(null)}
+        memberId={reporting?.match.member_id ?? ''}
+        who={reporting?.profile?.headline}
+      />
     </Screen>
   );
 }

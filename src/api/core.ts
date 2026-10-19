@@ -3,6 +3,8 @@ import { makeApiClient, RequestOptions, withEtag } from './client';
 import { cached } from './offlineCache';
 import type {
   AcceptCommitResponse,
+  MemberReportRequest,
+  MemberReportResponse,
   BlockedMember,
   CommitQuota,
   Connection,
@@ -159,6 +161,8 @@ export const coreApi = {
   reportMessage: (messageId: string, body: MessageReportRequest) =>
     client.post<MessageReportResponse>(`${messagePath(messageId)}/report`, body),
   blockMember: (memberId: string) => client.post<void>('/v1/members/block', { member_id: memberId }),
+  reportMember: (memberId: string, body: MemberReportRequest) =>
+    client.post<MemberReportResponse>(`/v1/members/${encodeURIComponent(memberId)}/report`, body),
   listBlockedMembers: () => client.get<BlockedMember[]>('/v1/me/blocks'),
   // 404 BLOCK_NOT_FOUND: not blocked (any more).
   unblockMember: (memberId: string) => client.del<void>(`/v1/members/block/${encodeURIComponent(memberId)}`),

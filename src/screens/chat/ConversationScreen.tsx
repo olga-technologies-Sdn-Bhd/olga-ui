@@ -9,13 +9,14 @@ import { coreApi } from '../../api/core';
 import type { ChatMessage, Conversation, ReportCategory } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
-import { BottomSheet, SheetOption } from '../../components/BottomSheet';
+import { BottomSheet, SheetChoices, SheetOption } from '../../components/BottomSheet';
 import { Button } from '../../components/Button';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
 import { ChatWallpaper } from '../../components/ChatWallpaper';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Pill } from '../../components/Pill';
+import { ReportMemberSheet } from '../../components/ReportMemberSheet';
 import { Screen } from '../../components/Screen';
 import { CHAT_MESSAGE_POLL_MS } from '../../config/env';
 import { useAuth } from '../../context/AuthContext';
@@ -77,7 +78,9 @@ type Sheet =
   | { kind: 'report'; message: ChatMessage }
   | { kind: 'reported' }
   | { kind: 'confirmBlock' }
-  | { kind: 'mute' };
+  | { kind: 'mute' }
+  // The header's ⋮: mute, report the member, block.
+  | { kind: 'menu' };
 
 const bySequence = (a: ChatMessage, b: ChatMessage) => a.server_sequence - b.server_sequence;
 
@@ -141,6 +144,8 @@ export function ConversationScreen({ route, navigation }: Props) {
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [reportCategory, setReportCategory] = useState<ReportCategory | null>(null);
   const [reportNote, setReportNote] = useState('');
+  // Reporting the member (SAF-01), not one message.
+  const [reportingMember, setReportingMember] = useState(false);
   // Ol-ga couldn't be reached on the last try: send over Bluetooth instead.
   const [networkDown, setNetworkDown] = useState(false);
   const peerId = route.params.memberId ?? conversationPeer?.memberId ?? conversation?.member_id ?? null;
@@ -557,7 +562,7 @@ export function ConversationScreen({ route, navigation }: Props) {
         }
         right={
           <Pressable
-            onPress={() => (conversation && !networkDown ? openSheet({ kind: 'mute' }) : peer && openSheet({ kind: 'confirmBlock' }))}
+            onPress={() => (conversation || peer) && openSheet({ kind: 'menu' })}
             style={styles.menu}
             hitSlop={8}
             accessibilityLabel="Conversation options"
@@ -697,9 +702,7 @@ export function ConversationScreen({ route, navigation }: Props) {
         )}
         {sheet?.kind === 'report' && (
           <>
-            {REPORT_CATEGORIES.map((c) => (
-              <SheetOption key={c.value} label={c.label} selected={reportCategory === c.value} onPress={() => setReportCategory(c.value)} />
-            ))}
+            <SheetChoices options={REPORT_CATEGORIES} value={reportCategory} onChange={setReportCategory} />
             <TextInput
               value={reportNote}
               onChangeText={setReportNote}
@@ -730,6 +733,22 @@ export function ConversationScreen({ route, navigation }: Props) {
             <Button label="Cancel" variant="secondary" disabled={sheetBusy} onPress={closeSheet} />
           </>
         )}
+        {sheet?.kind === 'menu' && (
+          <>
+            {conversation && !networkDown && <SheetOption label="Mute notifications" onPress={() => openSheet({ kind: 'mute' })} />}
+            {peerId && (
+              <SheetOption
+                label={`Report ${firstName ?? 'this member'}`}
+                onPress={() => {
+                  closeSheet();
+                  // Let this sheet slide away before the report sheet comes up.
+                  setTimeout(() => setReportingMember(true), 300);
+                }}
+              />
+            )}
+            <SheetOption label={`Block ${firstName ?? 'this member'}`} danger onPress={() => openSheet({ kind: 'confirmBlock' })} />
+          </>
+        )}
         {sheet?.kind === 'mute' && (
           <>
             {MUTE_OPTIONS.map((o) => (
@@ -740,6 +759,15 @@ export function ConversationScreen({ route, navigation }: Props) {
         )}
         {sheetError && <Text style={styles.error}>{sheetError}</Text>}
       </BottomSheet>
+
+      {peerId && (
+        <ReportMemberSheet
+          visible={reportingMember}
+          onClose={() => setReportingMember(false)}
+          memberId={peerId}
+          who={firstName ?? displayName}
+        />
+      )}
     </Screen>
   );
 }
@@ -759,6 +787,8 @@ function sheetTitle(sheet: Sheet | null, name: string) {
       return `Block ${name}?`;
     case 'mute':
       return 'Mute conversation';
+    case 'menu':
+      return name;
     default:
       return undefined;
   }
