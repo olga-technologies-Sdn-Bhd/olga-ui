@@ -1,11 +1,12 @@
 import Slider from '@react-native-community/slider';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronRight, Radio, Sparkles } from 'lucide-react-native';
+import { ChevronRight, Clock, Radio, Sparkles } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { BLE_DISCOVERY_ENABLED } from '../../bluetooth/bleDiscovery';
 import { MatchCard, MatchingError, MatchingFailure } from '../../api/matching';
+import { BottomSheet, SheetGroup, SheetOption } from '../../components/BottomSheet';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { DateBlock } from '../../components/DateBlock';
@@ -92,6 +93,14 @@ function initialsFor(card: MatchCard) {
   return letters ? letters.charAt(0).toUpperCase() + letters.slice(1).toLowerCase() : '··';
 }
 
+// GOL-02: how much more time a live session can take (the server caps it at
+// the event's end).
+const EXTEND_OPTIONS = [
+  { minutes: 30, label: '+30 minutes' },
+  { minutes: 60, label: '+1 hour' },
+  { minutes: 120, label: '+2 hours' },
+];
+
 export function GoLiveScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -107,6 +116,7 @@ export function GoLiveScreen({ navigation }: Props) {
     checkConsent,
     recordConsentDecision,
     stopLive,
+    extendLive,
     runMatching,
     matches,
     passedIds,
@@ -261,6 +271,26 @@ export function GoLiveScreen({ navigation }: Props) {
       { text: 'Not now', style: 'cancel', onPress: purpose === 'MATCHING' ? () => save('DENIED') : undefined },
       { text: 'Allow', onPress: () => save('GRANTED') },
     ], { icon: purpose === 'MATCHING' ? Sparkles : Radio });
+  }
+
+  // GOL-02: more time on the same session, before it ends.
+  const [extendOpen, setExtendOpen] = useState(false);
+  const [extending, setExtending] = useState(false);
+
+  async function extend(minutes: number) {
+    if (extending) return;
+    setExtending(true);
+    try {
+      const result = await extendLive(minutes);
+      setExtendOpen(false);
+      if (result === 'EXTENDED') haptics.success();
+      else if (result === 'AT_EVENT_END') showDialog('Already live until the end', 'Your session runs until the event closes.', undefined, { icon: Clock });
+      else showDialog('Your session has ended', 'Press and hold Go Live to go live again.', undefined, { icon: Clock });
+    } catch {
+      showDialog("Couldn't add time", 'Check your connection and try again.', undefined, { icon: Clock, tone: 'danger' });
+    } finally {
+      setExtending(false);
+    }
   }
 
   async function handleGoInvisible() {
@@ -437,6 +467,12 @@ export function GoLiveScreen({ navigation }: Props) {
             <Text style={styles.h3}>Visible to relevant people</Text>
             <Text style={styles.sub}>
               {activeUntil ? `Live until ${String(activeUntil.getHours()).padStart(2, '0')}:${String(activeUntil.getMinutes()).padStart(2, '0')}. ` : ''}
+              {activeUntil && (
+                <Text style={styles.extend} onPress={() => setExtendOpen(true)} accessibilityRole="button" suppressHighlighting>
+                  Extend
+                </Text>
+              )}
+              {activeUntil ? '\n' : ''}
               {LIVE_LINE}
             </Text>
           </View>
@@ -478,6 +514,18 @@ export function GoLiveScreen({ navigation }: Props) {
       )}
 
       <FilterSummary title={isLive ? 'Live for' : "You're going live for"} intent={intentText} filters={filters} onChange={openFilter} />
+      <BottomSheet
+        visible={extendOpen}
+        onClose={() => !extending && setExtendOpen(false)}
+        title="Stay live longer"
+        subtitle="Same relevant people, no new search. Never past the event's end."
+      >
+        <SheetGroup>
+          {EXTEND_OPTIONS.map((o) => (
+            <SheetOption key={o.minutes} label={o.label} onPress={() => extend(o.minutes)} />
+          ))}
+        </SheetGroup>
+      </BottomSheet>
     </Screen>
   );
 }
@@ -508,6 +556,7 @@ const makeStyles = (colors: ThemeColors) =>
     center: { fontSize: 12, lineHeight: 18, color: colors.muted, textAlign: 'center', marginTop: -6, paddingHorizontal: 8 },
     searching: { fontSize: 13, color: colors.muted, textAlign: 'center' },
     sub: { fontSize: 12, lineHeight: 17, color: colors.muted, marginTop: 2 },
+    extend: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.accent },
     error: { color: colors.danger, fontSize: 12, textAlign: 'center' },
     roomCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     cardButton: { alignSelf: 'flex-start', marginTop: 12 },
