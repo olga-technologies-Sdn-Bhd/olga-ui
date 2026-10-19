@@ -127,7 +127,7 @@ export function LiveMatchesScreen({ navigation }: Props) {
       <ReportMemberSheet
         visible={reporting !== null}
         onClose={() => setReporting(null)}
-        memberId={reporting?.match.member_id ?? ''}
+        target={{ memberId: reporting?.match.member_id ?? '' }}
         who={reporting?.profile?.headline}
       />
     </Screen>

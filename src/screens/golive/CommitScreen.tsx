@@ -166,7 +166,7 @@ export function CommitScreen({ route, navigation }: Props) {
           onPress={send}
         />
       )}
-      <ReportMemberSheet visible={reporting} onClose={() => setReporting(false)} memberId={memberId} who={card?.profile?.headline} />
+      <ReportMemberSheet visible={reporting} onClose={() => setReporting(false)} target={{ memberId }} who={card?.profile?.headline} />
     </Screen>
   );
 }

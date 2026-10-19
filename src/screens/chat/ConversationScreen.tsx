@@ -766,7 +766,7 @@ export function ConversationScreen({ route, navigation }: Props) {
         <ReportMemberSheet
           visible={reportingMember}
           onClose={() => setReportingMember(false)}
-          memberId={peerId}
+          target={{ memberId: peerId }}
           who={firstName ?? displayName}
         />
       )}

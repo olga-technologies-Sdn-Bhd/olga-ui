@@ -99,7 +99,7 @@ export function NearbyCommitScreen({ route, navigation }: Props) {
       ) : (
         <Button label="Send Commit" variant="charcoal" loading={sending} disabled={!person} onPress={send} />
       )}
-      <ReportMemberSheet visible={reporting} onClose={() => setReporting(false)} memberId={memberId} />
+      <ReportMemberSheet visible={reporting} onClose={() => setReporting(false)} target={{ memberId }} />
     </Screen>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Flag } from 'lucide-react-native';
+import { Flag, LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, TextInput } from 'react-native';
 import { ApiError } from '../api/client';
 import { coreApi } from '../api/core';
@@ -22,10 +22,11 @@ const MAX_NOTE = 2000;
 type Props = {
   visible: boolean;
   onClose: () => void;
-  memberId: string;
+  // Who: a member, or (anonymous) the sender of a Commit sent to me.
+  target: { memberId: string } | { commitRequestId: string };
   // Their name if it's known (connected); otherwise their headline, or nothing.
   who?: string | null;
-  // What the report is about, if more than their profile.
+  // What the report is about, if more than their profile (member reports only).
   resource?: { type: 'REQUEST' | 'MESSAGE'; id: string };
 };
 
@@ -34,7 +35,7 @@ type Step = 'pick' | 'sent' | 'already';
 // SAF-01: report a member (from a match card, their profile before a Commit,
 // Nearby, or a conversation). The same sheet everywhere: why, an optional
 // note, send. They're never told; an open report isn't sent twice.
-export function ReportMemberSheet({ visible, onClose, memberId, who, resource }: Props) {
+export function ReportMemberSheet({ visible, onClose, target, who, resource }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [step, setStep] = useState<Step>('pick');
@@ -63,12 +64,14 @@ export function ReportMemberSheet({ visible, onClose, memberId, who, resource }:
       ...(resource ? { resource_type: resource.type, resource_id: resource.id } : {}),
     };
     try {
-      await coreApi.reportMember(memberId, body);
+      if ('commitRequestId' in target) await coreApi.reportCommitSender(target.commitRequestId, { category, ...(description ? { description } : {}) });
+      else await coreApi.reportMember(target.memberId, body);
       setStep('sent');
     } catch (e) {
       const code = e instanceof ApiError ? e.code : '';
       if (code === 'REPORT_ALREADY_OPEN') setStep('already');
       else if (code === 'PROFILE_NOT_FOUND') setError('This member is no longer on Ol-ga.');
+      else if (code === 'COMMIT_NOT_FOUND') setError('This Commit is no longer available.');
       else if (code === 'MEMBER_REPORT_INVALID') setError('Check the report and try again.');
       else setError("Couldn't send the report. Check your connection and try again.");
     } finally {
@@ -108,8 +111,9 @@ export function ReportMemberSheet({ visible, onClose, memberId, who, resource }:
   );
 }
 
-// A quiet link that opens the sheet: on match cards and profiles.
-export function ReportMemberLink({ onPress, label = 'Report' }: { onPress: () => void; label?: string }) {
+// A quiet link (Report, or Block with its own icon): on match cards, profiles
+// and incoming Commits.
+export function ReportMemberLink({ onPress, label = 'Report', icon: Icon = Flag }: { onPress: () => void; label?: string; icon?: LucideIcon }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
@@ -120,7 +124,7 @@ export function ReportMemberLink({ onPress, label = 'Report' }: { onPress: () =>
       accessibilityLabel={label}
       style={({ pressed }) => [styles.link, pressed && styles.pressed]}
     >
-      <Flag size={13} color={colors.muted} strokeWidth={2} />
+      <Icon size={13} color={colors.muted} strokeWidth={2} />
       <Text style={styles.linkText}>{label}</Text>
     </Pressable>
   );
