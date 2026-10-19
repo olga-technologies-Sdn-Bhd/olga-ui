@@ -3,6 +3,7 @@ import { makeApiClient, RequestOptions, withEtag } from './client';
 import { cached } from './offlineCache';
 import type {
   AcceptCommitResponse,
+  BlockedMember,
   CommitQuota,
   Connection,
   IncomingCommit,
@@ -158,6 +159,9 @@ export const coreApi = {
   reportMessage: (messageId: string, body: MessageReportRequest) =>
     client.post<MessageReportResponse>(`${messagePath(messageId)}/report`, body),
   blockMember: (memberId: string) => client.post<void>('/v1/members/block', { member_id: memberId }),
+  listBlockedMembers: () => client.get<BlockedMember[]>('/v1/me/blocks'),
+  // 404 BLOCK_NOT_FOUND: not blocked (any more).
+  unblockMember: (memberId: string) => client.del<void>(`/v1/members/block/${encodeURIComponent(memberId)}`),
 
   // Files a request to delete this member's account (202). Pass the same
   // idempotencyKey when retrying the same request.

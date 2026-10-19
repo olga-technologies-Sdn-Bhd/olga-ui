@@ -495,3 +495,11 @@ export type MessageReportResponse = {
   status: string;
   created_at: string;
 };
+
+// GET /v1/me/blocks: members I blocked (newest first). The blocker knows who
+// they blocked, so the name is included.
+export type BlockedMember = {
+  member_id: string;
+  display_name: string | null;
+  blocked_at: string;
+};
