@@ -14,7 +14,8 @@ import {
   TextStyle,
   View,
 } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import LinearGradient from 'react-native-linear-gradient';
+import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { fonts, semibold } from '../theme/typography';
@@ -42,6 +43,8 @@ type Props = {
 // centre of the radar.
 const BUTTON = 168;
 const RING_GAP = 7; // thin outer border / hold progress, just outside the button
+// The glow that builds behind the button while it's held.
+const CHARGE = Math.round(BUTTON * 1.55);
 const LIFT = 40;
 const LIVE_SCALE = 0.82;
 const BRAND_H = 34;
@@ -335,8 +338,9 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
     tickTimers.current = [];
     if (!keepOpen) setHolding(false);
     hold.stopAnimation();
-    Animated.timing(hold, { toValue: 0, duration: 180, useNativeDriver: false }).start();
-    Animated.timing(press, { toValue: 0, duration: 180, useNativeDriver: true }).start();
+    Animated.timing(hold, { toValue: 0, duration: 220, useNativeDriver: false }).start();
+    // Let go: the button springs back up, overshooting a touch, like a real key.
+    Animated.spring(press, { toValue: 0, damping: 9, stiffness: 240, mass: 0.8, useNativeDriver: true }).start();
   }
 
   function handlePressIn() {
@@ -347,13 +351,17 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
     // Soft ticks as the ring fills, so the hold is felt as well as seen.
     const ticks = [0.34, 0.67].map((at) => setTimeout(() => !fired.current && haptics.tick(), HOLD_MS * at));
     tickTimers.current = ticks;
-    Animated.timing(press, { toValue: 1, duration: 140, useNativeDriver: true }).start();
+    // Press: the button sinks in with a quick, soft spring.
+    Animated.spring(press, { toValue: 1, damping: 15, stiffness: 320, mass: 0.7, useNativeDriver: true }).start();
     Animated.timing(hold, { toValue: 1, duration: HOLD_MS, easing: Easing.linear, useNativeDriver: false }).start(({ finished }) => {
       if (!finished || fired.current) return;
       fired.current = true;
       haptics.success();
       onHoldComplete();
       release(true);
+      // Done: a small pop as it springs back past its rest size.
+      press.setValue(-0.9);
+      Animated.spring(press, { toValue: 0, damping: 7, stiffness: 200, mass: 0.8, useNativeDriver: true }).start();
     });
   }
 
@@ -558,6 +566,29 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
             ]}
           >
             <Animated.View style={{ transform: [{ scale: breath.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }) }] }}>
+              {/* A warm glow that builds behind the button as the hold charges. */}
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.charge,
+                  {
+                    left: (ringSize - CHARGE) / 2,
+                    top: (ringSize - CHARGE) / 2,
+                    opacity: hold.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 0.55, 1] }),
+                    transform: [{ scale: hold.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1.1] }) }],
+                  },
+                ]}
+              >
+                <Svg width={CHARGE} height={CHARGE}>
+                  <Defs>
+                    <RadialGradient id="goLiveCharge" cx="50%" cy="50%" r="50%">
+                      <Stop offset="0.45" stopColor={colors.liveTo} stopOpacity={0.55} />
+                      <Stop offset="1" stopColor={colors.liveFrom} stopOpacity={0} />
+                    </RadialGradient>
+                  </Defs>
+                  <Circle cx={CHARGE / 2} cy={CHARGE / 2} r={CHARGE / 2} fill="url(#goLiveCharge)" />
+                </Svg>
+              </Animated.View>
               <Svg width={ringSize} height={ringSize} style={styles.holdRing}>
                 <Circle cx={ringSize / 2} cy={ringSize / 2} r={ringR} stroke={colors.line} strokeWidth={1.5} fill="none" />
                 <AnimatedCircle
@@ -575,7 +606,15 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
                   origin={`${ringSize / 2}, ${ringSize / 2}`}
                 />
               </Svg>
-              <Animated.View style={{ transform: [{ scale: press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.97] }) }] }}>
+              {/* Pressed in: smaller, and a touch lower, as if pushed into the page. */}
+              <Animated.View
+                style={{
+                  transform: [
+                    { translateY: press.interpolate({ inputRange: [0, 1], outputRange: [0, 3] }) },
+                    { scale: press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.92] }) },
+                  ],
+                }}
+              >
                 <Pressable
                   onPressIn={handlePressIn}
                   onPressOut={handlePressOut}
@@ -591,6 +630,25 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
                   }
                   style={styles.button}
                 >
+                  {/* The sunrise: coral into pink, like the Home photos and the orb. */}
+                  <LinearGradient
+                    colors={[colors.liveFrom, colors.liveTo]}
+                    start={{ x: 0.15, y: 0 }}
+                    end={{ x: 0.85, y: 1 }}
+                    style={styles.buttonFill}
+                  />
+                  {/* Light catching the top of the button; it dims as the button goes down. */}
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[styles.buttonFill, { opacity: press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.25], extrapolate: 'clamp' }) }]}
+                  >
+                    <LinearGradient colors={['rgba(255,255,255,0.32)', 'rgba(255,255,255,0)']} locations={[0, 0.55]} style={styles.buttonFill} />
+                  </Animated.View>
+                  {/* The shade of a pressed key. */}
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[styles.buttonFill, styles.pressShade, { opacity: press.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' }) }]}
+                  />
                   {live ? (
                     <>
                       <Radio size={24} color={colors.white} strokeWidth={1.8} />
@@ -624,7 +682,7 @@ const makeStyles = (colors: ThemeColors) =>
       height: RADAR,
       borderRadius: RADAR / 2,
       borderWidth: 1,
-      borderColor: colors.charcoal,
+      borderColor: colors.liveFrom,
       backgroundColor: colors.accentSoft,
     },
     centre: { position: 'absolute', width: 0, height: 0 },
@@ -647,11 +705,14 @@ const makeStyles = (colors: ThemeColors) =>
       height: BUTTON,
       borderRadius: BUTTON / 2,
       margin: RING_GAP,
-      backgroundColor: colors.charcoal,
+      overflow: 'hidden',
       alignItems: 'center',
       justifyContent: 'center',
       gap: 5,
     },
+    buttonFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+    pressShade: { backgroundColor: 'rgba(90,20,30,0.16)' },
+    charge: { position: 'absolute', width: CHARGE, height: CHARGE },
     label: { fontFamily: fonts.headingBold, fontSize: 21, fontWeight: semibold, letterSpacing: 1, color: colors.white, marginTop: 3 },
     caption: { fontFamily: fonts.bodyBold, fontSize: 10, fontWeight: semibold, letterSpacing: 2, color: 'rgba(255,255,255,0.78)' },
     labelLive: { fontSize: 19 },
