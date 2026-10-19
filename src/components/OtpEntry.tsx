@@ -119,7 +119,8 @@ const makeStyles = (colors: ThemeColors) =>
       letterSpacing: 8,
       textAlign: 'center',
       color: colors.text,
-      backgroundColor: colors.surface2,
+      // Every text box in the app is white.
+      backgroundColor: colors.surface,
     },
     row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     sub: { fontSize: 13, color: colors.muted },

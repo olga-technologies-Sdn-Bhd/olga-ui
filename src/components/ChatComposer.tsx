@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { SendHorizontal } from 'lucide-react-native';
+import { Mic, SendHorizontal } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeContext';
 
 type Props = {
@@ -12,6 +12,8 @@ type Props = {
   onChangeText?: (value: string) => void;
   disabled?: boolean;
   maxLength?: number;
+  // A mic in place of send while the box is empty (voice isn't built yet).
+  voice?: boolean;
 };
 
 // Matches the prototype's `.chat-composer` pill input + send button.
@@ -23,6 +25,7 @@ export function ChatComposer({
   onChangeText,
   disabled,
   maxLength,
+  voice,
 }: Props) {
   const [ownValue, setOwnValue] = useState('');
   const value = controlledValue ?? ownValue;
@@ -41,7 +44,7 @@ export function ChatComposer({
           paddingVertical: 12,
           paddingHorizontal: 14,
           backgroundColor: colors.surface,
-          fontSize: 14,
+          fontSize: 15,
           color: colors.text,
         },
         // A soft, deliberate near-black rather than the brand accent — a
@@ -56,6 +59,7 @@ export function ChatComposer({
         },
         // WhatsApp's paper plane, nudged right so it looks centred.
         sendIcon: { marginLeft: 2 },
+        mic: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
       }),
     [colors]
   );
@@ -82,9 +86,15 @@ export function ChatComposer({
         editable={!disabled}
         maxLength={maxLength}
       />
-      <Pressable style={styles.send} onPress={handleSend} hitSlop={12} disabled={disabled} accessibilityLabel="Send">
-        <SendHorizontal size={19} color={colors.onInk} strokeWidth={2.2} style={styles.sendIcon} />
-      </Pressable>
+      {voice && !value.trim() ? (
+        <View style={styles.mic} accessibilityLabel="Voice (coming soon)">
+          <Mic size={20} color={colors.muted} strokeWidth={1.8} />
+        </View>
+      ) : (
+        <Pressable style={styles.send} onPress={handleSend} hitSlop={12} disabled={disabled} accessibilityLabel="Send">
+          <SendHorizontal size={19} color={colors.onInk} strokeWidth={2.2} style={styles.sendIcon} />
+        </Pressable>
+      )}
     </View>
   );
 }
