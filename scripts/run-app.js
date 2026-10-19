@@ -23,11 +23,11 @@ const METRO_PORT = 8081;
 
 const ENVIRONMENTS = {
   dev: {
-    ios: ['OLGA_AUTH_SCHEME=olga-dev', 'OLGA_BUNDLE_ID=com.olga.dev.connect'],
+    ios: ['OLGA_AUTH_SCHEME=olga-dev', 'OLGA_LINK_SCHEME=olgaapp-dev', 'OLGA_BUNDLE_ID=com.olga.dev.connect'],
     androidAppId: 'com.olga.connect.dev',
   },
   prod: {
-    ios: ['OLGA_AUTH_SCHEME=olga', 'OLGA_BUNDLE_ID=com.olga.connect', 'OLGA_NAME_SUFFIX='],
+    ios: ['OLGA_AUTH_SCHEME=olga', 'OLGA_LINK_SCHEME=olgaapp', 'OLGA_BUNDLE_ID=com.olga.connect', 'OLGA_NAME_SUFFIX='],
     androidAppId: 'com.olga.connect',
   },
 };
