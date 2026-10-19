@@ -10,6 +10,8 @@ export type ApiErrorBody = {
   message: string;
   correlation_id: string;
   field_errors?: Record<string, string[]>;
+  // Extra facts for some codes, e.g. 409 MEMBER_DELETION_PENDING: { due_at }.
+  details?: Record<string, unknown>;
 };
 
 // Core/NLP serialize `ETag` as `e_tag` in bodies (also sent as the ETag
@@ -492,4 +494,12 @@ export type MessageReportResponse = {
   category: ReportCategory;
   status: string;
   created_at: string;
+};
+
+// GET /v1/me/blocks: members I blocked (newest first). The blocker knows who
+// they blocked, so the name is included.
+export type BlockedMember = {
+  member_id: string;
+  display_name: string | null;
+  blocked_at: string;
 };

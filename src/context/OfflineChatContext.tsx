@@ -57,6 +57,8 @@ type OfflineChatState = {
   // Stops their messages on this phone straight away (Bluetooth included) and
   // blocks them on Ol-ga as soon as it can be reached.
   blockPeer: (memberId: string) => void;
+  // After an unblock on Ol-ga: the chat with them shows again on this phone.
+  unblockPeer: (memberId: string) => void;
   isBlocked: (memberId: string) => boolean;
   // Files a report now if Ol-ga has the message, else keeps it until it does.
   reportMessage: (messageId: string, category: ReportCategory, description?: string) => void;
@@ -408,6 +410,11 @@ export function OfflineChatProvider({ children }: { children: React.ReactNode })
       blockPeer: (id) => {
         update((s) => (s.blocked.includes(id) ? s : { ...s, blocked: [...s.blocked, id] }));
         setTimeout(sync, 0);
+      },
+      unblockPeer: (id) => {
+        update((s) =>
+          s.blocked.includes(id) ? { ...s, blocked: s.blocked.filter((b) => b !== id), blockSynced: s.blockSynced.filter((b) => b !== id) } : s
+        );
       },
       isBlocked: (id) => saved.blocked.includes(id),
       resetForTesting: () => update(() => EMPTY_CHAT),

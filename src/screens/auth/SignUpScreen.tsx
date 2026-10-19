@@ -8,7 +8,7 @@ import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { SocialSignInButton } from '../../components/SocialSignInButton';
 import { warmUpApis } from '../../api/warmup';
-import { MemberRecoveryUnavailableError } from '../../auth/memberSession';
+import { AccountDeletionPendingError, MemberRecoveryUnavailableError } from '../../auth/memberSession';
 import { isExpiredSession, isInvalidCode, NativeAuthError } from '../../auth/nativeAuthClient';
 import { EntraProvider, isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
@@ -65,6 +65,8 @@ export function SignUpScreen() {
       console.warn(`Sign-in did not complete (${err.code ?? 'no code'}): ${err.message ?? ''}`);
       setEmail('');
       setStep('email');
+      // Already signed out; the notice on the email step says why.
+      if (error instanceof AccountDeletionPendingError) return;
       if (!isUserCancelledLogin(error)) {
         showDialog('Sign-in failed', 'Something went wrong signing you in. Please try again.', undefined, { icon: CircleAlert, tone: 'danger' });
       }
@@ -114,6 +116,11 @@ export function SignUpScreen() {
       const existingMember = await submitEmailCode(code);
       if (!existingMember) setStep('name');
     } catch (error) {
+      if (error instanceof AccountDeletionPendingError) {
+        setEmail('');
+        setStep('email');
+        return;
+      }
       if (isInvalidCode(error)) throw new Error("That code didn't work. Check it, or resend a new one.");
       if (isExpiredSession(error)) throw new Error('That code has expired. Tap Resend code for a new one.');
       if (error instanceof NativeAuthError && error.code === 'network_error') {
@@ -161,6 +168,12 @@ export function SignUpScreen() {
       await completeOnboarding(name.trim(), e164);
     } catch (error) {
       setMobile('');
+      if (error instanceof AccountDeletionPendingError) {
+        setName('');
+        setEmail('');
+        setStep('email');
+        return;
+      }
       if (error instanceof MemberRecoveryUnavailableError) {
         // Registered on another device / before a reinstall; retrying can't
         // help until the backend can look the member up, so sign out.

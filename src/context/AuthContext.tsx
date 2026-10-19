@@ -4,7 +4,9 @@ import { clearCache } from '../api/offlineCache';
 import { coreApi } from '../api/core';
 import { clearNearby } from '../nearby/store';
 import {
+  AccountDeletionPendingError,
   activateMember,
+  deletionPendingNotice,
   lookupExistingMember,
   MemberApi,
   MemberStore,
@@ -94,6 +96,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await saveMemberStore(next);
   }, []);
 
+  // The member behind this email asked to be deleted: nothing of them stays on
+  // the phone, the session ends and the sign-in screen says why.
+  const signOutPendingDeletion = useCallback(
+    async (forEmail: string, dueAt?: string) => {
+      const latest = await loadMemberStore();
+      const cached = latest.members[forEmail];
+      if (cached) {
+        await clearCache(cached.member_id);
+        await clearNearby(cached.member_id);
+      }
+      await entraLogOut();
+      await persist({ ...withoutMember(latest, forEmail), current: null });
+      registrationKey.current = null;
+      setNotice(deletionPendingNotice(dueAt));
+      applyMember(null);
+    },
+    [entraLogOut, persist, applyMember]
+  );
+
   // Every Olga API call reads X-Member-Id from here.
   useEffect(() => {
     setMemberIdProvider(() => memberRef.current?.member_id ?? null);
@@ -127,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setRestoreLookup(true);
       lookupExistingMember(email, memberApi)
         .then(async (lookup) => {
+          if (lookup.status === 'deletion_pending') return signOutPendingDeletion(email, lookup.dueAt);
           if (lookup.status !== 'found') return;
           const latest = await loadMemberStore();
           await persist(withMember({ ...latest, current: email }, email, lookup.member));
@@ -142,12 +164,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (result.status === 'stale') {
         await persist(withoutMember(latest, email));
         applyMember(null); // -> onboarding (name + mobile, no new OTP)
+      } else if (result.status === 'not_active') {
+        const lookup = await lookupExistingMember(email, memberApi);
+        if (lookup.status === 'deletion_pending') await signOutPendingDeletion(email, lookup.dueAt);
       } else {
         await persist(withMember({ ...latest, current: email }, email, result.member));
         applyMember(result.member);
       }
     });
-  }, [storesLoaded, store, accessToken, email, applyMember, persist]);
+  }, [storesLoaded, store, accessToken, email, applyMember, persist, signOutPendingDeletion]);
 
   // After Entra (any method) verified the user: find or create their member.
   const finishSignIn = useCallback(
@@ -159,7 +184,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         applyMember(null);
         return false;
       }
-      const resolved = await resolveLogin(await loadMemberStore(), verified, memberApi);
+      let resolved;
+      try {
+        resolved = await resolveLogin(await loadMemberStore(), verified, memberApi);
+      } catch (error) {
+        if (error instanceof AccountDeletionPendingError) await signOutPendingDeletion(normalizeEmail(verified), error.dueAt);
+        throw error;
+      }
       if (resolved.lookup?.status === 'unavailable') {
         // Falls back to sign-up; a 409 there retries the lookup. Never log the email.
         console.warn(`Member lookup unavailable, correlation_id=${resolved.lookup.correlationId ?? 'none'}`);
@@ -169,7 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.info(`[auth] member resolved in ${Date.now() - started} ms (existing=${resolved.member !== null})`);
       return resolved.member !== null;
     },
-    [applyMember, persist]
+    [applyMember, persist, signOutPendingDeletion]
   );
 
   const login = useCallback(
@@ -210,7 +241,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           registrationKey.current = null;
           // Existing member as the server has it (lookup already activated a
           // DRAFT); the name/mobile just typed are not applied.
-          next = await recoverExistingMember(email, error, memberApi);
+          try {
+            next = await recoverExistingMember(email, error, memberApi);
+          } catch (recoverError) {
+            if (recoverError instanceof AccountDeletionPendingError) await signOutPendingDeletion(email, recoverError.dueAt);
+            throw recoverError;
+          }
         } else {
           throw error;
         }
@@ -221,7 +257,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       registrationKey.current = null;
       applyMember(next);
     },
-    [email, applyMember, persist]
+    [email, applyMember, persist, signOutPendingDeletion]
   );
 
   const logOut = useCallback(async () => {

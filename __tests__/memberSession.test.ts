@@ -1,7 +1,9 @@
 import { ApiError, NETWORK_ERROR, withEtag } from '../src/api/client';
 import type { MemberLookupResponse, Profile } from '../src/api/types';
 import {
+  AccountDeletionPendingError,
   activateMember,
+  deletionPendingNotice,
   EMPTY_STORE,
   lookupExistingMember,
   MemberApi,
@@ -247,5 +249,40 @@ describe('withEtag', () => {
 
   it('empty etag when neither is present', () => {
     expect(withEtag<Body>({ data: { member_id: 'm' }, headers: headers() }).etag).toBe('');
+  });
+});
+
+describe('deletion pending (409 MEMBER_DELETION_PENDING)', () => {
+  const pending = new ApiError(409, 'MEMBER_DELETION_PENDING', 'Deletion pending', 'c-9', undefined, { due_at: '2026-11-17T10:00:00Z' });
+  const notActive = new ApiError(403, 'MEMBER_NOT_ACTIVE', 'Member not active', 'c-8');
+
+  it('lookup reports it with the due date', async () => {
+    const a = api({ lookupMember: jest.fn(async () => { throw pending; }) });
+    expect(await lookupExistingMember('asha@example.com', a)).toEqual({ status: 'deletion_pending', dueAt: '2026-11-17T10:00:00Z' });
+  });
+
+  it('a new phone signing in is stopped, never handed the old member', async () => {
+    const a = api({ lookupMember: jest.fn(async () => { throw pending; }) });
+    await expect(resolveLogin(EMPTY_STORE, 'asha@example.com', a)).rejects.toBeInstanceOf(AccountDeletionPendingError);
+  });
+
+  it('a cached member refused with 403 MEMBER_NOT_ACTIVE is stopped too', async () => {
+    const a = api({
+      getMyProfile: jest.fn(async () => { throw notActive; }),
+      lookupMember: jest.fn(async () => { throw pending; }),
+    });
+    const error = await resolveLogin(storeWith(member), 'asha@example.com', a).catch((e) => e);
+    expect(error).toBeInstanceOf(AccountDeletionPendingError);
+    expect(error.dueAt).toBe('2026-11-17T10:00:00Z');
+  });
+
+  it('registering again is stopped, not recovered', async () => {
+    const a = api({ lookupMember: jest.fn(async () => { throw pending; }) });
+    await expect(recoverExistingMember('asha@example.com', pending, a)).rejects.toBeInstanceOf(AccountDeletionPendingError);
+  });
+
+  it('notice names the date, or stays general without one', () => {
+    expect(deletionPendingNotice('2026-11-17T10:00:00Z')).toBe('This account is being deleted. You can join again with this email after 17 Nov 2026.');
+    expect(deletionPendingNotice()).toBe('This account is being deleted. You can join again with this email once it is erased.');
   });
 });

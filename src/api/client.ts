@@ -13,13 +13,15 @@ export class ApiError extends Error {
   code: string;
   correlationId?: string;
   fieldErrors?: Record<string, string[]>;
+  details?: Record<string, unknown>;
 
   constructor(
     status: number,
     code: string,
     message: string,
     correlationId?: string,
-    fieldErrors?: Record<string, string[]>
+    fieldErrors?: Record<string, string[]>,
+    details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'ApiError';
@@ -27,6 +29,7 @@ export class ApiError extends Error {
     this.code = code;
     this.correlationId = correlationId;
     this.fieldErrors = fieldErrors;
+    this.details = details;
   }
 }
 
@@ -90,7 +93,8 @@ async function toApiError(response: Response): Promise<ApiError> {
         body.code,
         body.message ?? response.statusText,
         body.correlation_id ?? headerCorrelationId,
-        body.field_errors
+        body.field_errors,
+        body.details
       );
     }
   } catch {

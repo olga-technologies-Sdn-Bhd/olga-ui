@@ -16,6 +16,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
 import { commitErrorMessage, THEIR_CHOICE_LABEL, WHEN_LABELS } from '../../utils/commitText';
 import { MatchSummary } from './LiveMatchesScreen';
+import { haptics } from '../../utils/haptics';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'Commit'>;
 
@@ -66,6 +67,7 @@ export function CommitScreen({ route, navigation }: Props) {
       );
       setQuota((q) => ({ limit: q?.limit ?? 5, used: (q?.limit ?? 5) - result.commits_remaining, remaining: result.commits_remaining }));
       markCommitted(memberId);
+      haptics.success();
       setSent(true);
     } catch (e) {
       if (__DEV__ && e instanceof ApiError) console.warn(`Send commit failed (${e.code}), correlation_id=${e.correlationId ?? 'none'}`);
