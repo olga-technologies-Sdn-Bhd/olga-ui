@@ -347,7 +347,7 @@ export function GoLiveScreen({ navigation }: Props) {
         <Text style={styles.lead}>Nobody can see you.</Text>
         <Card>
           <Text style={styles.sub}>Register for an event. Go Live opens when you check in at the badge desk.</Text>
-          <Button label="Find an event" variant="secondary" small style={styles.cardButton} onPress={() => navigation.getParent()?.navigate('EventsTab')} />
+          <Button label="Find an event" variant="secondary" small style={styles.cardButton} onPress={() => navigation.getParent()?.navigate('EventsTab', { screen: 'Events' })} />
         </Card>
         <FilterSummary title="Who you'll see" intent={intentText} filters={filters} onChange={openFilter} />
       </Screen>

@@ -75,7 +75,8 @@ export function GlassTabBar({ state, navigation, tabs, hidden }: Props) {
           const focused = state.index === i;
           const onPress = () => {
             const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-            if (!focused && !event.defaultPrevented) navigation.navigate(route.name, route.params);
+            // No route.params: they still hold the last nested navigate (e.g. an event page).
+            if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
           };
           return (
             <TabButton
