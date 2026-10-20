@@ -299,7 +299,7 @@ export function HomeScreen({ navigation }: Props) {
             isRegistered(e) ? ' You are registered.' : started ? ' Registration is open.' : ' is open for registration.'
           }${attending}`,
           icon: <Ticket size={18} color={colors.accent} />,
-          onPress: () => navigation.navigate('EventsTab', { screen: 'EventDetail', params: { eventId: e.event_id } }),
+          onPress: () => navigation.navigate('EventsTab', { screen: 'EventDetail', params: { eventId: e.event_id }, initial: false }),
         };
       }),
     ...TIPS.filter(t => !prefs.tipsDone[t.key]).map(

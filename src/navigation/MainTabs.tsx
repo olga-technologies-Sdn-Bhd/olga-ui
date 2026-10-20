@@ -29,7 +29,7 @@ export function MainTabs() {
   // Signed in: an event link (now or held from before sign-in) opens that event's page.
   useEffect(() => {
     setEventOpener((eventId) => {
-      if (navigationRef.isReady()) navigationRef.navigate('EventsTab', { screen: 'EventDetail', params: { eventId } });
+      if (navigationRef.isReady()) navigationRef.navigate('EventsTab', { screen: 'EventDetail', params: { eventId }, initial: false });
     });
     return () => setEventOpener(null);
   }, []);
@@ -68,7 +68,18 @@ export function MainTabs() {
       >
         <Tab.Screen name="HomeTab" component={HomeStack} />
         <Tab.Screen name="GoLiveTab" component={GoLiveStack} />
-        <Tab.Screen name="EventsTab" component={EventsStack} />
+        <Tab.Screen
+          name="EventsTab"
+          component={EventsStack}
+          // The Events tab always lands on the list of all events, even if an
+          // event page was opened from Home or a link.
+          listeners={({ navigation }) => ({
+            tabPress: e => {
+              e.preventDefault();
+              navigation.navigate('EventsTab', { screen: 'Events' });
+            },
+          })}
+        />
         <Tab.Screen name="ChatTab" component={ChatStack} />
       </Tab.Navigator>
       <NearbyBanner />
