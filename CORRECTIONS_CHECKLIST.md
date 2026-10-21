@@ -2,38 +2,40 @@
 
 > Tracks the "Olga Corrected Screens" client feedback (1 Oct 2026 handover PDF).
 > **Delete this file before going live** — it's a working doc, not part of the shipped app.
-> Check an item by changing `- [ ]` to `- [x]` as it's actually done in code, not just planned.
+> Check an item by changing `- [ ]` to `- [x]` only when every bullet of the spec for it is met in code. Items that are only waiting on the backend stay unchecked, with the gap named.
 
-Last updated: 2026-10-03 (checked against develop @ 610c3ca, incl. Jigar's PRs #11–#18; Jigar's `feature/corrected-screens` noted per item)
+Last updated: 2026-10-08 — verified in the code on develop @ e164a30 (Jigar's PRs #11–#26). Static check only: `tsc` is clean; the new screens have not been run end to end.
 
 ## Foundation
 
 - [x] Brand retheme — bone/sand/ink tokens, green reserved for live/match, amber for outcomes, no blue, no gradients
 - [x] Typography — Outfit (headings/scores), Instrument Sans (body/buttons), IBM Plex Mono (small uppercase labels) wired in and linked natively
 - [x] True pill buttons, 44–48px tall
-- [ ] "The loop must close" — Commit → Accept → reveal → meet
-- [ ] Presence gated — Go Live unlocks only after badge-desk check-in *(feature/corrected-screens: interim gate on the event's start time; swap to check-in when Core has it)*
+- [x] "The loop must close" — Commit → Accept → reveal → meet. *(Jigar #21: send Commit, per-room quota, Commits for you with Accept/Decline, sent Commits and meetings, all on real Core endpoints. Not yet tested end to end with two real members.)*
+- [ ] Presence gated — Go Live unlocks only after badge-desk check-in. *(Not enforced: Go Live is gated by the event's live window; check-in is only a notice on the event page ("check in at the badge desk before you appear in matches") and Core's matching skips members who aren't checked in, Jigar #22. Spec wants Go Live itself locked until checked in.)*
 
 ## Screens
 
-- [x] 01 Home — first name, sand intent card with Edit, three tips that disappear once done, coming-up card with date block *(feature/corrected-screens; match count and intent history need Core/NLP)*
-- [ ] 02 Events — list — needs date blocks, 3 sections (You're going / Open for sign-up / Past). *(Done, Jigar #18: "All cities" chip. ⚠ #18 also dropped the "N match your intent" line from list cards — the spec wants it on every card, so it needs to come back once the backend provides a count.)* *(feature/corrected-screens: date blocks, wrapping titles, You're going / Open for sign-up / Past + empty state, green live count only while live. Still needs Core `match_count` and past events.)*
-- [ ] 03 Event detail, signed up — needs tagline removed, no Go Live button before the event, per-event intent editable. *(Done, Jigar #18: duplicate match pill removed. ⚠ #18 also removed the "match your intent" number from the stats row — the spec's stats row should carry both 612 signed up and 41 match your intent. Partial, Jigar: intent card shows the member's real intent — still not editable per event.)* *(feature/corrected-screens: name/date/venue lead, tagline removed, no Go Live before the event, signed-up state. Still needs per-event intent (NLP) and "Leave this event" (Core unregister).)*
-- [ ] 04 Who's going — needs neutral silhouette (no "?"), score badge back on each card, confirm the header count is "N of total" for intent-matched attendees. *(Done, Jigar #18: copy now says "Names appear when you both accept"; list and header count come from the real attendees API.)* *(feature/corrected-screens: neutral silhouette, top five + Show all, count line. Still needs intent-matched attendees + score from Core/NLP.)*
-- [x] 05 Go Live — before the event — "Not in a room yet", locked disc, next room named, filter summary *(feature/corrected-screens)*
-- [x] 06 Go Live — ready — press-and-hold disc, colour row, end time stated, filter summary under it *(feature/corrected-screens)*
-- [x] 07 Filter — tags removed, intent on top (once per live session), two toggles off by default *(feature/corrected-screens; "N people live clear this" needs NLP)*
-- [x] 08 Go Live — live — SEARCHING → LIVE · N READY, green waves, "Go invisible", bounded retries + one manual retry *(feature/corrected-screens)*
-- [x] 09 Your three — at most three, silhouettes, Commit / Pass *(feature/corrected-screens)*
-- [ ] 10 Chat — Commits/meetings — replace "coming soon" modal with real Commits-for-you + meetings UI
-- [ ] 11 Go Live mark — ring-with-dot used as the Go Live tab icon *(feature/corrected-screens)*; Quick Settings tile / status bar still to do
-- [x] 15 Your Go Live colour *(feature/corrected-screens; saved on the phone)*
-- [ ] 16 Commit — where and when — screen built; sending waits for Core (place/time, expiry, 5 per room) *(feature/corrected-screens)*
+- [ ] 01 Home — first name only, sand intent card with Edit, "Get started" with the three tips (they disappear once done), coming-up card with a date block and "N signed up" are all done (Jigar #20). Still needs: "N match your intent" on the coming-up card (no match count from Core/NLP yet).
+- [ ] 02 Events — list — "All cities" chip, date blocks, titles wrapping to two lines, the three sections with the Past empty state are done (Jigar #18, #20). Still needs: "N match your intent" on every card (Core `match_count`), and real past events.
+- [ ] 03 Event detail, signed up — name/date/venue lead, tagline removed, duplicate match pill removed, no Go Live button before the event (it only appears while the event is live), signed-up state, intent card editable (Jigar #18, #20). Still needs: per-event intent (today it edits the general intent); "Leave this event" (needs a Core unregister); the stats row's "N match your intent" next to "signed up".
+- [ ] 04 Who's going — "Names appear when you both accept" copy, neutral silhouette, top five + "Show all", real attendees API (Jigar #18, #20). Still needs: score badge on each card; confirm the list and count are intent-matched attendees only (Core/NLP).
+- [x] 05 Go Live — before the event — "Not in a room yet", locked disc, next room named, filter summary (Jigar #20)
+- [x] 06 Go Live — ready — press-and-hold disc, colour row, end time stated, filter summary under it (Jigar #20)
+- [ ] 07 Filter — "Add tags for this session" removed, intent on top (editable once per live session), the two toggles default off (Jigar #20). Still needs: "N people live clear this" on the minimum-match slider (needs NLP).
+- [x] 08 Go Live — live — SEARCHING → LIVE · N READY, green waves, "Go invisible", bounded retries + one manual retry (Jigar #20)
+- [x] 09 Your three — at most three (the app asks the server for up to 7 and shows the top 3), silhouettes, Commit / Pass (Jigar #20)
+- [x] 10 Chat — Commits for you (Accept / Decline) and meetings replace the "coming soon" modal (Jigar #21)
+- [ ] 11 Go Live mark — the client's ring-with-dot mark. *(Jigar #23 uses the Lucide "Radio" icon for the tab instead of the ring mark, and the tab turns green while live. Still not built: Quick Settings tile, status-bar icon, lock-screen control. Decide whether the Radio icon is acceptable to the client.)*
+- [x] 15 Your Go Live colour — six colours, saved on the phone (Jigar #20)
+- [x] 16 Commit — where and when — sheet with meeting spots and quota, sending calls Core (Jigar #20, #21)
 
 ## Brand assets (not in the client PDF — done alongside this work)
 
 - [x] App icon replaced with the "Ol-ga" wordmark on both iOS and Android, plus the Play Store 512×512 listing icon
 - [x] Sign-up screen retheme — dropped the old dark photo-carousel background, matches the rest of the app now
+- [x] Bundle ID / application ID set to `com.olga.connect` on iOS and Android (Jigar #24; replaces the template placeholders and my earlier `com.olga.app`). ⚠ The ID is registered under a colleague's Apple Developer account, so signing needs that account. Not yet confirmed on Google Play.
+- [x] iOS sign-in hang fixed — Microsoft redirects to `olga-dev://auth/` (with a slash) and iOS AppAuth rejected it silently; the redirect now carries the slash on iOS only (Android unchanged). The production tenant will need the same handling.
 
 ## Landed on develop by Jigar (not on the client list)
 
@@ -43,6 +45,14 @@ Last updated: 2026-10-03 (checked against develop @ 610c3ca, incl. Jigar's PRs #
 - [x] Admin-managed events (list/detail refresh, cancelled-event handling, event description)
 - [x] Live Mode consent policy version read from Core; OFFER intent built from the member's profile; NLP intent IDs capped at 64 chars
 - [x] #18: all mock data removed — events, matching and Who's going use the real APIs; intent re-save fix; Go Live asks for an intent on Home first
+- [x] #19: Core Go Live error codes mapped (EVENT_NOT_LIVE, LIVE_MODE_DISABLED, MEMBER_NOT_ACTIVE)
+- [x] #20: the corrected screens (Home, Events, Go Live, Filter, Your three, colour) plus the green-tint token #E7F3EB
+- [x] #21: the Commit flow (send, quota, incoming/outgoing, Accept/Decline, meetings)
+- [x] #22: MATCHING consent asked before Go Live; check-in notice for events that need it
+- [x] #23: Go Live tab icon (Lucide Radio)
+- [x] #24: app ID `com.olga.connect` on both platforms
+- [x] #25: search again when the minimum match changes while live; equal Commit and Pass buttons
+- [x] #26: Android bold brand fonts (`_bold` font copies; they were falling back to Roboto)
 
 ## Explicitly out of scope (per the client doc — don't build without asking)
 
