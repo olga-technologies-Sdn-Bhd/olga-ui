@@ -3,8 +3,8 @@ import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { Check, ChevronRight, Mic, SlidersHorizontal, Ticket, TrendingUp, UsersRound } from 'lucide-react-native';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ElementRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { coreApi } from '../../api/core';
 import type { Meeting } from '../../api/types';
@@ -69,6 +69,12 @@ const BANNER_FADE = 28;
 const TABS_H = 39;
 // Side margin of the top section (header, greeting, Ask bar, prompts, card).
 const SIDE = 14;
+// Android cannot pull the page past its top the way iOS can, so it gets a pull zone: an empty
+// strip above the page that the finger scrolls into. The photo stretches over it and the page
+// moves down with the finger, as on iOS. Pull past PULL_TRIGGER and let go to refresh.
+const PULL_ZONE = Platform.OS === 'android' ? 140 : 0;
+const PULL_TRIGGER = 80;
+const PULL_HOLD = 64;
 
 // Each tip disappears once the member does the action (not on tap) and never
 // returns. "Confirm you met" is amber: an outcome state.
@@ -195,11 +201,48 @@ export function HomeScreen({ navigation }: Props) {
   }
   const { refreshing, handleRefresh } = usePullToRefresh(refresh);
 
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const onScroll = useMemo(
-    () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
-    [scrollY],
+  // rawY is where the ScrollView really is. On Android the page rests PULL_ZONE below 0, so
+  // scrollY (0 at rest, negative while pulled down) is what every animation below uses.
+  const rawY = useRef(new Animated.Value(PULL_ZONE)).current;
+  const scrollY = useMemo(
+    () => rawY.interpolate({ inputRange: [0, 1], outputRange: [-PULL_ZONE, 1 - PULL_ZONE], extrapolate: 'extend' }),
+    [rawY],
   );
+  const scrollRef = useRef<ElementRef<typeof Animated.ScrollView>>(null);
+  const offsetNow = useRef(PULL_ZONE);
+  const settled = useRef(false);
+  const onScroll = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { y: rawY } } }], {
+        useNativeDriver: true,
+        listener: PULL_ZONE ? (e: { nativeEvent: { contentOffset: { y: number } } }) => (offsetNow.current = e.nativeEvent.contentOffset.y) : undefined,
+      }),
+    [rawY],
+  );
+  // Android pull-to-refresh: when the finger lets go, either refresh (pulled far enough) and hold
+  // the zone open a little, or snap back to the top.
+  const refreshingNow = useRef(false);
+  refreshingNow.current = refreshing;
+  const settlePull = useCallback(() => {
+    if (!PULL_ZONE) return;
+    const pulled = PULL_ZONE - offsetNow.current;
+    if (pulled <= 0) return;
+    const hold = refreshingNow.current || pulled >= PULL_TRIGGER;
+    if (hold && !refreshingNow.current) handleRefresh();
+    scrollRef.current?.scrollTo({ y: hold ? PULL_ZONE - PULL_HOLD : PULL_ZONE, animated: true });
+  }, [handleRefresh]);
+  useEffect(() => {
+    if (!PULL_ZONE || refreshing) return;
+    if (offsetNow.current < PULL_ZONE) scrollRef.current?.scrollTo({ y: PULL_ZONE, animated: true });
+  }, [refreshing]);
+  // Start at rest, below the pull zone.
+  const startAtRest = useCallback(() => {
+    if (!PULL_ZONE || settled.current) return;
+    settled.current = true;
+    scrollRef.current?.scrollTo({ y: PULL_ZONE, animated: false });
+  }, []);
+  // The spinner in the pull zone fades in as you pull.
+  const pullOpacity = scrollY.interpolate({ inputRange: [-PULL_TRIGGER, -10, 0], outputRange: [1, 0.2, 0], extrapolate: 'clamp' });
   const span = Math.max(1, askAt);
   const clamp = 'clamp' as const;
   // The wordmark shrinks towards its left edge.
@@ -218,7 +261,8 @@ export function HomeScreen({ navigation }: Props) {
   const greetFade = scrollY.interpolate({ inputRange: [0, span * 0.75], outputRange: [1, 0], extrapolate: clamp });
   const greetShift = scrollY.interpolate({ inputRange: [0, span], outputRange: [0, span * 0.4], extrapolate: clamp });
   // The Ask bar moves with the page until it reaches the header, then stays.
-  const askY = scrollY.interpolate({ inputRange: [0, span], outputRange: [span, 0], extrapolate: clamp });
+  // Pulled down (scrollY below 0) it keeps following the page, so it is not left behind.
+  const askY = scrollY.interpolate({ inputRange: [0, span], outputRange: [span, 0], extrapolateLeft: 'extend', extrapolateRight: clamp });
   // The photo at the top moves with the page until the bar settles, then
   // stays as the banner (the same pixels as the page's photo until then).
   const photoShift = scrollY.interpolate({ inputRange: [0, span], outputRange: [0, -span], extrapolate: clamp });
@@ -229,9 +273,10 @@ export function HomeScreen({ navigation }: Props) {
   // The Social Capital card fades gently as it passes under the banner.
   const cardFade = scrollY.interpolate({ inputRange: [span - 20, span + 260], outputRange: [1, 0], extrapolate: clamp });
   // The tabs move with the page until they reach the banner, then pin there.
-  const tabsAt = sheetAt + tabsInSheet;
+  const tabsAt = sheetAt + tabsInSheet - PULL_ZONE;
   const tabsTravel = Math.max(1, tabsAt - ASK_BAND);
-  const tabsY = scrollY.interpolate({ inputRange: [0, tabsTravel], outputRange: [tabsAt, ASK_BAND], extrapolate: clamp });
+  // Pulled down (scrollY below 0) they keep following the page too.
+  const tabsY = scrollY.interpolate({ inputRange: [0, tabsTravel], outputRange: [tabsAt, ASK_BAND], extrapolateLeft: 'extend', extrapolateRight: clamp });
 
   function tipIcon(key: TipKey) {
     if (key === 'wentLive') return <GoLiveMark size={20} color={colors.accent} />;
@@ -318,6 +363,12 @@ export function HomeScreen({ navigation }: Props) {
   const headerHeight = topInset + HEADER_H;
   const onPhoto = photo.lightText ? styles.onPhotoLight : styles.onPhotoDark;
   const imageHeight = Math.round(width * HERO_RATIO);
+  // The photo sits in a layer behind the page, pinned to the top of the screen. Scrolling up
+  // moves it with the page. Pulling down (scrollY below 0) stretches it from the top, so the
+  // space that opens above the page is filled with the same picture, as on Android.
+  const photoLift = scrollY.interpolate({ inputRange: [0, 1], outputRange: [0, -1], extrapolateLeft: 'clamp', extrapolateRight: 'extend' });
+  const photoStretch = scrollY.interpolate({ inputRange: [-imageHeight, 0], outputRange: [2, 1], extrapolateLeft: 'extend', extrapolateRight: clamp });
+  const stretchFromTop = { transformOrigin: '50% 0%' } as const;
   // The photo with its top wash; every copy (page, header, banner) carries
   // the same wash so they line up exactly.
   const photoImage = (
@@ -332,23 +383,43 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={styles.page}>
+      {/* The photo, behind the page: it follows the page up and stretches when the page is pulled down. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.photo, { top: 0, height: imageHeight }, stretchFromTop, { transform: [{ translateY: photoLift }, { scale: photoStretch }] }]}>
+        {photoImage}
+        <LinearGradient
+          colors={[colors.bgClear, colors.bg]}
+          style={[styles.photoFade, { top: imageHeight * 0.5, height: imageHeight * 0.5 }]}
+        />
+      </Animated.View>
       <Animated.ScrollView
+        ref={scrollRef}
         style={[styles.flex, { marginTop: headerHeight }]}
         contentContainerStyle={styles.content}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        overScrollMode={PULL_ZONE ? 'never' : undefined}
+        onContentSizeChange={startAtRest}
+        onScrollEndDrag={settlePull}
+        onMomentumScrollEnd={settlePull}
+        refreshControl={
+          PULL_ZONE ? undefined : (
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={photo.lightText ? '#FFFFFF' : undefined} />
+          )
+        }
       >
+        {/* Android only: the pull zone, an empty strip above the page with the refresh spinner. */}
+        {PULL_ZONE > 0 && (
+          <View style={{ height: PULL_ZONE, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 14 }} pointerEvents="none">
+            <Animated.View style={{ opacity: refreshing ? 1 : pullOpacity }}>
+              <ActivityIndicator animating={refreshing} color={photo.lightText ? '#FFFFFF' : colors.muted} />
+            </Animated.View>
+          </View>
+        )}
         {/* The greeting, over the photo (which starts under the status bar
             and fades into the page ground below the card's top). */}
         <View style={styles.hero} onLayout={e => setAskAt(e.nativeEvent.layout.height)}>
-          <View style={[styles.photo, { top: -headerHeight }]} pointerEvents="none">
-            {photoImage}
-            <LinearGradient
-              colors={[colors.bgClear, colors.bg]}
-              style={[styles.photoFade, { top: imageHeight * 0.5, height: imageHeight * 0.5 }]}
-            />
-          </View>
           <Animated.View style={{ opacity: greetFade, transform: [{ translateY: greetShift }] }}>
             {/* Calm, as in Calendar or Mail: "Monday, 19 October". */}
             <Text style={[styles.date, onPhoto]}>
@@ -491,11 +562,11 @@ export function HomeScreen({ navigation }: Props) {
       <View style={styles.overlay} pointerEvents="box-none">
         {/* The photo's top, behind the status bar and the header. */}
         <View style={[styles.clip, { height: headerHeight }]} pointerEvents="none">
-          <Animated.View style={{ transform: [{ translateY: photoShift }] }}>{photoImage}</Animated.View>
+          <Animated.View style={[stretchFromTop, { transform: [{ translateY: photoShift }, { scale: photoStretch }] }]}>{photoImage}</Animated.View>
         </View>
         {/* The banner: the photo behind the header and the settled bar. */}
         <Animated.View style={[styles.clip, { height: headerHeight + ASK_BAND, opacity: bannerIn }]} pointerEvents="none">
-          <Animated.View style={{ transform: [{ translateY: photoShift }] }}>{photoImage}</Animated.View>
+          <Animated.View style={[stretchFromTop, { transform: [{ translateY: photoShift }, { scale: photoStretch }] }]}>{photoImage}</Animated.View>
           <LinearGradient colors={[colors.bgClear, colors.bg]} style={styles.bannerFade} />
         </Animated.View>
 
