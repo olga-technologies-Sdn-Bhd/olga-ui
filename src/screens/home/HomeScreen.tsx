@@ -218,7 +218,8 @@ export function HomeScreen({ navigation }: Props) {
   const greetFade = scrollY.interpolate({ inputRange: [0, span * 0.75], outputRange: [1, 0], extrapolate: clamp });
   const greetShift = scrollY.interpolate({ inputRange: [0, span], outputRange: [0, span * 0.4], extrapolate: clamp });
   // The Ask bar moves with the page until it reaches the header, then stays.
-  const askY = scrollY.interpolate({ inputRange: [0, span], outputRange: [span, 0], extrapolate: clamp });
+  // Pulled down (scrollY below 0) it keeps following the page, so it is not left behind.
+  const askY = scrollY.interpolate({ inputRange: [0, span], outputRange: [span, 0], extrapolateLeft: 'extend', extrapolateRight: clamp });
   // The photo at the top moves with the page until the bar settles, then
   // stays as the banner (the same pixels as the page's photo until then).
   const photoShift = scrollY.interpolate({ inputRange: [0, span], outputRange: [0, -span], extrapolate: clamp });
@@ -231,7 +232,8 @@ export function HomeScreen({ navigation }: Props) {
   // The tabs move with the page until they reach the banner, then pin there.
   const tabsAt = sheetAt + tabsInSheet;
   const tabsTravel = Math.max(1, tabsAt - ASK_BAND);
-  const tabsY = scrollY.interpolate({ inputRange: [0, tabsTravel], outputRange: [tabsAt, ASK_BAND], extrapolate: clamp });
+  // Pulled down (scrollY below 0) they keep following the page too.
+  const tabsY = scrollY.interpolate({ inputRange: [0, tabsTravel], outputRange: [tabsAt, ASK_BAND], extrapolateLeft: 'extend', extrapolateRight: clamp });
 
   function tipIcon(key: TipKey) {
     if (key === 'wentLive') return <GoLiveMark size={20} color={colors.accent} />;
