@@ -50,7 +50,7 @@ export type ChatStackParamList = {
   Conversation: { conversationId?: string; memberId?: string };
   // picker: who chooses the spot when the plan is "Their choice" (the
   // receiver); unknown for meetings opened from the list.
-  Meetup: { name?: string; headline?: string; where: string; when: CommitWhen; eventName?: string; picker?: 'you' | 'them' };
+  Meetup: { memberId?: string; name?: string; headline?: string; where: string; when: CommitWhen; eventName?: string; picker?: 'you' | 'them' };
 };
 
 export type MainTabParamList = {

@@ -98,7 +98,7 @@ export function BlockedMembersScreen({ navigation }: Props) {
           {blocked.map((m) => (
             <ListRow
               key={m.member_id}
-              leading={<Avatar initials={m.display_name ? getInitials(m.display_name) : '?'} />}
+              leading={<Avatar initials={m.display_name ? getInitials(m.display_name) : '?'} memberId={m.member_id} />}
               title={m.display_name ?? 'Member'}
               subtitle={`Blocked ${blockedOn(m.blocked_at)}`}
               trailing={

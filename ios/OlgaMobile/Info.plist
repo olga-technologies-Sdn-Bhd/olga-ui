@@ -45,6 +45,10 @@
 	</dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Ol-ga uses Bluetooth while Nearby is on to find Ol-ga members close to you, and to send messages to people you're connected with when there's no internet. People nearby see your role and what you're looking for, never your name.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Ol-ga uses the camera only when you choose to take a profile photo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Ol-ga uses your photos only when you choose one as your profile photo.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

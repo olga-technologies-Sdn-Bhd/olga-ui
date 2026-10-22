@@ -48,7 +48,7 @@ export function ChatScreen({ navigation, route }: Props) {
             accessibilityRole="button"
             accessibilityLabel="Your account"
           >
-            <Avatar initials={(name ?? '?').slice(0, 1).toUpperCase()} size="sm" dark />
+            <Avatar own initials={(name ?? '?').slice(0, 1).toUpperCase()} size="sm" dark />
           </Pressable>
         </View>
         <View style={styles.tabs}>

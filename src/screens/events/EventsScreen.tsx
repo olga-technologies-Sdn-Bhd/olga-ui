@@ -161,7 +161,7 @@ export function EventsScreen({ navigation }: Props) {
             accessibilityRole="button"
             accessibilityLabel="Your account"
           >
-            <Avatar initials={initial} size="sm" dark />
+            <Avatar own initials={initial} size="sm" dark />
           </Pressable>
         </View>
 

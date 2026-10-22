@@ -101,6 +101,7 @@ export function CommitsPanel() {
       haptics.success();
       setIncoming((list) => (list ?? []).filter((c) => c.request_id !== commit.request_id));
       navigation.navigate('Meetup', {
+        memberId: result.member_id,
         name: result.display_name,
         headline: commit.sender.headline,
         where: commit.plan.where,
@@ -223,7 +224,7 @@ export function CommitsPanel() {
             {meetings.map((m) => (
               <ListRow
                 key={m.conversation_id}
-                leading={<Avatar initials={m.display_name ? getInitials(m.display_name) : '?'} />}
+                leading={<Avatar initials={m.display_name ? getInitials(m.display_name) : '?'} memberId={m.member_id} />}
                 title={m.display_name ?? 'Your meeting'}
                 subtitle={m.headline}
                 threeLines
@@ -238,7 +239,7 @@ export function CommitsPanel() {
                 trailing={<Text style={styles.time}>{formatTime(m.last_activity_at)}</Text>}
                 onPress={
                   m.plan
-                    ? () => navigation.navigate('Meetup', { name: m.display_name, headline: m.headline, where: m.plan!.where, when: m.plan!.when })
+                    ? () => navigation.navigate('Meetup', { memberId: m.member_id, name: m.display_name, headline: m.headline, where: m.plan!.where, when: m.plan!.when })
                     : undefined
                 }
               />

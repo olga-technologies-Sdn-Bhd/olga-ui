@@ -546,7 +546,7 @@ export function ConversationScreen({ route, navigation }: Props) {
         onBack={() => navigation.goBack()}
         left={
           <View style={styles.header}>
-            <Avatar initials={displayName ? getInitials(displayName) : '?'} size="sm" light />
+            <Avatar initials={displayName ? getInitials(displayName) : '?'} size="sm" light memberId={displayName && peerId ? peerId : undefined} />
             <View style={styles.headerText}>
               <Text style={styles.h3} numberOfLines={1}>
                 {conversation || peer ? name : ' '}

@@ -78,7 +78,7 @@ export function OlgaAgentScreen({ navigation, route }: Props) {
           <Text style={styles.wordmark}>Ol-ga</Text>
           <Text style={styles.preview}>Preview</Text>
         </View>
-        <Avatar initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" dark />
+        <Avatar own initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" dark />
       </View>
 
       {/* The chat area: the same white wallpaper as a conversation. */}

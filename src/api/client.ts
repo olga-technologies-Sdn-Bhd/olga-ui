@@ -56,6 +56,17 @@ export function setAccessTokenProvider(provider: () => string | null) {
   accessTokenProvider = provider;
 }
 
+// Headers for an image the app loads straight from Core (<Image source>):
+// the same member and token headers every other Core call carries.
+export function imageHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const memberId = memberIdProvider();
+  if (memberId) headers['X-Member-Id'] = memberId;
+  const token = accessTokenProvider();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
 // RFC 4122 v4 UUID. Math.random is fine here: idempotency keys only need to be
 // unique per user action, not unguessable, and Hermes has no crypto.randomUUID.
 export function newIdempotencyKey(): string {
@@ -112,8 +123,11 @@ async function send<T>(
 ): Promise<ApiResponse<T>> {
   const { headers = {}, idempotencyKey, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
 
+  // A FormData body (a picture upload) must not get a Content-Type: the
+  // network layer adds multipart/form-data with its boundary.
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   const finalHeaders: Record<string, string> = { Accept: 'application/json' };
-  if (body !== undefined) finalHeaders['Content-Type'] = 'application/json';
+  if (body !== undefined && !isForm) finalHeaders['Content-Type'] = 'application/json';
   const memberId = memberIdProvider();
   if (memberId) finalHeaders['X-Member-Id'] = memberId;
   if (method !== 'GET') finalHeaders['Idempotency-Key'] = idempotencyKey ?? newIdempotencyKey();
@@ -131,7 +145,7 @@ async function send<T>(
     response = await fetch(`${baseUrl}${path}`, {
       method,
       headers: finalHeaders,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
       signal: controller.signal,
     });
   } catch (e) {

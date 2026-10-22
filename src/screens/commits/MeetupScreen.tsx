@@ -21,7 +21,7 @@ type Props = NativeStackScreenProps<ChatStackParamList, 'Meetup'>;
 export function MeetupScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { name, headline, where, when, eventName, picker } = route.params;
+  const { memberId, name, headline, where, when, eventName, picker } = route.params;
   const who = name || 'your connection';
 
   return (
@@ -34,7 +34,7 @@ export function MeetupScreen({ route, navigation }: Props) {
       </View>
 
       <Card style={styles.row}>
-        <Avatar initials={name ? getInitials(name) : '?'} size="lg" />
+        <Avatar initials={name ? getInitials(name) : '?'} size="lg" memberId={memberId} />
         <View style={styles.flex}>
           <Text style={styles.h3}>{name ?? 'Your connection'}</Text>
           {headline && <Text style={styles.sub}>{headline}</Text>}
