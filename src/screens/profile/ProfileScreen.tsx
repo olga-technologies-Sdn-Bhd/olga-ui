@@ -1,10 +1,11 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
-import { Ban, BriefcaseBusiness, ChevronRight, Eye, Hash, LogOut, LucideIcon, Mail, Moon, Phone, Search, Server } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ban, BriefcaseBusiness, Camera, ChevronRight, Eye, Hash, LogOut, LucideIcon, Mail, Moon, Phone, Search, Server } from 'lucide-react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
+import { BottomSheet, SheetGroup, SheetOption } from '../../components/BottomSheet';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Screen } from '../../components/Screen';
@@ -12,6 +13,7 @@ import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { APP_ENV } from '../../config/env';
 import { useAuth } from '../../context/AuthContext';
 import { useLive } from '../../context/LiveContext';
+import { clearPictureError, PictureSource, pickMyPicture, removeMyPicture, useMyPicture } from '../../profile/myPicture';
 import { HomeStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
@@ -31,6 +33,9 @@ export function ProfileScreen({ navigation }: Props) {
   // The server only ever returns the masked number, so that is what a
   // reinstall, a new device or a fresh sign-in shows.
   const [phoneHint, setPhoneHint] = useState<string | null>(null);
+  const picture = useMyPicture(memberId);
+  const [photoSheet, setPhotoSheet] = useState(false);
+  const photoBusy = picture.busy !== null;
 
   useEffect(() => {
     if (!memberId) return;
@@ -45,6 +50,30 @@ export function ProfileScreen({ navigation }: Props) {
       active = false;
     };
   }, [memberId]);
+
+  function openPhotoSheet() {
+    if (photoBusy) return;
+    clearPictureError();
+    setPhotoSheet(true);
+  }
+
+  // iOS can't present the picker while the sheet is still sliding away.
+  function choosePhoto(source: PictureSource) {
+    setPhotoSheet(false);
+    setTimeout(() => pickMyPicture(source), Platform.OS === 'ios' ? 500 : 0);
+  }
+
+  function confirmRemovePhoto() {
+    setPhotoSheet(false);
+    setTimeout(
+      () =>
+        showDialog('Remove your photo?', 'Your initials will show instead.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Remove', style: 'destructive', onPress: () => removeMyPicture() },
+        ]),
+      Platform.OS === 'ios' ? 400 : 0
+    );
+  }
 
   function confirmLogOut() {
     showDialog('Log out?', 'You can sign back in any time with the same email.', [
@@ -69,10 +98,43 @@ export function ProfileScreen({ navigation }: Props) {
       <BackHeader onBack={() => navigation.goBack()} title="Account" />
 
       <View style={styles.identity}>
-        <Avatar initials={(name ?? '?').slice(0, 1).toUpperCase()} size="lg" />
+        <Pressable
+          onPress={openPhotoSheet}
+          accessibilityRole="button"
+          accessibilityLabel={picture.hasPicture ? 'Change your photo' : 'Add a photo'}
+          style={({ pressed }) => pressed && styles.pressed}
+        >
+          <Avatar
+            own
+            initials={(name ?? '?').slice(0, 1).toUpperCase()}
+            size="xl"
+            previewUri={picture.preview}
+            busy={photoBusy}
+          />
+          <View style={styles.cameraBadge}>
+            <Camera size={14} color={colors.white} strokeWidth={2.2} />
+          </View>
+        </Pressable>
         <Text style={styles.h2}>{name ?? 'Your profile'}</Text>
         {email && <Text style={styles.sub}>{email}</Text>}
+        {picture.busy === 'uploading' && <Text style={styles.sub}>Uploading your photo…</Text>}
+        {picture.busy === 'processing' && <Text style={styles.sub}>Checking your photo…</Text>}
+        {picture.busy === 'removing' && <Text style={styles.sub}>Removing your photo…</Text>}
+        {picture.slow && !photoBusy && <Text style={styles.sub}>Your photo is still being prepared. It will appear shortly.</Text>}
+        {picture.error && (
+          <Text style={styles.photoError} accessibilityLiveRegion="polite">
+            {picture.error}
+          </Text>
+        )}
       </View>
+
+      <BottomSheet visible={photoSheet} onClose={() => setPhotoSheet(false)} title="Your photo" subtitle="Other members see it next to your name once you are connected.">
+        <SheetGroup>
+          <SheetOption label="Take a photo" onPress={() => choosePhoto('camera')} />
+          <SheetOption label="Choose from your photos" onPress={() => choosePhoto('library')} />
+          {picture.hasPicture && <SheetOption label="Remove photo" danger onPress={confirmRemovePhoto} />}
+        </SheetGroup>
+      </BottomSheet>
 
       <Text style={styles.sectionTitle}>Your introduction</Text>
       <Card style={styles.list}>
@@ -213,7 +275,21 @@ function RowIcon({ icon: Icon, styles, colors }: { icon: LucideIcon; styles: Ret
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   identity: { alignItems: 'center', gap: 6, marginTop: 4 },
   h2: { fontFamily: fonts.headingExtraBold, fontSize: 18, fontWeight: semibold, color: colors.text, marginTop: 8 },
-  sub: { fontSize: 12, color: colors.muted },
+  sub: { fontSize: 12, color: colors.muted, textAlign: 'center' },
+  cameraBadge: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.accent,
+    borderWidth: 2,
+    borderColor: colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoError: { fontSize: 12, color: colors.danger, textAlign: 'center' },
   sectionTitle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold, marginTop: 10 },
   list: { paddingVertical: 4 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 10 },

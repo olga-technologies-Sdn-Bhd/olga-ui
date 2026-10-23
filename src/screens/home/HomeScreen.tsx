@@ -615,7 +615,7 @@ export function HomeScreen({ navigation }: Props) {
             </Animated.Text>
           </Pressable>
           <Pressable onPress={() => navigation.navigate('Profile')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Your account">
-            <Avatar initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" dark />
+            <Avatar own initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" dark />
           </Pressable>
         </View>
 

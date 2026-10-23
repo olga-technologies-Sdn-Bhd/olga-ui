@@ -125,6 +125,7 @@ export function ChatsPanel() {
               return (
                 <ChatRow
                   key={p.memberId}
+                  memberId={p.memberId}
                   name={p.name || FALLBACK_NAME}
                   initials={p.name ? getInitials(p.name) : p.initials ?? '?'}
                   time={last ? formatChatListTime(last.sentAt) : undefined}
@@ -151,6 +152,7 @@ export function ChatsPanel() {
         {items?.map((c) => (
           <ChatRow
             key={c.conversation_id}
+            memberId={c.member_id}
             name={c.display_name || FALLBACK_NAME}
             initials={c.display_name ? getInitials(c.display_name) : '?'}
             time={formatChatListTime(c.last_activity_at)}
@@ -180,6 +182,7 @@ export function ChatsPanel() {
 // One chat in the list, as in WhatsApp: avatar, name and time on top, the
 // last message and an unread count below, hairline divider after the avatar.
 function ChatRow({
+  memberId,
   name,
   initials,
   time,
@@ -191,6 +194,7 @@ function ChatRow({
   styles,
   colors,
 }: {
+  memberId?: string;
   name: string;
   initials: string;
   time?: string;
@@ -211,7 +215,7 @@ function ChatRow({
       accessibilityRole="button"
       accessibilityLabel={`${name}${hasUnread ? `, ${unread} unread` : ''}`}
     >
-      <Avatar initials={initials} size="list" />
+      <Avatar initials={initials} size="list" memberId={memberId} />
       <View style={styles.rowBody}>
         <View style={styles.line}>
           <Text style={styles.name} numberOfLines={1}>

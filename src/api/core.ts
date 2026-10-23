@@ -1,5 +1,5 @@
 import { CORE_API_URL } from '../config/env';
-import { makeApiClient, RequestOptions, withEtag } from './client';
+import { imageHeaders, makeApiClient, RequestOptions, withEtag } from './client';
 import { cached } from './offlineCache';
 import type {
   AcceptCommitResponse,
@@ -37,6 +37,7 @@ import type {
   PrivacyRequestCreate,
   PrivacyRequestResponse,
   ProfileBody,
+  ProfileImageUploadResponse,
   RegisterMemberBody,
   RegisterMemberRequest,
   UpdateProfileRequest,
@@ -49,6 +50,23 @@ const client = makeApiClient(CORE_API_URL, { sendAccessToken: true });
 
 export type CoreEvent = EventSummary & {
 };
+
+// A picture chosen on the phone, as React Native's FormData wants it.
+export type PictureFile = { uri: string; name: string; type: string };
+
+// thumbnail 64, small 256, large 512 px (WebP, square).
+export type PictureSize = 'thumbnail' | 'small' | 'large';
+
+// Where a member's picture is loaded from, and the headers it needs (Core
+// serves it only to signed-in members). The URL stays the same when a picture
+// is replaced, so `version` (the profile etag) keeps an old copy from showing.
+export function memberPictureSource(memberId: string, size: PictureSize, version?: string | null) {
+  const v = version ? `&v=${encodeURIComponent(version)}` : '';
+  return {
+    uri: `${CORE_API_URL}/v1/members/${encodeURIComponent(memberId)}/profile-picture?size=${size}${v}`,
+    headers: imageHeaders(),
+  };
+}
 
 export const coreApi = {
   // Once, right after Entra OTP succeeds. X-Member-Id isn't set yet.
@@ -72,6 +90,29 @@ export const coreApi = {
   updateMyProfile: async (body: UpdateProfileRequest, ifMatch: string, options?: RequestOptions) =>
     withEtag(
       await client.send<ProfileBody>('PATCH', '/v1/me/profile', body, {
+        ...options,
+        headers: { ...options?.headers, 'If-Match': ifMatch },
+      })
+    ),
+
+  // Upload or replace. 202: the picture is checked and resized by a worker, so
+  // read the profile until profile_image_status is READY or REJECTED. ifMatch
+  // is the profile etag; reuse the same idempotencyKey only to retry this same
+  // file.
+  uploadProfilePicture: async (file: PictureFile, ifMatch: string, options?: RequestOptions) => {
+    const form = new FormData();
+    form.append('file', file as unknown as Blob);
+    const r = await client.send<ProfileImageUploadResponse>('PUT', '/v1/me/profile-picture', form, {
+      ...options,
+      headers: { ...options?.headers, 'If-Match': ifMatch },
+    });
+    return { ...r.data, etag: r.data.etag ?? r.headers.get('ETag') ?? '' };
+  },
+
+  // 200 with the updated profile. Idempotent.
+  deleteProfilePicture: async (ifMatch: string, options?: RequestOptions) =>
+    withEtag(
+      await client.send<ProfileBody>('DELETE', '/v1/me/profile-picture', undefined, {
         ...options,
         headers: { ...options?.headers, 'If-Match': ifMatch },
       })

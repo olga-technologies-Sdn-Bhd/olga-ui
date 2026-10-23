@@ -77,8 +77,23 @@ export type ProfileBody = {
   // when the member has no value; the full values are never returned.
   email_hint?: string;
   phone_hint?: string;
+  // A relative Core URL (never a blob URL), e.g.
+  // /v1/members/mem_123/profile-picture?size=thumbnail. Null/absent: no picture.
+  profile_image_url?: string | null;
+  profile_image_status?: ProfileImageStatus | null;
 };
 export type Profile = WithEtag<ProfileBody>;
+
+// Pictures are processed by a worker after the upload: PENDING / PROCESSING
+// until READY, or REJECTED (the previous picture then stays).
+export type ProfileImageStatus = 'PENDING' | 'PROCESSING' | 'READY' | 'REJECTED' | 'DELETED';
+
+// PUT /v1/me/profile-picture -> 202. `etag` is the new profile version.
+export type ProfileImageUploadResponse = {
+  image_id: string;
+  status: ProfileImageStatus;
+  etag: string;
+};
 
 // PATCH /v1/me/profile is a full replace: omitted optional fields are cleared.
 export type UpdateProfileRequest = {
