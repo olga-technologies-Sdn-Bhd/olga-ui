@@ -115,7 +115,7 @@ function nearbyNote(reach: NearbyReach, firstName: string) {
   }
 }
 
-// Just the time, as in WhatsApp; only a message still on this phone says so.
+// Just the time; only a message still on this phone says so.
 function localStatus(m: { from: 'me' | 'them'; delivered: boolean; synced: boolean; sentAt: string }) {
   return m.from === 'me' && !m.delivered && !m.synced ? 'Waiting to send' : formatClock(m.sentAt);
 }
@@ -497,7 +497,7 @@ export function ConversationScreen({ route, navigation }: Props) {
     thread.push({ kind: 'msg', ...r });
   });
 
-  // While scrolling, the day of what's at the top floats there (WhatsApp).
+  // While scrolling, the day of what's at the top floats there.
   const onThreadScroll = (y: number) => {
     const above = Object.values(dayOffsets.current)
       // Only once its own section chip has scrolled out of view (no double chip).
@@ -540,7 +540,7 @@ export function ConversationScreen({ route, navigation }: Props) {
 
   return (
     <Screen scroll={false} style={styles.ground} contentStyle={[styles.screen, { paddingBottom: 12 + bottom }]}>
-      {/* WhatsApp style: who you're talking to sits right beside the arrow. */}
+      {/* Who you're talking to sits right beside the arrow. */}
       <BackHeader
           chevron
         onBack={() => navigation.goBack()}
@@ -847,7 +847,7 @@ const makeStyles = (colors: ThemeColors) =>
       gap: 4,
       marginTop: 2,
     },
-    // Just the three vertical dots (WhatsApp), the tap area stays 38 x 38.
+    // Just the three vertical dots, the tap area stays 38 x 38.
     menu: { width: 38, height: 38, marginRight: -10, alignItems: 'center', justifyContent: 'center' },
     eyebrow: {
       fontFamily: fonts.monoBold,

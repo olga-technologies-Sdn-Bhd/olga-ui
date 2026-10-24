@@ -57,7 +57,7 @@ export function ChatComposer({
           alignItems: 'center',
           justifyContent: 'center',
         },
-        // WhatsApp's paper plane, nudged right so it looks centred.
+        // The paper plane, nudged right so it looks centred.
         sendIcon: { marginLeft: 2 },
         mic: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
       }),

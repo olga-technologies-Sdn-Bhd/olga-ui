@@ -21,7 +21,7 @@ import { useMemo, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 
-// WhatsApp-style doodles behind a conversation, from the world of meeting
+// Doodles behind a conversation, from the world of meeting
 // people at events: coffee, handshakes, a calendar, a mic. Faint line icons
 // in the app's own icon set, scattered the same way every time (seeded), and
 // never in the way of a touch.
@@ -45,8 +45,8 @@ const DOODLES: LucideIcon[] = [
   MessageCircle,
 ];
 
-// One doodle per cell, nudged around inside it. Sized and spaced like the
-// WhatsApp default wallpaper: about 20px line icons, clearly visible but soft.
+// One doodle per cell, nudged around inside it: about 20px line icons,
+// clearly visible but soft.
 const CELL = 46;
 // Room left clear in the middle for the Ol-ga mark.
 const CLEAR_W = 230;
