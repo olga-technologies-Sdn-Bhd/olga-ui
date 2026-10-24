@@ -480,6 +480,49 @@ export type Conversation = {
   last_activity_at: string;
   can_send: boolean;
   muted_until?: string; // only present while a mute is active
+  // The highest server_sequence of my messages the other member has received /
+  // read: mine at or below count as delivered / seen. Absent until the first receipt.
+  other_delivered_through_sequence?: number;
+  other_read_through_sequence?: number;
+};
+
+// PUT /v1/messages/{id}/receipt: at least one of the two.
+export type MessageReceiptRequest = { delivered_at?: string; read_at?: string };
+
+// PUT /v1/me/devices/{deviceId}: this app installation. push_provider and
+// push_token go together (none until push is set up).
+export type DeviceRegistrationRequest = {
+  platform: 'ANDROID' | 'IOS';
+  app_version: string;
+  push_provider?: 'FCM' | 'APNS';
+  push_token?: string;
+};
+
+export type Device = {
+  device_id: string;
+  platform: string;
+  app_version: string;
+  status: string;
+  push_enabled: boolean;
+  last_seen_at: string;
+};
+
+// What /v1/realtime/chat sends on its "event" method: the integration
+// envelope. At least once, in any order; only ids and sequences, never a body.
+export type ChatEvent = {
+  event_id: string;
+  event_type: string; // MessageCreated.v1, MessageDeleted.v1, ConversationRead.v1, more later
+  aggregate_id: string;
+  occurred_at: string;
+  data: {
+    conversation_id: string;
+    message_id?: string;
+    sender_member_id?: string;
+    recipient_member_id?: string;
+    reader_member_id?: string;
+    server_sequence?: number;
+    last_read_server_sequence?: number;
+  };
 };
 
 // GET /v1/conversations: newest first; next_cursor is opaque.

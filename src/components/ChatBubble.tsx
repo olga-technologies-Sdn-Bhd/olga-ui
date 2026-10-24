@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Check, CheckCheck } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { OlgaMark } from './OlgaMark';
 import { semibold } from '../theme/typography';
@@ -11,6 +12,8 @@ type Props = {
   person?: boolean;
   time?: string; // the prototype's `.chat-time` line under the bubble
   status?: 'pending' | 'failed';
+  // My message on Ol-ga: ✓ sent, ✓✓ delivered, coloured ✓✓ seen.
+  tick?: 'sent' | 'delivered' | 'read';
   deleted?: boolean;
   // Their message looked abusive: shown covered until tapped.
   hidden?: boolean;
@@ -21,7 +24,7 @@ type Props = {
 
 // Ol-ga's messages sit on the left with her sparkle mark; the member's on the
 // right. In a conversation (person), the other member's bubbles have no avatar.
-export function ChatBubble({ from, text, person, time, status, deleted, hidden, onPress, onLongPress, onRetry }: Props) {
+export function ChatBubble({ from, text, person, time, status, tick, deleted, hidden, onPress, onLongPress, onRetry }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(
     () =>
@@ -59,6 +62,8 @@ export function ChatBubble({ from, text, person, time, status, deleted, hidden, 
         },
         meta: { fontSize: 9, color: colors.muted, marginTop: 3 },
         metaMe: { textAlign: 'right' },
+        metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 3, marginTop: 3 },
+        metaInRow: { marginTop: 0 },
         failed: { fontSize: 11, color: colors.danger, marginTop: 4, textAlign: 'right', fontWeight: semibold },
       }),
     [colors]
@@ -91,6 +96,15 @@ export function ChatBubble({ from, text, person, time, status, deleted, hidden, 
         <Pressable onPress={onRetry} hitSlop={8} accessibilityRole="button">
           <Text style={styles.failed}>Not sent · Tap to retry</Text>
         </Pressable>
+      ) : tick && meta ? (
+        <View style={styles.metaRow} accessibilityLabel={`${meta}, ${tick === 'read' ? 'seen' : tick}`}>
+          <Text style={[styles.meta, styles.metaInRow]}>{meta}</Text>
+          {tick === 'sent' ? (
+            <Check size={12} color={colors.muted} />
+          ) : (
+            <CheckCheck size={12} color={tick === 'read' ? colors.brand : colors.muted} />
+          )}
+        </View>
       ) : (
         meta && <Text style={[styles.meta, from === 'me' && styles.metaMe]}>{meta}</Text>
       )}

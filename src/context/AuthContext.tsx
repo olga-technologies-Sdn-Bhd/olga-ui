@@ -3,6 +3,7 @@ import { ApiError, newIdempotencyKey, setAccessTokenProvider, setMemberIdProvide
 import { clearCache } from '../api/offlineCache';
 import { coreApi } from '../api/core';
 import { clearNearby } from '../nearby/store';
+import { registerDevice, removeDevice } from '../chat/device';
 import {
   AccountDeletionPendingError,
   activateMember,
@@ -120,6 +121,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setMemberIdProvider(() => memberRef.current?.member_id ?? null);
     setAccessTokenProvider(() => accessTokenRef.current);
   }, []);
+
+  // This phone, for Ol-ga's device list (and push later). Best effort.
+  const signedInMemberId = member?.member_id;
+  useEffect(() => {
+    if (!signedInMemberId) return;
+    registerDevice().catch((e) => {
+      if (__DEV__) console.warn(`Device registration failed (${e instanceof ApiError ? e.code : 'unknown'})`);
+    });
+  }, [signedInMemberId]);
 
   useEffect(() => {
     loadMemberStore().then((loaded) => {
@@ -261,6 +271,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logOut = useCallback(async () => {
+    // Before the member is cleared: the call needs X-Member-Id.
+    await removeDevice().catch(() => {});
     // What was kept on the phone for offline use goes with the session.
     if (member?.member_id) await clearCache(member.member_id);
     await entraLogOut();

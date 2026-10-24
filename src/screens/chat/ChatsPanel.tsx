@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BellOff } from 'lucide-react-native';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -14,6 +14,8 @@ import { CHAT_INBOX_POLL_MS } from '../../config/env';
 import { useAuth } from '../../context/AuthContext';
 import { useNearby } from '../../context/NearbyContext';
 import { useOfflineChat } from '../../context/OfflineChatContext';
+import { useChatEvents } from '../../context/ChatRealtimeContext';
+import { markDelivered } from '../../chat/receipts';
 import { isOffensive } from '../../chat/moderation';
 import { ChatStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
@@ -40,8 +42,11 @@ export function ChatsPanel() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { memberId: myId } = useAuth();
+  const myIdRef = useRef(myId);
+  myIdRef.current = myId;
+  const isFocused = useIsFocused();
   const chat = useOfflineChat();
-  const { inRange } = useNearby();
+  const { inRange, online } = useNearby();
   const [items, setItems] = useState<Conversation[] | null>(null);
   const [cursor, setCursor] = useState<string | undefined>();
   const [hasMore, setHasMore] = useState(false);
@@ -56,6 +61,11 @@ export function ChatsPanel() {
     try {
       const page = await coreApi.listConversations();
       setError(null);
+      // Their newest message reached this phone: "delivered" for them.
+      page.items.forEach((c) => {
+        const last = c.last_message;
+        if (last && last.sender_member_id !== myIdRef.current && !last.deleted_at) markDelivered(last.message_id);
+      });
       setItems((current) => {
         if (!current || !loadedMore.current) return page.items;
         const fresh = new Map(page.items.map((c) => [c.conversation_id, c]));
@@ -77,6 +87,16 @@ export function ChatsPanel() {
   }, []);
 
   usePollWhileFocused(refresh, CHAT_INBOX_POLL_MS);
+  // Realtime: any chat change (or a reconnect) can move unread counts and
+  // last messages.
+  useChatEvents(() => {
+    if (isFocused) refresh();
+  });
+
+  // Back online: unread counts and last messages may be stale.
+  useEffect(() => {
+    if (online) refresh();
+  }, [online, refresh]);
 
   async function loadMore() {
     if (!cursor || loadingMore) return;

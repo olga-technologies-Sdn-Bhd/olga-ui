@@ -18,6 +18,9 @@ import type {
   ChatMessage,
   Conversation,
   ConversationPage,
+  Device,
+  DeviceRegistrationRequest,
+  MessageReceiptRequest,
   EventAttendeesResponse,
   MessageReportRequest,
   MessageReportResponse,
@@ -206,11 +209,14 @@ export const coreApi = {
   // Marks the other member's messages up to and including this one as read.
   markConversationRead: (conversationId: string, lastReadMessageId: string) =>
     client.post<Conversation>(`${conversationPath(conversationId)}/read`, { last_read_message_id: lastReadMessageId }),
+  // Tells the sender their message reached this phone (delivered ticks).
+  saveReceipt: (messageId: string, body: MessageReceiptRequest, options?: RequestOptions) =>
+    client.put<void>(`${messagePath(messageId)}/receipt`, body, options),
   // null unmutes.
   muteConversation: (conversationId: string, mutedUntil: string | null) =>
     client.put<Conversation>(`${conversationPath(conversationId)}/mute`, { muted_until: mutedUntil }),
   // Sender only; soft delete (the message stays, without a body).
-  deleteMessage: (messageId: string) => client.del<void>(messagePath(messageId)),
+  deleteMessage: (messageId: string, options?: RequestOptions) => client.del<void>(messagePath(messageId), options),
   reportMessage: (messageId: string, body: MessageReportRequest) =>
     client.post<MessageReportResponse>(`${messagePath(messageId)}/report`, body),
   blockMember: (memberId: string) => client.post<void>('/v1/members/block', { member_id: memberId }),
@@ -219,6 +225,16 @@ export const coreApi = {
   listBlockedMembers: () => client.get<BlockedMember[]>('/v1/me/blocks'),
   // 404 BLOCK_NOT_FOUND: not blocked (any more).
   unblockMember: (memberId: string) => client.del<void>(`/v1/members/block/${encodeURIComponent(memberId)}`),
+
+  // Where this member's chat events come from (Azure SignalR) and a
+  // short-lived token for it. The member is X-Member-Id, as everywhere.
+  negotiateChatRealtime: () =>
+    client.post<{ url: string; accessToken: string }>('/v1/realtime/chat/negotiate?negotiateVersion=1'),
+  // This phone, registered on sign-in and removed on sign-out.
+  registerDevice: (deviceId: string, body: DeviceRegistrationRequest) =>
+    client.put<Device>(`/v1/me/devices/${encodeURIComponent(deviceId)}`, body),
+  removeDevice: (deviceId: string, options?: RequestOptions) =>
+    client.del<void>(`/v1/me/devices/${encodeURIComponent(deviceId)}`, options),
 
   // Files a request to delete this member's account (202). Pass the same
   // idempotencyKey when retrying the same request.
