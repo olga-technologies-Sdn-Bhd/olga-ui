@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BellOff } from 'lucide-react-native';
@@ -41,7 +41,7 @@ export function ChatsPanel() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { memberId: myId } = useAuth();
   const chat = useOfflineChat();
-  const { inRange } = useNearby();
+  const { inRange, online } = useNearby();
   const [items, setItems] = useState<Conversation[] | null>(null);
   const [cursor, setCursor] = useState<string | undefined>();
   const [hasMore, setHasMore] = useState(false);
@@ -77,6 +77,10 @@ export function ChatsPanel() {
   }, []);
 
   usePollWhileFocused(refresh, CHAT_INBOX_POLL_MS);
+  // Back online: unread counts and last messages may be stale.
+  useEffect(() => {
+    if (online) refresh();
+  }, [online, refresh]);
 
   async function loadMore() {
     if (!cursor || loadingMore) return;

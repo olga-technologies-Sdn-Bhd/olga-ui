@@ -210,7 +210,7 @@ export const coreApi = {
   muteConversation: (conversationId: string, mutedUntil: string | null) =>
     client.put<Conversation>(`${conversationPath(conversationId)}/mute`, { muted_until: mutedUntil }),
   // Sender only; soft delete (the message stays, without a body).
-  deleteMessage: (messageId: string) => client.del<void>(messagePath(messageId)),
+  deleteMessage: (messageId: string, options?: RequestOptions) => client.del<void>(messagePath(messageId), options),
   reportMessage: (messageId: string, body: MessageReportRequest) =>
     client.post<MessageReportResponse>(`${messagePath(messageId)}/report`, body),
   blockMember: (memberId: string) => client.post<void>('/v1/members/block', { member_id: memberId }),

@@ -61,19 +61,29 @@ const REPORT_CATEGORIES: { value: ReportCategory; label: string }[] = [
   { value: 'OTHER', label: 'Other' },
 ];
 
-// Sent by me, not yet confirmed by the server. The same message_id and
-// Idempotency-Key are reused on retry so the server never stores it twice.
+// Sent by me, not yet confirmed by the server. The same message_id, body and
+// Idempotency-Key are reused on every retry so the server never stores it twice.
 type Outgoing = {
   message_id: string;
   idempotencyKey: string;
   body: string;
   client_sent_at: string;
+  // pending: sending, or waiting to retry on the next poll.
   status: 'pending' | 'failed';
+  attempts: number;
+  // false: retrying can't help (a client bug), so no "Tap to retry".
+  retryable: boolean;
+  // From the last error, for support; never shown.
+  correlationId?: string;
 };
+
+// A 500 is retried a few times with the same key, then left to the user.
+const MAX_SERVER_ERROR_ATTEMPTS = 3;
 
 type Sheet =
   | { kind: 'mine'; message: ChatMessage }
-  | { kind: 'confirmDelete'; message: ChatMessage }
+  // The key is made once per delete and reused if that delete is retried.
+  | { kind: 'confirmDelete'; message: ChatMessage; idempotencyKey: string }
   | { kind: 'theirs'; message: ChatMessage }
   | { kind: 'report'; message: ChatMessage }
   | { kind: 'reported' }
@@ -193,6 +203,13 @@ export function ConversationScreen({ route, navigation }: Props) {
     [conversationId]
   );
 
+  // Mirrors `outbox` for retries started from a poll; `sending` holds the
+  // message_ids with a request in flight.
+  const outboxRef = useRef<Outgoing[]>([]);
+  outboxRef.current = outbox;
+  const sending = useRef(new Set<string>());
+  const deliverRef = useRef<(item: Outgoing) => void>(() => {});
+
   const sync = useCallback(async () => {
     if (unavailable || !conversationId) return;
     try {
@@ -200,7 +217,7 @@ export function ConversationScreen({ route, navigation }: Props) {
         const [header, history] = await Promise.all([coreApi.getConversation(conversationId), fetchFrom(0)]);
         needsFullReload.current = false;
         setConversation(header);
-        setMessages(history.messages);
+        setMessages([...history.messages].sort(bySequence));
         lastSequence.current = history.last;
       } else {
         const fresh = await fetchFrom(lastSequence.current);
@@ -209,6 +226,8 @@ export function ConversationScreen({ route, navigation }: Props) {
       }
       setLoadError(null);
       setNetworkDown(false);
+      // Ol-ga answers again: send what's still waiting, same IDs and keys.
+      outboxRef.current.filter((o) => o.status === 'pending' && !sending.current.has(o.message_id)).forEach((o) => deliverRef.current(o));
     } catch (e) {
       if (handleUnavailable(e)) return;
       if (__DEV__) console.warn(`Conversation sync failed (${errorCode(e)})`);
@@ -227,10 +246,15 @@ export function ConversationScreen({ route, navigation }: Props) {
       return () => setActivePeer(null);
     }, [setActivePeer, peerId])
   );
-  // Nearby noticed Ol-ga answering again.
+  // Nearby noticed Ol-ga answering again: catch up from the last sequence.
+  const wasOnline = useRef(online);
   useEffect(() => {
-    if (online) setNetworkDown(false);
-  }, [online]);
+    const cameBack = online && wasOnline.current === false;
+    wasOnline.current = online;
+    if (!online) return;
+    setNetworkDown(false);
+    if (cameBack && isFocused) sync();
+  }, [online, isFocused, sync]);
   usePollWhileFocused(sync, CHAT_MESSAGE_POLL_MS);
 
   // Server-confirmed messages drop out of the outbox.
@@ -259,8 +283,14 @@ export function ConversationScreen({ route, navigation }: Props) {
       });
   }, [messages, isFocused, myId, conversationId]);
 
+  const patchOutgoing = (id: string, change: Partial<Outgoing>) =>
+    setOutbox((current) => current.map((o) => (o.message_id === id ? { ...o, ...change } : o)));
+  const dropOutgoing = (id: string) => setOutbox((current) => current.filter((o) => o.message_id !== id));
+
   async function deliver(item: Outgoing) {
-    setOutbox((current) => current.map((o) => (o.message_id === item.message_id ? { ...o, status: 'pending' } : o)));
+    if (sending.current.has(item.message_id)) return;
+    sending.current.add(item.message_id);
+    patchOutgoing(item.message_id, { status: 'pending' });
     try {
       const sent = await coreApi.sendMessage(
         conversationId,
@@ -272,13 +302,17 @@ export function ConversationScreen({ route, navigation }: Props) {
         },
         { idempotencyKey: item.idempotencyKey }
       );
+      // The 201 is authoritative: upsert by message_id.
       setMessages((current) => mergeMessages(current ?? [], [sent]));
     } catch (e) {
       if (__DEV__) console.warn(`Send failed (${errorCode(e)})`);
+      const status = e instanceof ApiError ? e.status : 0;
+      const code = errorCode(e);
+      const correlationId = e instanceof ApiError ? e.correlationId : undefined;
       // No internet: the same message goes over Bluetooth (and to Ol-ga later).
-      if (!(e instanceof ApiError && e.status > 0) && peerId && chat.peerFor(peerId)) {
+      if (status === 0 && peerId && chat.peerFor(peerId)) {
         setNetworkDown(true);
-        setOutbox((current) => current.filter((o) => o.message_id !== item.message_id));
+        dropOutgoing(item.message_id);
         chat.sendNearby(peerId, item.body, {
           id: item.message_id,
           key: item.idempotencyKey,
@@ -286,16 +320,41 @@ export function ConversationScreen({ route, navigation }: Props) {
         });
         return;
       }
-      setOutbox((current) => current.map((o) => (o.message_id === item.message_id ? { ...o, status: 'failed' } : o)));
+      // Timeout, no answer or Ol-ga starting up: stays pending, the next poll
+      // sends it again unchanged.
+      if (status === 0 || status === 502 || status === 503 || status === 504) {
+        if (status === 0) setNetworkDown(true);
+        patchOutgoing(item.message_id, { correlationId });
+        return;
+      }
+      if (status === 500) {
+        const attempts = item.attempts + 1;
+        patchOutgoing(item.message_id, { attempts, correlationId, status: attempts < MAX_SERVER_ERROR_ATTEMPTS ? 'pending' : 'failed' });
+        return;
+      }
+      // The key already went with this message: it's saved. Fetch it.
+      if (code === 'IDEMPOTENCY_KEY_REUSED') {
+        dropOutgoing(item.message_id);
+        sync();
+        return;
+      }
+      if (status === 404) {
+        navigation.goBack(); // the list refreshes on focus
+        return;
+      }
+      patchOutgoing(item.message_id, { status: 'failed', correlationId, retryable: code !== 'IDEMPOTENCY_KEY_REQUIRED' });
       if (handleUnavailable(e)) return;
       // can_send may have changed (blocked, closed): refresh the header.
-      if (e instanceof ApiError && e.status === 403)
+      if (status === 403)
         coreApi
           .getConversation(conversationId)
           .then(setConversation)
           .catch(() => {});
+    } finally {
+      sending.current.delete(item.message_id);
     }
   }
+  deliverRef.current = deliver;
 
   // A nudge, not a block: abusive-looking text asks first (works offline too).
   function send(body: string) {
@@ -315,6 +374,8 @@ export function ConversationScreen({ route, navigation }: Props) {
       body,
       client_sent_at: new Date().toISOString(),
       status: 'pending',
+      attempts: 0,
+      retryable: true,
     };
     setOutbox((current) => [...current, item]);
     deliver(item);
@@ -346,10 +407,18 @@ export function ConversationScreen({ route, navigation }: Props) {
     }
   }
 
-  function deleteMessage(message: ChatMessage) {
+  function deleteMessage(message: ChatMessage, idempotencyKey: string) {
     runSheetAction(
       async () => {
-        await coreApi.deleteMessage(message.message_id);
+        try {
+          await coreApi.deleteMessage(message.message_id, { idempotencyKey });
+        } catch (e) {
+          if (!(e instanceof ApiError && e.status === 404)) throw e;
+          // Gone on the server: drop it here too.
+          setMessages((current) => (current ?? []).filter((m) => m.message_id !== message.message_id));
+          setSheet(null);
+          return;
+        }
         const deletedAt = new Date().toISOString();
         setMessages((current) =>
           (current ?? []).map((m) => (m.message_id === message.message_id ? { ...m, body: undefined, deleted_at: deletedAt } : m))
@@ -359,8 +428,6 @@ export function ConversationScreen({ route, navigation }: Props) {
       (code) =>
         code === 'MESSAGE_DELETE_FORBIDDEN'
           ? 'You can only delete your own messages.'
-          : code === 'MESSAGE_NOT_FOUND'
-          ? 'This message no longer exists.'
           : "Couldn't delete the message. Try again."
     );
   }
@@ -428,8 +495,12 @@ export function ConversationScreen({ route, navigation }: Props) {
   const canSend = canSendOnline || canSendNearby;
   const reach = peerId ? chat.reach(peerId) : 'out-of-range';
 
-  // Everything in one list by time, with Today / Yesterday / date sections.
+  // One list with Today / Yesterday / date sections. Ol-ga's messages go by
+  // server_sequence only (`messages` is kept sorted), then Bluetooth-only
+  // ones, then what's still sending, each of those by when it was written.
+  // Never by clock across the groups: phone clocks drift.
   type Row = { kind: 'msg'; key: string; at: string; node: React.ReactNode } | { kind: 'day'; key: string; label: string };
+  const byWritten = (a: { at: string }, b: { at: string }) => a.at.localeCompare(b.at);
   const rows: { at: string; key: string; node: React.ReactNode }[] = [
     ...(messages ?? []).map((m) => {
       const mine = m.sender_member_id === myId;
@@ -452,7 +523,8 @@ export function ConversationScreen({ route, navigation }: Props) {
         ),
       };
     }),
-    ...local.map((m) => ({
+    ...local
+      .map((m) => ({
       at: m.sentAt,
       key: m.id,
       node: (
@@ -484,16 +556,30 @@ export function ConversationScreen({ route, navigation }: Props) {
           }
         />
       ),
-    })),
-    ...outbox.map((o) => ({
-      at: o.client_sent_at,
-      key: o.message_id,
-      node: <ChatBubble key={o.message_id} person from="me" text={o.body} status={o.status} onRetry={() => deliver(o)} />,
-    })),
-  ].sort((a, b) => a.at.localeCompare(b.at));
+    }))
+      .sort(byWritten),
+    // Until the server copy shows up; never both at once.
+    ...outbox
+      .filter((o) => !onServer.has(o.message_id))
+      .map((o) => ({
+        at: o.client_sent_at,
+        key: o.message_id,
+        node: (
+          <ChatBubble
+            key={o.message_id}
+            person
+            from="me"
+            text={o.body}
+            status={o.status}
+            onRetry={o.retryable ? () => deliver({ ...o, attempts: 0 }) : undefined}
+          />
+        ),
+      }))
+      .sort(byWritten),
+  ];
   const thread: Row[] = [];
   rows.forEach((r, i) => {
-    if (i === 0 || dayKey(rows[i - 1].at) !== dayKey(r.at)) thread.push({ kind: 'day', key: `day-${dayKey(r.at)}`, label: formatDayLabel(r.at) });
+    if (i === 0 || dayKey(rows[i - 1].at) !== dayKey(r.at)) thread.push({ kind: 'day', key: `day-${dayKey(r.at)}-${i}`, label: formatDayLabel(r.at) });
     thread.push({ kind: 'msg', ...r });
   });
 
@@ -687,12 +773,16 @@ export function ConversationScreen({ route, navigation }: Props) {
       <BottomSheet visible={sheet !== null} onClose={closeSheet} title={sheetTitle(sheet, name)} subtitle={sheetSubtitle(sheet, name)}>
         {sheet?.kind === 'mine' && (
           <SheetGroup>
-            <SheetOption label="Delete message" danger onPress={() => openSheet({ kind: 'confirmDelete', message: sheet.message })} />
+            <SheetOption
+              label="Delete message"
+              danger
+              onPress={() => openSheet({ kind: 'confirmDelete', message: sheet.message, idempotencyKey: newIdempotencyKey() })}
+            />
           </SheetGroup>
         )}
         {sheet?.kind === 'confirmDelete' && (
           <>
-            <Button label="Delete" loading={sheetBusy} onPress={() => deleteMessage(sheet.message)} />
+            <Button label="Delete" loading={sheetBusy} onPress={() => deleteMessage(sheet.message, sheet.idempotencyKey)} />
             <Button label="Cancel" variant="secondary" disabled={sheetBusy} onPress={closeSheet} />
           </>
         )}
