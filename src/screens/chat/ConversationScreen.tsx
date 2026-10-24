@@ -28,6 +28,7 @@ import { dayKey, formatClock, formatDayLabel } from '../../utils/chatTime';
 import { getInitials } from '../../utils/initials';
 import { usePollWhileFocused } from '../../utils/usePollWhileFocused';
 import { useNearby } from '../../context/NearbyContext';
+import { useChatEvents } from '../../context/ChatRealtimeContext';
 import { MAX_NEARBY_BODY, NearbyReach, useOfflineChat } from '../../context/OfflineChatContext';
 import { isOffensive } from '../../chat/moderation';
 import { FALLBACK_NAME } from './ChatsPanel';
@@ -168,6 +169,8 @@ export function ConversationScreen({ route, navigation }: Props) {
   // Re-fetch the whole history on focus: polling with after= can't see
   // deletions of older messages.
   const needsFullReload = useRef(true);
+  // Ticks: fetch the header again (it carries delivered/read through).
+  const needsHeader = useRef(false);
   const scrollRef = useRef<ScrollViewInstance>(null);
   // A message that looked abusive, waiting for "Edit" or "Send anyway".
   const [offensiveDraft, setOffensiveDraft] = useState<string | null>(null);
@@ -220,7 +223,13 @@ export function ConversationScreen({ route, navigation }: Props) {
         setMessages([...history.messages].sort(bySequence));
         lastSequence.current = history.last;
       } else {
-        const fresh = await fetchFrom(lastSequence.current);
+        const refreshHeader = needsHeader.current;
+        needsHeader.current = false;
+        const [fresh, header] = await Promise.all([
+          fetchFrom(lastSequence.current),
+          refreshHeader ? coreApi.getConversation(conversationId) : Promise.resolve(null),
+        ]);
+        if (header) setConversation(header);
         lastSequence.current = fresh.last;
         if (fresh.messages.length > 0) setMessages((current) => mergeMessages(current ?? [], fresh.messages));
       }
@@ -256,6 +265,16 @@ export function ConversationScreen({ route, navigation }: Props) {
     if (cameBack && isFocused) sync();
   }, [online, isFocused, sync]);
   usePollWhileFocused(sync, CHAT_MESSAGE_POLL_MS);
+
+  // Realtime: something changed in this conversation, or the connection came
+  // back (null). Fetch over REST; the event itself holds no message.
+  useChatEvents((event) => {
+    if (!isFocused) return;
+    if (event && event.data.conversation_id !== conversationId) return;
+    if (!event || event.event_type === 'MessageDeleted.v1') needsFullReload.current = true;
+    if (event?.event_type === 'ConversationRead.v1') needsHeader.current = true;
+    sync();
+  });
 
   // Server-confirmed messages drop out of the outbox.
   useEffect(() => {
@@ -486,6 +505,17 @@ export function ConversationScreen({ route, navigation }: Props) {
     );
   }
 
+  // ✓ / ✓✓ / seen for my messages, from the header's through-sequences.
+  const deliveredThrough = conversation?.other_delivered_through_sequence ?? 0;
+  const readThrough = conversation?.other_read_through_sequence ?? 0;
+  const tickFor = (m: ChatMessage) =>
+    m.server_sequence <= readThrough ? 'read' : m.server_sequence <= deliveredThrough ? 'delivered' : 'sent';
+  // Polls also refresh the header while one of mine isn't seen yet.
+  const unseen = (messages ?? []).some((m) => m.sender_member_id === myId && !m.deleted_at && m.server_sequence > readThrough);
+  useEffect(() => {
+    needsHeader.current = unseen;
+  });
+
   // Bluetooth messages Ol-ga doesn't have (yet), shown with the rest.
   const onServer = new Set((messages ?? []).map((m) => m.message_id));
   const local = peerId ? chat.messagesWith(peerId).filter((m) => !onServer.has(m.id)) : [];
@@ -518,6 +548,7 @@ export function ConversationScreen({ route, navigation }: Props) {
             hidden={!deleted && hiddenFor(m.message_id, mine ? 'me' : 'them', m.body)}
             onPress={!deleted && hiddenFor(m.message_id, mine ? 'me' : 'them', m.body) ? () => reveal(m.message_id) : undefined}
             time={formatClock(m.created_at)}
+            tick={mine && !deleted ? tickFor(m) : undefined}
             onLongPress={deleted ? undefined : () => openSheet({ kind: mine ? 'mine' : 'theirs', message: m })}
           />
         ),

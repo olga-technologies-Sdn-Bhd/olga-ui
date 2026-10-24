@@ -35,6 +35,9 @@ export const CORE_API_URL = requireUrl('Core API URL', environment.coreApiUrl);
 export const CHAT_COMING_SOON: boolean = APP_ENV === 'prod';
 // Chat has no real-time channel yet, so it polls while the screen is focused.
 export const CHAT_MESSAGE_POLL_MS = 4000;
+// Sent when registering this phone; keep in step with versionName
+// (android/app/build.gradle) and CFBundleShortVersionString (iOS).
+export const APP_VERSION = '1.0';
 export const CHAT_INBOX_POLL_MS = 15000;
 
 
