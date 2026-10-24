@@ -25,7 +25,7 @@ export function formatClock(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-// WhatsApp-style day sections: Today, Yesterday, a weekday this week, then a date.
+// Day sections: Today, Yesterday, a weekday this week, then a date.
 export function formatDayLabel(iso: string, now = Date.now()): string {
   const day = new Date(iso);
   const start = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -44,7 +44,7 @@ export function dayKey(iso: string): string {
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const pad = (n: number) => String(n).padStart(2, '0');
 
-// The time on a Chats list row, as WhatsApp shows it: today "18:39", then
+// The time on a Chats list row: today "18:39", then
 // "Yesterday", a weekday within the last week ("Monday"), then "13/10/2026".
 // Built by hand so it reads the same on every phone and engine.
 export function formatChatListTime(iso: string, now = Date.now()): string {

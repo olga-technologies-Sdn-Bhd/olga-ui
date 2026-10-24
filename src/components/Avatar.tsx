@@ -26,7 +26,7 @@ type Props = {
   busy?: boolean;
 };
 
-// list: a row in the Chats list (WhatsApp-sized).
+// list: a row in the Chats list.
 const SIZES: Record<Size, number> = { sm: 34, md: 42, list: 50, lg: 58, xl: 96 };
 const FONT_SIZES: Record<Size, number> = { sm: 12, md: 15, list: 16, lg: 18, xl: 30 };
 

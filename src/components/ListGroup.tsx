@@ -5,8 +5,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { fonts, semibold } from '../theme/typography';
 
 // The app's standard list: one rounded group per section, compact rows,
-// hairline dividers that start after the row's leading element (as in iOS
-// Settings or WhatsApp). Use it for lists of people, meetings and the like;
+// hairline dividers that start after the row's leading element (as in a
+// settings list). Use it for lists of people, meetings and the like;
 // Card stays for single blocks with actions.
 
 const LEAD = 42; // the leading avatar/silhouette size rows are laid out for

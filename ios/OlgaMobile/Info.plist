@@ -72,15 +72,8 @@
 	<false/>
 	<key>UIAppFonts</key>
 	<array>
-		<string>Outfit-Bold.ttf</string>
 		<string>Inter-Regular.ttf</string>
 		<string>Inter-SemiBold.ttf</string>
-		<string>IBMPlexMono-Bold.ttf</string>
-		<string>IBMPlexMono-Medium.ttf</string>
-		<string>IBMPlexMono-Regular.ttf</string>
-		<string>Outfit-ExtraBold.ttf</string>
-		<string>InstrumentSans-Regular.ttf</string>
-		<string>InstrumentSans-Bold.ttf</string>
 	</array>
 </dict>
 </plist>
