@@ -5,7 +5,6 @@ import { Avatar } from '../../components/Avatar';
 import { SlidingUnderline } from '../../components/SlidingUnderline';
 import { TopGlow } from '../../components/TopGlow';
 import { useTopInset } from '../../components/Screen';
-import { CHAT_COMING_SOON } from '../../config/env';
 import { useAuth } from '../../context/AuthContext';
 import { ChatStackParamList, ChatTabKey } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
@@ -70,16 +69,7 @@ export function ChatScreen({ navigation, route }: Props) {
         </View>
       </View>
 
-      {tab === 'commits' ? (
-        <CommitsPanel />
-      ) : CHAT_COMING_SOON ? (
-        // Temporary: chat is built but not switched on for everyone yet.
-        <View style={styles.soon}>
-          <Text style={styles.soonText}>Chat feature is coming soon</Text>
-        </View>
-      ) : (
-        <ChatsPanel />
-      )}
+      {tab === 'commits' ? <CommitsPanel /> : <ChatsPanel />}
     </View>
   );
 }
@@ -94,6 +84,4 @@ const makeStyles = (colors: ThemeColors) =>
     tab: { flex: 1, alignItems: 'center', paddingTop: 10, minHeight: 44 },
     tabText: { fontSize: 14, color: colors.muted, paddingBottom: 10 },
     tabTextActive: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: colors.text },
-    soon: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, paddingBottom: 100 },
-    soonText: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: semibold, color: colors.muted, textAlign: 'center' },
   });

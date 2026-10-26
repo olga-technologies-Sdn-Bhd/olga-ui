@@ -1,15 +1,10 @@
 import { Permission, PermissionsAndroid, Platform } from 'react-native';
-import { APP_ENV } from '../config/env';
 import NativeOlgaBle, { NativeBleMessage, NativeBleSighting, NativeBleStatus } from './specs/NativeOlgaBle';
 import type { BluetoothState } from './types';
 
 // The Ol-ga BLE service. The same on Android and iOS; it identifies the app,
 // never a member. Changing it splits old and new app versions apart.
 export const OLGA_BLE_SERVICE_UUID = '3eecebab-22bf-4234-bf1d-035cbe8539f4';
-
-// Nearby is still being built: it runs in dev and local builds only, so
-// production users get no Bluetooth prompt for a feature they can't use yet.
-export const BLE_DISCOVERY_ENABLED = APP_ENV !== 'prod';
 
 // A device not heard from for this long has gone (walked away, Bluetooth off,
 // app closed). Phones advertise several times a second, so this is generous.

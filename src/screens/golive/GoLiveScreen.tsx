@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, Clock, Radio, Sparkles } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
-import { BLE_DISCOVERY_ENABLED } from '../../bluetooth/bleDiscovery';
 import { MatchCard, MatchingError, MatchingFailure } from '../../api/matching';
 import { BottomSheet, SheetGroup, SheetOption } from '../../components/BottomSheet';
 import { Button } from '../../components/Button';
@@ -235,9 +234,7 @@ export function GoLiveScreen({ navigation }: Props) {
       // No internet: Nearby still finds people close by, over Bluetooth.
       setError(
         unreachable
-          ? BLE_DISCOVERY_ENABLED
-            ? 'No internet. Switch to Nearby to find people around you over Bluetooth.'
-            : "Couldn't connect. Try again."
+          ? 'No internet. Switch to Nearby to find people around you over Bluetooth.'
           : `Couldn't Go Live (${e instanceof ApiError ? e.status : 0})`
       );
       return;
@@ -329,11 +326,11 @@ export function GoLiveScreen({ navigation }: Props) {
   // Nearby (no event): when there's no room, the member picked it, or there's
   // no internet (the event room needs Ol-ga; Nearby works without it).
   const nearby =
-    BLE_DISCOVERY_ENABLED && !isLive && (!room || mode === 'nearby' || (mode === null && (nearbyAvailable || online === false)));
+    !isLive && (!room || mode === 'nearby' || (mode === null && (nearbyAvailable || online === false)));
   if (nearby) {
     return <NearbyView navigation={navigation} onSwitchToEvent={room ? () => setMode('event') : undefined} />;
   }
-  const modeSwitch = BLE_DISCOVERY_ENABLED && !isLive && <GoLiveModeSwitch mode="event" onChange={setMode} />;
+  const modeSwitch = !isLive && <GoLiveModeSwitch mode="event" onChange={setMode} />;
 
   // No upcoming room: nothing to go live in.
   if (!room) {
