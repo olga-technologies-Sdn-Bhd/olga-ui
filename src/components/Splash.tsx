@@ -9,169 +9,123 @@ const WORDMARK_BOTTOM = 176;
 
 // Where each character of the wordmark ends inside the 288-wide artwork
 // (O, l, -, g, a), measured from the image. Each character sits under its own
-// white cover; the covers fade away one after another, so the name appears
-// character by character. The line beneath then arrives word by word, and
-// once everything is there the whole of it zooms in once.
+// white cover, so the name can appear piece by piece.
 const EDGES = [0, 122.3, 132.6, 147.8, 184.1, LOGO_SIZE];
 const LETTERS = EDGES.length - 1;
+// The hyphen inside the artwork (measured): its two ends and its middle line.
+const HYPHEN_LEFT = 133;
+const HYPHEN_RIGHT = 147;
+const HYPHEN_Y = 143;
+
+// The hyphen in Ol-ga joins two halves, as Ol-ga joins two people. So: two
+// people (coral dots) go live on either side with one soft pulse, glide
+// together and meet where the hyphen is; they become it, one ring spreads
+// from the meeting (a match), and the name opens out from there: l and g,
+// then O and a. The line beneath arrives word by word, and the whole of it
+// zooms in once.
+const BRAND = '#EC6A55';
+const DOT = 8;
+const START_GAP = 104; // how far out each person starts, from the hyphen's ends
+const APPEAR_MS = 260;
+const PULSE_MS = 900;
+const MEET_AT_MS = 320;
+const MEET_MS = 760;
+const MET_MS = MEET_AT_MS + MEET_MS;
+const RING_MS = 1000;
+const FADE_MS = 460; // one character coming in
+const PAIR_STAGGER_MS = 170; // l and g, then O and a
+// Covers in the order they lift: the hyphen, l and g together, O and a together.
+const ORDER = [[2], [1, 3], [0, 4]];
+const REVEAL_MS = PAIR_STAGGER_MS * (ORDER.length - 1) + FADE_MS;
 
 // The same line as the sign-up screen.
 const TAGLINE = 'Meet people who matter most.'.split(' ');
-
-const FADE_MS = 460; // one character coming in
-const STAGGER_MS = 150; // gap between characters
 const WORD_FADE_MS = 420; // one word coming in
 const WORD_STAGGER_MS = 120; // gap between words
-const REVEAL_MS = STAGGER_MS * (LETTERS - 1) + FADE_MS;
 const WORDS_MS = WORD_STAGGER_MS * (TAGLINE.length - 1) + WORD_FADE_MS;
 // The phases overlap a little, so it reads as one continuous motion.
 const OVERLAP_MS = 180;
 const ZOOM_MS = 1300; // everything, once
 const HOLD_MS = 150;
-export const SPLASH_MIN_MS = REVEAL_MS + WORDS_MS + ZOOM_MS + HOLD_MS - OVERLAP_MS * 2;
+export const SPLASH_MIN_MS = MET_MS + REVEAL_MS + WORDS_MS + ZOOM_MS + HOLD_MS - OVERLAP_MS * 2;
 // The splash then fades away over the app instead of cutting to it.
 export const SPLASH_FADE_MS = 380;
 // Apple-style ease: quick start, long soft settle.
 const SOFT = Easing.bezier(0.22, 1, 0.36, 1);
-
-// Behind the name, quietly: people (dots) appear around it and the ones that
-// fit link up, as members do on Ol-ga; three links are matches, in the brand
-// colour. Points are offsets from the centre, kept clear of the wordmark and
-// the line beneath it.
-const SPREAD = 0.86; // kept well inside the narrowest phones
-const PEOPLE: [number, number][] = (
-  [
-    [-130, -190], [-40, -232], [72, -206], [152, -150], [-168, -108], [8, -150], [178, -60],
-    [-176, 124], [168, 118], [-150, 160], [-48, 212], [62, 186], [142, 226], [-112, 252],
-  ] as [number, number][]
-).map(([x, y]) => [x * SPREAD, y * SPREAD]);
-// Two small circles of people, one above the name and one below.
-const LINKS: [number, number][] = [
-  [0, 1], [1, 2], [2, 3], [0, 4], [1, 5], [3, 6], [7, 9], [9, 10], [10, 13], [11, 12], [8, 12],
-];
-// The matches: drawn last, in the brand colour, their people a touch larger.
-const MATCHES: [number, number][] = [[5, 2], [10, 11], [9, 13]];
-const MATCHED = new Set(MATCHES.flat());
-const BRAND = '#EC6A55';
-const DOT_MS = 380;
-const DOT_STAGGER_MS = 55;
-const LINK_MS = 460;
-const LINK_STAGGER_MS = 65;
-const LINKS_AT_MS = 320;
-const MATCHES_AT_MS = LINKS_AT_MS + LINK_STAGGER_MS * LINKS.length + 120;
-
-function Link({ from, to, progress, match }: { from: [number, number]; to: [number, number]; progress: Animated.Value; match?: boolean }) {
-  const dx = to[0] - from[0];
-  const dy = to[1] - from[1];
-  return (
-    <Animated.View
-      style={[
-        styles.link,
-        match && styles.match,
-        {
-          left: from[0],
-          top: from[1],
-          width: Math.hypot(dx, dy),
-          opacity: progress.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 1, 1] }),
-          // Drawn out from the first person to the second.
-          transform: [{ rotate: `${Math.atan2(dy, dx)}rad` }, { scaleX: progress }],
-        },
-      ]}
-    />
-  );
-}
-
-// The network, drawn in under the name, then settling back as it zooms.
-function Network({ settle }: { settle: Animated.Value }) {
-  const dots = useRef(PEOPLE.map(() => new Animated.Value(0))).current;
-  const links = useRef(LINKS.map(() => new Animated.Value(0))).current;
-  const matches = useRef(MATCHES.map(() => new Animated.Value(0))).current;
-
-  useEffect(() => {
-    const ease = (v: Animated.Value, ms: number) => Animated.timing(v, { toValue: 1, duration: ms, easing: SOFT, useNativeDriver: true });
-    const run = Animated.parallel([
-      Animated.stagger(DOT_STAGGER_MS, dots.map((d) => ease(d, DOT_MS))),
-      Animated.sequence([Animated.delay(LINKS_AT_MS), Animated.stagger(LINK_STAGGER_MS, links.map((l) => ease(l, LINK_MS)))]),
-      Animated.sequence([Animated.delay(MATCHES_AT_MS), Animated.stagger(140, matches.map((m) => ease(m, LINK_MS + 140)))]),
-    ]);
-    run.start();
-    return () => run.stop();
-  }, [dots, links, matches]);
-
-  // Matched people swell once as their link completes.
-  const swell = (i: number) => {
-    const m = MATCHES.findIndex((pair) => pair.includes(i));
-    return m < 0 ? 1 : matches[m].interpolate({ inputRange: [0, 0.8, 1], outputRange: [1, 1.5, 1.15] });
-  };
-
-  return (
-    <Animated.View
-      style={[
-        styles.network,
-        {
-          opacity: settle.interpolate({ inputRange: [0, 1], outputRange: [1, 0.55] }),
-          transform: [{ scale: settle.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }) }],
-        },
-      ]}
-      pointerEvents="none"
-    >
-      {LINKS.map(([a, b], i) => (
-        <Link key={`l${i}`} from={PEOPLE[a]} to={PEOPLE[b]} progress={links[i]} />
-      ))}
-      {MATCHES.map(([a, b], i) => (
-        <Link key={`m${i}`} from={PEOPLE[a]} to={PEOPLE[b]} progress={matches[i]} match />
-      ))}
-      {PEOPLE.map(([x, y], i) => (
-        <Animated.View
-          key={`p${i}`}
-          style={[
-            styles.dot,
-            MATCHED.has(i) && styles.dotMatched,
-            {
-              left: x,
-              top: y,
-              opacity: dots[i],
-              transform: [{ scale: Animated.multiply(dots[i].interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }), swell(i)) }],
-            },
-          ]}
-        />
-      ))}
-    </Animated.View>
-  );
-}
+// Gliding together: unhurried at both ends.
+const GLIDE = Easing.bezier(0.65, 0, 0.35, 1);
 
 export function Splash() {
   const covers = useRef(EDGES.slice(0, LETTERS).map(() => new Animated.Value(1))).current;
   const words = useRef(TAGLINE.map(() => new Animated.Value(0))).current;
   const zoom = useRef(new Animated.Value(0)).current;
+  const appear = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
+  const meet = useRef(new Animated.Value(0)).current;
+  const ring = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    const timing = (v: Animated.Value, toValue: number, duration: number, easing = SOFT) =>
+      Animated.timing(v, { toValue, duration, easing, useNativeDriver: true });
+    const after = (ms: number, anim: Animated.CompositeAnimation) => Animated.sequence([Animated.delay(ms), anim]);
     const letters = Animated.stagger(
-      STAGGER_MS,
-      covers.map((cover) => Animated.timing(cover, { toValue: 0, duration: FADE_MS, easing: SOFT, useNativeDriver: true }))
+      PAIR_STAGGER_MS,
+      ORDER.map((group) => Animated.parallel(group.map((i) => timing(covers[i], 0, FADE_MS))))
     );
     const line = Animated.stagger(
       WORD_STAGGER_MS,
-      words.map((word) => Animated.timing(word, { toValue: 1, duration: WORD_FADE_MS, easing: SOFT, useNativeDriver: true }))
+      words.map((word) => timing(word, 1, WORD_FADE_MS))
     );
-    const grow = Animated.timing(zoom, { toValue: 1, duration: ZOOM_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true });
-    // Each phase starts just before the last one finishes.
     const run = Animated.parallel([
-      letters,
-      Animated.sequence([Animated.delay(REVEAL_MS - OVERLAP_MS), line]),
-      Animated.sequence([Animated.delay(REVEAL_MS + WORDS_MS - OVERLAP_MS * 2), grow]),
+      timing(appear, 1, APPEAR_MS),
+      timing(pulse, 1, PULSE_MS, Easing.out(Easing.quad)),
+      after(MEET_AT_MS, timing(meet, 1, MEET_MS, GLIDE)),
+      after(MET_MS - 60, timing(ring, 1, RING_MS, Easing.out(Easing.cubic))),
+      after(MET_MS - 80, letters),
+      after(MET_MS + REVEAL_MS - OVERLAP_MS, line),
+      after(MET_MS + REVEAL_MS + WORDS_MS - OVERLAP_MS * 2, timing(zoom, 1, ZOOM_MS, Easing.inOut(Easing.cubic))),
     ]);
     run.start();
     return () => run.stop();
-  }, [covers, words, zoom]);
+  }, [covers, words, zoom, appear, pulse, meet, ring]);
 
   // A gentle zoom, and the name settles up from just below as it appears.
   const scale = zoom.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
   const rise = covers[LETTERS - 1].interpolate({ inputRange: [0, 1], outputRange: [0, 6] });
+  // The two people hand over to the hyphen as they meet.
+  const dotsOpacity = Animated.multiply(appear, meet.interpolate({ inputRange: [0, 0.9, 1], outputRange: [1, 1, 0] }));
+
+  const person = (side: -1 | 1) => {
+    const end = side < 0 ? HYPHEN_LEFT + DOT / 2 : HYPHEN_RIGHT - DOT / 2;
+    const travel = meet.interpolate({ inputRange: [0, 1], outputRange: [side * START_GAP, 0] });
+    return (
+      <View key={side} style={[styles.at, { left: end, top: HYPHEN_Y }]} pointerEvents="none">
+        {/* Going live: one soft pulse where they start. */}
+        <Animated.View
+          style={[
+            styles.ring,
+            styles.pulse,
+            {
+              opacity: pulse.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 0.45, 0] }),
+              transform: [{ translateX: side * START_GAP }, { scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 4.5] }) }],
+            },
+          ]}
+        />
+        <Animated.View
+          style={[
+            styles.dot,
+            {
+              opacity: dotsOpacity,
+              transform: [{ translateX: travel }, { scale: appear.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }],
+            },
+          ]}
+        />
+      </View>
+    );
+  };
 
   return (
     <View style={styles.wrap}>
-      <Network settle={zoom} />
       <Animated.View style={[styles.logo, { transform: [{ scale }, { translateY: rise }] }]}>
         <Animated.Image source={LOGO} resizeMode="contain" style={styles.logo} />
         {covers.map((opacity, i) => (
@@ -180,6 +134,20 @@ export function Splash() {
             style={[styles.cover, { left: EDGES[i], width: EDGES[i + 1] - EDGES[i] + 0.5, opacity }]}
           />
         ))}
+        {/* The match: one ring spreading from where they met. */}
+        <View style={[styles.at, { left: (HYPHEN_LEFT + HYPHEN_RIGHT) / 2, top: HYPHEN_Y }]} pointerEvents="none">
+          <Animated.View
+            style={[
+              styles.ring,
+              {
+                opacity: ring.interpolate({ inputRange: [0, 0.1, 1], outputRange: [0, 0.5, 0] }),
+                transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 16] }) }],
+              },
+            ]}
+          />
+        </View>
+        {person(-1)}
+        {person(1)}
         <View style={styles.tagline} accessible accessibilityLabel={TAGLINE.join(' ')}>
           {TAGLINE.map((word, i) => (
             <Animated.Text
@@ -206,6 +174,11 @@ const styles = StyleSheet.create({
   wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
   logo: { width: LOGO_SIZE, height: LOGO_SIZE },
   cover: { position: 'absolute', top: 0, bottom: 0, backgroundColor: '#FFFFFF' },
+  // A zero-size anchor; what's inside is centred on it.
+  at: { position: 'absolute', width: 0, height: 0, alignItems: 'center', justifyContent: 'center' },
+  dot: { position: 'absolute', width: DOT, height: DOT, borderRadius: DOT / 2, backgroundColor: BRAND },
+  ring: { position: 'absolute', width: DOT * 2, height: DOT * 2, borderRadius: DOT, borderWidth: 1, borderColor: BRAND },
+  pulse: { borderWidth: 1.5 },
   tagline: {
     position: 'absolute',
     top: WORDMARK_BOTTOM + 14,
@@ -216,11 +189,4 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   word: { fontFamily: fonts.bodyRegular, fontSize: 15, letterSpacing: 0.2, color: '#1A1A1A' },
-  // The network's origin is the centre of the screen; points are offsets from it.
-  network: { position: 'absolute', left: '50%', top: '50%', width: 0, height: 0 },
-  // A hairline from its left end, turned towards the other person.
-  link: { position: 'absolute', height: 1, marginTop: -0.5, backgroundColor: '#E4DED6', transformOrigin: '0% 50%' },
-  match: { height: 1.5, marginTop: -0.75, backgroundColor: BRAND, opacity: 0.75 },
-  dot: { position: 'absolute', width: 6, height: 6, marginLeft: -3, marginTop: -3, borderRadius: 3, backgroundColor: '#CBC3B9' },
-  dotMatched: { width: 8, height: 8, marginLeft: -4, marginTop: -4, borderRadius: 4, backgroundColor: BRAND },
 });
