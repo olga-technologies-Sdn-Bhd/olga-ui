@@ -219,6 +219,9 @@ export const coreApi = {
   deleteMessage: (messageId: string, options?: RequestOptions) => client.del<void>(messagePath(messageId), options),
   reportMessage: (messageId: string, body: MessageReportRequest) =>
     client.post<MessageReportResponse>(`${messagePath(messageId)}/report`, body),
+  // "I'm typing" (202), at most every 3 s. No Idempotency-Key, by contract.
+  sendTyping: (conversationId: string) =>
+    client.post<void>(`${conversationPath(conversationId)}/typing`, undefined, { idempotencyKey: null, timeoutMs: 10000 }),
   blockMember: (memberId: string) => client.post<void>('/v1/members/block', { member_id: memberId }),
   reportMember: (memberId: string, body: MemberReportRequest) =>
     client.post<MemberReportResponse>(`/v1/members/${encodeURIComponent(memberId)}/report`, body),

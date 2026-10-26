@@ -20,11 +20,15 @@ type Props = {
   onPress?: () => void;
   onLongPress?: () => void;
   onRetry?: () => void;
+  // Why it failed, in place of "Not sent" (e.g. a file type the server refused).
+  failedText?: string;
+  // A photo, PDF or voice note; `text` is then its caption (may be empty).
+  media?: React.ReactNode;
 };
 
 // Ol-ga's messages sit on the left with her sparkle mark; the member's on the
 // right. In a conversation (person), the other member's bubbles have no avatar.
-export function ChatBubble({ from, text, person, time, status, tick, deleted, hidden, onPress, onLongPress, onRetry }: Props) {
+export function ChatBubble({ from, text, person, time, status, tick, deleted, hidden, onPress, onLongPress, onRetry, failedText, media }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(
     () =>
@@ -53,6 +57,9 @@ export function ChatBubble({ from, text, person, time, status, tick, deleted, hi
         },
         me: { backgroundColor: colors.bubbleMe, color: colors.onBubbleMe, borderBottomRightRadius: 6 },
         textPending: { opacity: 0.6 },
+        // A media bubble: the same colours and tail, tighter padding.
+        mediaBox: { padding: 5, borderRadius: 20, overflow: 'hidden' },
+        caption: { fontSize: 15, lineHeight: 21, paddingHorizontal: 9, paddingTop: 6, paddingBottom: 3 },
         textDeleted: {
           backgroundColor: 'transparent',
           borderWidth: 1,
@@ -81,20 +88,30 @@ export function ChatBubble({ from, text, person, time, status, tick, deleted, hi
   return (
     <View style={[styles.wrap, from === 'me' && styles.wrapMe]}>
       <Pressable onPress={onPress} onLongPress={onLongPress} disabled={!onLongPress && !onPress} delayLongPress={350}>
-        <Text
-          style={[
-            styles.text,
-            from === 'me' ? styles.me : styles.them,
-            status === 'pending' && styles.textPending,
-            (deleted || hidden) && styles.textDeleted,
-          ]}
-        >
-          {deleted ? 'This message was deleted' : hidden ? 'Hidden: may be offensive. Tap to view' : text}
-        </Text>
+        {media && !deleted && !hidden ? (
+          <View style={[styles.mediaBox, from === 'me' ? styles.me : styles.them]}>
+            {media}
+            {text ? <Text style={[styles.caption, { color: from === 'me' ? colors.onBubbleMe : colors.text }]}>{text}</Text> : null}
+          </View>
+        ) : (
+          <Text
+            style={[
+              styles.text,
+              from === 'me' ? styles.me : styles.them,
+              status === 'pending' && styles.textPending,
+              (deleted || hidden) && styles.textDeleted,
+            ]}
+          >
+            {deleted ? 'This message was deleted' : hidden ? 'Hidden: may be offensive. Tap to view' : text}
+          </Text>
+        )}
       </Pressable>
       {status === 'failed' ? (
         <Pressable onPress={onRetry} hitSlop={8} accessibilityRole="button">
-          <Text style={styles.failed}>Not sent · Tap to retry</Text>
+          <Text style={styles.failed}>
+            {failedText ?? 'Not sent'}
+            {onRetry ? ' · Tap to retry' : ''}
+          </Text>
         </Pressable>
       ) : tick && meta ? (
         <View style={styles.metaRow} accessibilityLabel={`${meta}, ${tick === 'read' ? 'seen' : tick}`}>

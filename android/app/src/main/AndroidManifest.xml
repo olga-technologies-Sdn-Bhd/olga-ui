@@ -23,6 +23,8 @@
          optional hardware, and the photo library needs no permission (system
          photo picker). -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Voice messages in chat. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <queries>
         <intent>

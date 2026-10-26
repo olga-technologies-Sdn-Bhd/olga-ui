@@ -82,8 +82,9 @@ export type RequestOptions = {
   headers?: Record<string, string>;
   // Pass the same key when retrying the same user action after a network
   // failure; generate it once (newIdempotencyKey) outside any retry loop.
-  // Omitted on a write → a fresh key is generated for this call.
-  idempotencyKey?: string;
+  // Omitted on a write → a fresh key is generated for this call; null → no
+  // key at all (the typing signal must not carry one).
+  idempotencyKey?: string | null;
   timeoutMs?: number;
 };
 
@@ -94,15 +95,20 @@ export type ApiResponse<T> = {
 };
 
 async function toApiError(response: Response): Promise<ApiError> {
-  const headerCorrelationId = response.headers.get('X-Correlation-Id') ?? undefined;
   const text = await response.text().catch(() => '');
+  return apiErrorFrom(response.status, response.statusText, text, response.headers.get('X-Correlation-Id') ?? undefined);
+}
+
+// The problem body Core sends, or the raw text when there is none. Also used
+// for uploads, which go through XMLHttpRequest for their progress.
+export function apiErrorFrom(status: number, statusText: string, text: string, headerCorrelationId?: string): ApiError {
   try {
     const body = JSON.parse(text) as Partial<ApiErrorBody>;
     if (body && typeof body.code === 'string') {
       return new ApiError(
-        response.status,
+        status,
         body.code,
-        body.message ?? response.statusText,
+        body.message ?? statusText,
         body.correlation_id ?? headerCorrelationId,
         body.field_errors,
         body.details
@@ -111,7 +117,7 @@ async function toApiError(response: Response): Promise<ApiError> {
   } catch {
     // not JSON — fall through to the raw text
   }
-  return new ApiError(response.status, `HTTP_${response.status}`, text || response.statusText, headerCorrelationId);
+  return new ApiError(status, `HTTP_${status}`, text || statusText, headerCorrelationId);
 }
 
 async function send<T>(
@@ -130,7 +136,7 @@ async function send<T>(
   if (body !== undefined && !isForm) finalHeaders['Content-Type'] = 'application/json';
   const memberId = memberIdProvider();
   if (memberId) finalHeaders['X-Member-Id'] = memberId;
-  if (method !== 'GET') finalHeaders['Idempotency-Key'] = idempotencyKey ?? newIdempotencyKey();
+  if (method !== 'GET' && idempotencyKey !== null) finalHeaders['Idempotency-Key'] = idempotencyKey ?? newIdempotencyKey();
   Object.assign(finalHeaders, headers);
 
   const controller = new AbortController();
