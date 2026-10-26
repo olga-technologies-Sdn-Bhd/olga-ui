@@ -10,7 +10,7 @@ import { Button } from '../../components/Button';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { showDialog } from '../../components/DialogHost';
 import { FilterSummary } from '../../components/FilterSummary';
-import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH } from '../../components/GoLiveModeSwitch';
+import { GoLiveModeSwitch, GoLiveTop, HEADER_ABOVE_WITH_SWITCH } from '../../components/GoLiveModeSwitch';
 import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase, useCountUp } from '../../components/GoLiveRadar';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
@@ -192,17 +192,21 @@ export function AnywhereView({ navigation, onSwitchMode }: Props) {
   const phase: RadarPhase = searching ? 'searching' : !live ? 'idle' : generalMatches === null ? 'live' : count > 0 ? 'found' : 'empty';
 
   return (
-    <Screen>
-      <View style={styles.header}>
-        <Text style={styles.title}>ANYWHERE</Text>
-        {live && (
-          <View style={styles.status}>
-            <Pill label="● SHARING" tone="positive" />
+    <Screen
+      renderHeader={(scrollY) => (
+        // Sharing runs for days in the background: the other modes stay open.
+        <GoLiveTop scrollY={scrollY} modeSwitch={<GoLiveModeSwitch mode="anywhere" onChange={onSwitchMode} disabled={searching} scrollY={scrollY} />}>
+          <View style={styles.header}>
+            <Text style={styles.title}>ANYWHERE</Text>
+            {live && (
+              <View style={styles.status}>
+                <Pill label="● SHARING" tone="positive" />
+              </View>
+            )}
           </View>
-        )}
-      </View>
-      {/* Sharing runs for days in the background: the other modes stay open. */}
-      <GoLiveModeSwitch mode="anywhere" onChange={onSwitchMode} disabled={searching} />
+        </GoLiveTop>
+      )}
+    >
 
       <GoLiveRadar
         phase={phase}

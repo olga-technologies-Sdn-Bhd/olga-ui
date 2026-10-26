@@ -74,6 +74,8 @@ const SIDE = 14;
 // moves down with the finger, as on iOS. Pull past PULL_TRIGGER and let go to refresh.
 const PULL_ZONE = Platform.OS === 'android' ? 140 : 0;
 const PULL_TRIGGER = 80;
+// How long our own snap (scrollTo) takes; its scroll events are ignored meanwhile.
+const SNAP_MS = 400;
 const PULL_HOLD = 64;
 
 // Each tip disappears once the member does the action (not on tap) and never
@@ -219,22 +221,38 @@ export function HomeScreen({ navigation }: Props) {
       }),
     [rawY],
   );
-  // Android pull-to-refresh: when the finger lets go, either refresh (pulled far enough) and hold
-  // the zone open a little, or snap back to the top.
+  // Android pull-to-refresh: when the page comes to rest in the pull zone, either refresh (pulled
+  // far enough) and hold the zone open a little, or snap back to the top. One smooth move each
+  // time: a release with a fling waits for the fling to end (moving during it makes the two
+  // fight and crawl), and the scroll events our own move causes don't start another.
   const refreshingNow = useRef(false);
   refreshingNow.current = refreshing;
+  const ownMoveUntil = useRef(0);
+  const moveTo = useCallback((y: number) => {
+    if (Math.abs(offsetNow.current - y) < 2) return;
+    ownMoveUntil.current = Date.now() + SNAP_MS;
+    scrollRef.current?.scrollTo({ y, animated: true });
+  }, []);
   const settlePull = useCallback(() => {
-    if (!PULL_ZONE) return;
+    if (!PULL_ZONE || Date.now() < ownMoveUntil.current) return;
     const pulled = PULL_ZONE - offsetNow.current;
-    if (pulled <= 0) return;
+    if (pulled < 2) return;
     const hold = refreshingNow.current || pulled >= PULL_TRIGGER;
     if (hold && !refreshingNow.current) handleRefresh();
-    scrollRef.current?.scrollTo({ y: hold ? PULL_ZONE - PULL_HOLD : PULL_ZONE, animated: true });
-  }, [handleRefresh]);
+    moveTo(hold ? PULL_ZONE - PULL_HOLD : PULL_ZONE);
+  }, [handleRefresh, moveTo]);
+  const onReleased = useCallback(
+    (e: { nativeEvent: { velocity?: { y: number } } }) => {
+      // Still flinging: onMomentumScrollEnd settles it.
+      if (Math.abs(e.nativeEvent.velocity?.y ?? 0) > 0.05) return;
+      settlePull();
+    },
+    [settlePull],
+  );
   useEffect(() => {
     if (!PULL_ZONE || refreshing) return;
-    if (offsetNow.current < PULL_ZONE) scrollRef.current?.scrollTo({ y: PULL_ZONE, animated: true });
-  }, [refreshing]);
+    if (offsetNow.current < PULL_ZONE) moveTo(PULL_ZONE);
+  }, [refreshing, moveTo]);
   // Start at rest, below the pull zone.
   const startAtRest = useCallback(() => {
     if (!PULL_ZONE || settled.current) return;
@@ -416,7 +434,8 @@ export function HomeScreen({ navigation }: Props) {
         scrollEventThrottle={16}
         overScrollMode={PULL_ZONE ? 'never' : undefined}
         onContentSizeChange={startAtRest}
-        onScrollEndDrag={settlePull}
+        onScrollBeginDrag={() => (ownMoveUntil.current = 0)}
+        onScrollEndDrag={onReleased}
         onMomentumScrollEnd={settlePull}
         refreshControl={
           PULL_ZONE ? undefined : (

@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BleDebugPanel } from '../../components/BleDebugPanel';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { FilterSummary } from '../../components/FilterSummary';
-import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH } from '../../components/GoLiveModeSwitch';
+import { GoLiveModeSwitch, GoLiveTop, HEADER_ABOVE_WITH_SWITCH } from '../../components/GoLiveModeSwitch';
 import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase, useCountUp } from '../../components/GoLiveRadar';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
@@ -135,17 +135,20 @@ export function NearbyView({ navigation, onSwitchMode }: Props) {
           : "This phone can't use Bluetooth for Nearby.";
 
   return (
-    <Screen>
-      <View style={styles.header}>
-        <Text style={styles.eventName}>NEARBY</Text>
-        {available && (
-          <View style={styles.status}>
-            <Pill label="● AVAILABLE" tone="positive" />
+    <Screen
+      renderHeader={(scrollY) => (
+        <GoLiveTop scrollY={scrollY} modeSwitch={<GoLiveModeSwitch mode="nearby" onChange={trySwitch} disabled={available} offline={online === false} scrollY={scrollY} />}>
+          <View style={styles.header}>
+            <Text style={styles.eventName}>NEARBY</Text>
+            {available && (
+              <View style={styles.status}>
+                <Pill label="● AVAILABLE" tone="positive" />
+              </View>
+            )}
           </View>
-        )}
-      </View>
-
-      <GoLiveModeSwitch mode="nearby" onChange={trySwitch} disabled={available} offline={online === false} />
+        </GoLiveTop>
+      )}
+    >
       {offlineNote && (
         <View style={styles.offlineNote} accessibilityLiveRegion="polite">
           <WifiOff size={14} color={colors.muted} strokeWidth={2} />

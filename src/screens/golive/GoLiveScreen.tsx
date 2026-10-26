@@ -2,7 +2,7 @@ import Slider from '@react-native-community/slider';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, Clock, Radio, Sparkles } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { MatchCard, MatchingError, MatchingFailure } from '../../api/matching';
 import { BottomSheet, SheetGroup, SheetOption } from '../../components/BottomSheet';
@@ -11,7 +11,7 @@ import { Card } from '../../components/Card';
 import { DateBlock } from '../../components/DateBlock';
 import { FilterSummary } from '../../components/FilterSummary';
 import { GoLiveDisc } from '../../components/GoLiveDisc';
-import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH } from '../../components/GoLiveModeSwitch';
+import { GoLiveModeSwitch, GoLiveTop, HEADER_ABOVE_WITH_SWITCH } from '../../components/GoLiveModeSwitch';
 import { Marquee } from '../../components/Marquee';
 import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase, useCountUp } from '../../components/GoLiveRadar';
 import { Pill } from '../../components/Pill';
@@ -347,7 +347,17 @@ export function GoLiveScreen({ navigation }: Props) {
   if (nearby) {
     return <NearbyView navigation={navigation} onSwitchMode={setMode} />;
   }
-  const modeSwitch = !isLive && <GoLiveModeSwitch mode="event" onChange={setMode} offline={online === false} />;
+  // The pinned top bar: a title row, and the mode switch until live.
+  const top = (title: React.ReactNode) => (scrollY: Animated.Value) => (
+    <GoLiveTop scrollY={scrollY} modeSwitch={!isLive && <GoLiveModeSwitch mode="event" onChange={setMode} offline={online === false} scrollY={scrollY} />}>
+      {title}
+    </GoLiveTop>
+  );
+  const plainTitle = (
+    <View style={styles.header}>
+      <Text style={[styles.eventName, styles.centred]}>GO LIVE</Text>
+    </View>
+  );
   const picker = (
     <BottomSheet visible={pickerOpen} onClose={() => setPickerOpen(false)} title="Choose your event" subtitle="You Go Live in one event at a time.">
       <SheetGroup>
@@ -361,12 +371,8 @@ export function GoLiveScreen({ navigation }: Props) {
   // No upcoming room: nothing to go live in.
   if (!room) {
     return (
-      <Screen>
-        <View>
-          <Text style={styles.eyebrow}>Go Live</Text>
-          <Text style={styles.h2}>Not in a room yet</Text>
-        </View>
-        {modeSwitch}
+      <Screen renderHeader={top(plainTitle)}>
+        <Text style={styles.h2}>Not in a room yet</Text>
         <GoLiveDisc locked label="GO LIVE" caption="OPENS AT CHECK-IN" fill={disc.fill} textColor={disc.text} />
         <Text style={styles.lead}>Nobody can see you.</Text>
         <Card>
@@ -381,12 +387,8 @@ export function GoLiveScreen({ navigation }: Props) {
   // Board 05: before the event. Locked, and says so plainly.
   if (beforeRoom && !isLive) {
     return (
-      <Screen>
-        <View>
-          <Text style={styles.eyebrow}>Go Live</Text>
-          <Text style={styles.h2}>Not in a room yet</Text>
-        </View>
-        {modeSwitch}
+      <Screen renderHeader={top(plainTitle)}>
+        <Text style={styles.h2}>Not in a room yet</Text>
         <GoLiveDisc locked label="GO LIVE" caption="OPENS AT CHECK-IN" fill={disc.fill} textColor={disc.text} />
         <Text style={styles.lead}>Nobody can see you.</Text>
         <Pressable onPress={canPick ? () => setPickerOpen(true) : undefined} disabled={!canPick} accessibilityRole={canPick ? 'button' : undefined}>
@@ -410,9 +412,8 @@ export function GoLiveScreen({ navigation }: Props) {
   const count = people.length;
   const phase: RadarPhase = searching ? 'searching' : !isLive ? 'idle' : count > 0 ? 'found' : matches && !matchingFailed ? 'empty' : 'live';
 
-  return (
-    <Screen>
-      <View style={styles.header}>
+  const roomTitle = (
+    <View style={styles.header}>
         {/* The event's name; with more than one event, it picks between them. */}
         <Pressable
           onPress={() => setPickerOpen(true)}
@@ -437,16 +438,18 @@ export function GoLiveScreen({ navigation }: Props) {
             </View>
           )
         )}
-      </View>
-      {modeSwitch}
+    </View>
+  );
 
+  return (
+    <Screen renderHeader={top(roomTitle)}>
       <GoLiveRadar
         phase={phase}
         people={people}
         disabled={searching}
         onHoldComplete={onHoldComplete}
         onOpenMatches={openMatches}
-        headerAbove={modeSwitch ? HEADER_ABOVE_WITH_SWITCH : undefined}
+        headerAbove={!isLive ? HEADER_ABOVE_WITH_SWITCH : undefined}
       />
 
       {phase === 'idle' && (
@@ -586,6 +589,7 @@ const makeStyles = (colors: ThemeColors) =>
     },
     // Room on both sides for the live pill ("● 12 LIVE"), so the name stays centred.
     eventNameBox: { marginHorizontal: 92, flexDirection: 'row', alignItems: 'center', gap: 4 },
+    centred: { textAlign: 'center' },
     // On the left, leaving the right-hand end for the wordmark when live.
     status: { position: 'absolute', left: 0 },
     eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold },
