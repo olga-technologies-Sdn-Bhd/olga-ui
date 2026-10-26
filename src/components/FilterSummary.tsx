@@ -17,12 +17,14 @@ type Props = {
   intent: string;
   filters: MatchFilters;
   onChange: () => void;
+  // Go Live > Anywhere: the event filters don't apply, so no chips.
+  hideFilters?: boolean;
 };
 
 // Boards 05, 06, 08: the filter summary under the Go Live control. A compact
 // card: title and Edit, what the member is looking for, then the filters as
 // small chips. The whole card opens the filter.
-export function FilterSummary({ title, intent, filters, onChange }: Props) {
+export function FilterSummary({ title, intent, filters, onChange, hideFilters }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const wanted = intent.trim();
@@ -58,21 +60,23 @@ export function FilterSummary({ title, intent, filters, onChange }: Props) {
         </View>
       )}
 
-      <View style={styles.chips}>
-        {filters.lookingFor.map((tag) => (
-          <View key={tag} style={[styles.chip, styles.chipStrong]}>
-            <Text style={[styles.chipText, styles.chipTextStrong]}>{tag}</Text>
-          </View>
-        ))}
-        {chips.map(({ icon: Icon, label }) => (
-          <View key={label} style={styles.chip}>
-            <Icon size={12} color={colors.muted} strokeWidth={2} />
-            <Text style={styles.chipText} numberOfLines={1}>
-              {label}
-            </Text>
-          </View>
-        ))}
-      </View>
+      {!hideFilters && (
+        <View style={styles.chips}>
+          {filters.lookingFor.map((tag) => (
+            <View key={tag} style={[styles.chip, styles.chipStrong]}>
+              <Text style={[styles.chipText, styles.chipTextStrong]}>{tag}</Text>
+            </View>
+          ))}
+          {chips.map(({ icon: Icon, label }) => (
+            <View key={label} style={styles.chip}>
+              <Icon size={12} color={colors.muted} strokeWidth={2} />
+              <Text style={styles.chipText} numberOfLines={1}>
+                {label}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
     </Pressable>
   );
 }

@@ -1,8 +1,8 @@
 import Slider from '@react-native-community/slider';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronRight, Clock, Radio, Sparkles } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChevronDown, ChevronRight, Clock, Radio, Sparkles } from 'lucide-react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { MatchCard, MatchingError, MatchingFailure } from '../../api/matching';
 import { BottomSheet, SheetGroup, SheetOption } from '../../components/BottomSheet';
@@ -11,6 +11,7 @@ import { Card } from '../../components/Card';
 import { DateBlock } from '../../components/DateBlock';
 import { FilterSummary } from '../../components/FilterSummary';
 import { GoLiveDisc } from '../../components/GoLiveDisc';
+import { GoLiveModeSwitch, GoLiveTop, HEADER_ABOVE_WITH_SWITCH } from '../../components/GoLiveModeSwitch';
 import { Marquee } from '../../components/Marquee';
 import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase, useCountUp } from '../../components/GoLiveRadar';
 import { Pill } from '../../components/Pill';
@@ -24,7 +25,8 @@ import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
 import { topMatches } from './LiveMatchesScreen';
-import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH, NearbyView } from './NearbyView';
+import { AnywhereView } from './AnywhereView';
+import { NearbyView } from './NearbyView';
 import { showDialog } from '../../components/DialogHost';
 import { LiveDuration, usePrefs } from '../../context/PrefsContext';
 import { haptics } from '../../utils/haptics';
@@ -147,14 +149,25 @@ export function GoLiveScreen({ navigation }: Props) {
     return () => clearInterval(timer);
   }, []);
 
-  // The room: the selected event while it's still yours, else your next
-  // registered event that hasn't ended.
-  const room = useMemo(() => {
-    const mine = (events ?? [])
-      .filter((e) => isRegistered(e) && new Date(e.ends_at).getTime() > now)
-      .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-    return mine.find((e) => e.event_id === activeEvent?.eventId) ?? mine[0] ?? null;
-  }, [events, now, activeEvent?.eventId]);
+  // Your registered events that haven't ended, soonest first. The room is
+  // the one you picked (the event picker, or Go Live on an event's page)
+  // while it's still yours, else the first.
+  const myRooms = useMemo(
+    () =>
+      (events ?? [])
+        .filter((e) => isRegistered(e) && new Date(e.ends_at).getTime() > now)
+        .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
+    [events, now]
+  );
+  const room = myRooms.find((e) => e.event_id === activeEvent?.eventId) ?? myRooms[0] ?? null;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // More than one event to go live in: the name at the top picks between them.
+  const canPick = !isLive && myRooms.length > 1;
+  const pickRoom = (eventId: string) => {
+    const next = myRooms.find((e) => e.event_id === eventId);
+    setPickerOpen(false);
+    if (next && next.event_id !== room?.event_id) setActiveEvent({ eventId: next.event_id, name: next.name, endsAt: next.ends_at, liveCount: next.live_count });
+  };
 
   useEffect(() => {
     if (!room || isLive || room.event_id === activeEvent?.eventId) return;
@@ -323,23 +336,43 @@ export function GoLiveScreen({ navigation }: Props) {
   }, []);
   const openMatches = useCallback(() => navigation.navigate('LiveMatches'), [navigation]);
 
-  // Nearby (no event): when there's no room, the member picked it, or there's
-  // no internet (the event room needs Ol-ga; Nearby works without it).
-  const nearby =
-    !isLive && (!room || mode === 'nearby' || (mode === null && (nearbyAvailable || online === false)));
-  if (nearby) {
-    return <NearbyView navigation={navigation} onSwitchToEvent={room ? () => setMode('event') : undefined} />;
+  // Three ways to Go Live, on one switch: Event (this screen), Nearby
+  // (Bluetooth) and Anywhere (general matching). Live at an event, the
+  // switch waits until it ends. With no choice made: the event when there's
+  // one, else Nearby (also when there's no internet: it works without).
+  if (!isLive && mode === 'anywhere') {
+    return <AnywhereView navigation={navigation} onSwitchMode={setMode} />;
   }
-  const modeSwitch = !isLive && <GoLiveModeSwitch mode="event" onChange={setMode} />;
+  const nearby = !isLive && (mode === 'nearby' || (mode === null && (!room || nearbyAvailable || online === false)));
+  if (nearby) {
+    return <NearbyView navigation={navigation} onSwitchMode={setMode} />;
+  }
+  // The pinned top bar: a title row, and the mode switch until live.
+  const top = (title: React.ReactNode) => (scrollY: Animated.Value) => (
+    <GoLiveTop scrollY={scrollY} modeSwitch={!isLive && <GoLiveModeSwitch mode="event" onChange={setMode} offline={online === false} scrollY={scrollY} />}>
+      {title}
+    </GoLiveTop>
+  );
+  const plainTitle = (
+    <View style={styles.header}>
+      <Text style={[styles.eventName, styles.centred]}>GO LIVE</Text>
+    </View>
+  );
+  const picker = (
+    <BottomSheet visible={pickerOpen} onClose={() => setPickerOpen(false)} title="Choose your event" subtitle="You Go Live in one event at a time.">
+      <SheetGroup>
+        {myRooms.map((e) => (
+          <SheetOption key={e.event_id} label={e.name} selected={e.event_id === room?.event_id} onPress={() => pickRoom(e.event_id)} />
+        ))}
+      </SheetGroup>
+    </BottomSheet>
+  );
 
   // No upcoming room: nothing to go live in.
   if (!room) {
     return (
-      <Screen>
-        <View>
-          <Text style={styles.eyebrow}>Go Live</Text>
-          <Text style={styles.h2}>Not in a room yet</Text>
-        </View>
+      <Screen renderHeader={top(plainTitle)}>
+        <Text style={styles.h2}>Not in a room yet</Text>
         <GoLiveDisc locked label="GO LIVE" caption="OPENS AT CHECK-IN" fill={disc.fill} textColor={disc.text} />
         <Text style={styles.lead}>Nobody can see you.</Text>
         <Card>
@@ -354,22 +387,22 @@ export function GoLiveScreen({ navigation }: Props) {
   // Board 05: before the event. Locked, and says so plainly.
   if (beforeRoom && !isLive) {
     return (
-      <Screen>
-        <View>
-          <Text style={styles.eyebrow}>Go Live</Text>
-          <Text style={styles.h2}>Not in a room yet</Text>
-        </View>
-        {modeSwitch}
+      <Screen renderHeader={top(plainTitle)}>
+        <Text style={styles.h2}>Not in a room yet</Text>
         <GoLiveDisc locked label="GO LIVE" caption="OPENS AT CHECK-IN" fill={disc.fill} textColor={disc.text} />
         <Text style={styles.lead}>Nobody can see you.</Text>
-        <Card style={styles.roomCard}>
-          <DateBlock iso={room.starts_at} size="sm" />
-          <View style={styles.flex}>
-            <Text style={styles.h3}>{room.name}</Text>
-            <Text style={styles.sub}>Go Live opens when you check in at the badge desk.</Text>
-          </View>
-        </Card>
+        <Pressable onPress={canPick ? () => setPickerOpen(true) : undefined} disabled={!canPick} accessibilityRole={canPick ? 'button' : undefined}>
+          <Card style={styles.roomCard}>
+            <DateBlock iso={room.starts_at} size="sm" />
+            <View style={styles.flex}>
+              <Text style={styles.h3}>{room.name}</Text>
+              <Text style={styles.sub}>Go Live opens when you check in at the badge desk.</Text>
+            </View>
+            {canPick && <ChevronDown size={18} color={colors.muted} />}
+          </Card>
+        </Pressable>
         <FilterSummary title="Who you'll see" intent={intentText} filters={filters} onChange={openFilter} />
+        {picker}
       </Screen>
     );
   }
@@ -379,12 +412,21 @@ export function GoLiveScreen({ navigation }: Props) {
   const count = people.length;
   const phase: RadarPhase = searching ? 'searching' : !isLive ? 'idle' : count > 0 ? 'found' : matches && !matchingFailed ? 'empty' : 'live';
 
-  return (
-    <Screen>
-      <View style={styles.header}>
-        <View style={styles.eventNameBox}>
-          <Marquee text={room.name} style={styles.eventName} />
-        </View>
+  const roomTitle = (
+    <View style={styles.header}>
+        {/* The event's name; with more than one event, it picks between them. */}
+        <Pressable
+          onPress={() => setPickerOpen(true)}
+          disabled={!canPick}
+          accessibilityRole={canPick ? 'button' : undefined}
+          accessibilityLabel={canPick ? `${room.name}. Choose another event` : room.name}
+          style={styles.eventNameBox}
+        >
+          <View style={styles.flex}>
+            <Marquee text={room.name} style={styles.eventName} />
+          </View>
+          {canPick && <ChevronDown size={14} color={colors.muted} strokeWidth={2.4} />}
+        </Pressable>
         {isLive ? (
           <View style={styles.status}>
             <Pill label="● LIVE" tone="positive" />
@@ -396,16 +438,18 @@ export function GoLiveScreen({ navigation }: Props) {
             </View>
           )
         )}
-      </View>
-      {modeSwitch}
+    </View>
+  );
 
+  return (
+    <Screen renderHeader={top(roomTitle)}>
       <GoLiveRadar
         phase={phase}
         people={people}
         disabled={searching}
         onHoldComplete={onHoldComplete}
         onOpenMatches={openMatches}
-        headerAbove={modeSwitch ? HEADER_ABOVE_WITH_SWITCH : undefined}
+        headerAbove={!isLive ? HEADER_ABOVE_WITH_SWITCH : undefined}
       />
 
       {phase === 'idle' && (
@@ -511,6 +555,7 @@ export function GoLiveScreen({ navigation }: Props) {
       )}
 
       <FilterSummary title={isLive ? 'Live for' : "You're going live for"} intent={intentText} filters={filters} onChange={openFilter} />
+      {picker}
       <BottomSheet
         visible={extendOpen}
         onClose={() => !extending && setExtendOpen(false)}
@@ -542,8 +587,9 @@ const makeStyles = (colors: ThemeColors) =>
       textTransform: 'uppercase',
       color: colors.muted,
     },
-    // Room on both sides for the live pill, so the name stays centred.
-    eventNameBox: { marginHorizontal: 74 },
+    // Room on both sides for the live pill ("● 12 LIVE"), so the name stays centred.
+    eventNameBox: { marginHorizontal: 92, flexDirection: 'row', alignItems: 'center', gap: 4 },
+    centred: { textAlign: 'center' },
     // On the left, leaving the right-hand end for the wordmark when live.
     status: { position: 'absolute', left: 0 },
     eyebrow: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: colors.muted, fontWeight: semibold },

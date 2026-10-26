@@ -2,7 +2,7 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { Check, ChevronRight, Mic, SlidersHorizontal, Ticket, TrendingUp, UsersRound } from 'lucide-react-native';
+import { Check, ChevronRight, Mic, SlidersHorizontal, Sparkles, Ticket, TrendingUp, UsersRound } from 'lucide-react-native';
 import { ElementRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -74,6 +74,8 @@ const SIDE = 14;
 // moves down with the finger, as on iOS. Pull past PULL_TRIGGER and let go to refresh.
 const PULL_ZONE = Platform.OS === 'android' ? 140 : 0;
 const PULL_TRIGGER = 80;
+// How long our own snap (scrollTo) takes; its scroll events are ignored meanwhile.
+const SNAP_MS = 400;
 const PULL_HOLD = 64;
 
 // Each tip disappears once the member does the action (not on tap) and never
@@ -171,7 +173,7 @@ export function HomeScreen({ navigation }: Props) {
   const [tryPeriod, setTryPeriod] = useState<Period | null>(null);
   const period = tryPeriod ?? periodAt(today.getHours());
   const photo = PHOTOS[period];
-  const { requests: nearbyRequests } = useNearby();
+  const { requests: nearbyRequests, setMode: setGoLiveMode } = useNearby();
 
   const loadNetwork = useCallback(async () => {
     const [connections, page] = await Promise.all([coreApi.getConnections().catch(() => null), coreApi.getMeetings().catch(() => null)]);
@@ -219,22 +221,38 @@ export function HomeScreen({ navigation }: Props) {
       }),
     [rawY],
   );
-  // Android pull-to-refresh: when the finger lets go, either refresh (pulled far enough) and hold
-  // the zone open a little, or snap back to the top.
+  // Android pull-to-refresh: when the page comes to rest in the pull zone, either refresh (pulled
+  // far enough) and hold the zone open a little, or snap back to the top. One smooth move each
+  // time: a release with a fling waits for the fling to end (moving during it makes the two
+  // fight and crawl), and the scroll events our own move causes don't start another.
   const refreshingNow = useRef(false);
   refreshingNow.current = refreshing;
+  const ownMoveUntil = useRef(0);
+  const moveTo = useCallback((y: number) => {
+    if (Math.abs(offsetNow.current - y) < 2) return;
+    ownMoveUntil.current = Date.now() + SNAP_MS;
+    scrollRef.current?.scrollTo({ y, animated: true });
+  }, []);
   const settlePull = useCallback(() => {
-    if (!PULL_ZONE) return;
+    if (!PULL_ZONE || Date.now() < ownMoveUntil.current) return;
     const pulled = PULL_ZONE - offsetNow.current;
-    if (pulled <= 0) return;
+    if (pulled < 2) return;
     const hold = refreshingNow.current || pulled >= PULL_TRIGGER;
     if (hold && !refreshingNow.current) handleRefresh();
-    scrollRef.current?.scrollTo({ y: hold ? PULL_ZONE - PULL_HOLD : PULL_ZONE, animated: true });
-  }, [handleRefresh]);
+    moveTo(hold ? PULL_ZONE - PULL_HOLD : PULL_ZONE);
+  }, [handleRefresh, moveTo]);
+  const onReleased = useCallback(
+    (e: { nativeEvent: { velocity?: { y: number } } }) => {
+      // Still flinging: onMomentumScrollEnd settles it.
+      if (Math.abs(e.nativeEvent.velocity?.y ?? 0) > 0.05) return;
+      settlePull();
+    },
+    [settlePull],
+  );
   useEffect(() => {
     if (!PULL_ZONE || refreshing) return;
-    if (offsetNow.current < PULL_ZONE) scrollRef.current?.scrollTo({ y: PULL_ZONE, animated: true });
-  }, [refreshing]);
+    if (offsetNow.current < PULL_ZONE) moveTo(PULL_ZONE);
+  }, [refreshing, moveTo]);
   // Start at rest, below the pull zone.
   const startAtRest = useCallback(() => {
     if (!PULL_ZONE || settled.current) return;
@@ -260,6 +278,8 @@ export function HomeScreen({ navigation }: Props) {
   // The big greeting drifts up slower than the page and fades.
   const greetFade = scrollY.interpolate({ inputRange: [0, span * 0.75], outputRange: [1, 0], extrapolate: clamp });
   const greetShift = scrollY.interpolate({ inputRange: [0, span], outputRange: [0, span * 0.4], extrapolate: clamp });
+  // The date under the avatar lifts as it fades (it sits in the fixed header).
+  const dateLift = scrollY.interpolate({ inputRange: [0, span * 0.75], outputRange: [0, -12], extrapolate: clamp });
   // The Ask bar moves with the page until it reaches the header, then stays.
   // Pulled down (scrollY below 0) it keeps following the page, so it is not left behind.
   const askY = scrollY.interpolate({ inputRange: [0, span], outputRange: [span, 0], extrapolateLeft: 'extend', extrapolateRight: clamp });
@@ -361,6 +381,19 @@ export function HomeScreen({ navigation }: Props) {
   ];
   const shown = filter === 'all' ? updates : updates.filter(u => u.kind === filter);
   const headerHeight = topInset + HEADER_H;
+  // The pills under Ask Ol-ga: general matching (Go Live > Anywhere, no
+  // event needed) first, then the Olga agent's starter prompts.
+  const prompts = [
+    {
+      icon: Sparkles,
+      label: 'Find matches',
+      onPress: () => {
+        setGoLiveMode('anywhere');
+        navigation.navigate('GoLiveTab', { screen: 'GoLive' });
+      },
+    },
+    ...OLGA_PROMPTS.map(({ icon, label }) => ({ icon, label, onPress: () => navigation.navigate('OlgaAgent', { prompt: label }) })),
+  ];
   const onPhoto = photo.lightText ? styles.onPhotoLight : styles.onPhotoDark;
   const imageHeight = Math.round(width * HERO_RATIO);
   // The photo sits in a layer behind the page, pinned to the top of the screen. Scrolling up
@@ -401,7 +434,8 @@ export function HomeScreen({ navigation }: Props) {
         scrollEventThrottle={16}
         overScrollMode={PULL_ZONE ? 'never' : undefined}
         onContentSizeChange={startAtRest}
-        onScrollEndDrag={settlePull}
+        onScrollBeginDrag={() => (ownMoveUntil.current = 0)}
+        onScrollEndDrag={onReleased}
         onMomentumScrollEnd={settlePull}
         refreshControl={
           PULL_ZONE ? undefined : (
@@ -421,10 +455,6 @@ export function HomeScreen({ navigation }: Props) {
             and fades into the page ground below the card's top). */}
         <View style={styles.hero} onLayout={e => setAskAt(e.nativeEvent.layout.height)}>
           <Animated.View style={{ opacity: greetFade, transform: [{ translateY: greetShift }] }}>
-            {/* Calm, as in Calendar or Mail: "Monday, 19 October". */}
-            <Text style={[styles.date, onPhoto]}>
-              {WEEKDAYS[today.getDay()]}, {today.getDate()} {MONTHS[today.getMonth()]}
-            </Text>
             {/* Sree: a simple "Hey <first name>", no time-of-day wishes. */}
             <Text style={[styles.greeting, onPhoto]} numberOfLines={1} adjustsFontSizeToFit>
               Hey {firstName || 'there'},
@@ -438,19 +468,21 @@ export function HomeScreen({ navigation }: Props) {
 
         {/* Prompts and the Social Capital card (fade as the page scrolls). */}
         <Animated.View style={[styles.body, { opacity: cardFade }]}>
+          {/* Two rows of small pills that scroll sideways together. */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsBleed} contentContainerStyle={styles.chips}>
-            {OLGA_PROMPTS.map(({ icon: Icon, label }) => (
-              <Pressable
-                key={label}
-                onPress={() => navigation.navigate('OlgaAgent', { prompt: label })}
-                accessibilityRole="button"
-                style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
-              >
-                <View style={styles.chipIcon}>
-                  <Icon size={13} color={colors.text} strokeWidth={2} />
-                </View>
-                <Text style={styles.chipText}>{label}</Text>
-              </Pressable>
+            {[0, 1].map((row) => (
+              <View key={row} style={styles.chipRow}>
+                {prompts
+                  .filter((_, i) => i % 2 === row)
+                  .map(({ icon: Icon, label, onPress }) => (
+                    <Pressable key={label} onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.chip, pressed && styles.pressed]}>
+                      <View style={styles.chipIcon}>
+                        <Icon size={11} color={colors.text} strokeWidth={2} />
+                      </View>
+                      <Text style={styles.chipText}>{label}</Text>
+                    </Pressable>
+                  ))}
+              </View>
             ))}
           </ScrollView>
 
@@ -614,9 +646,19 @@ export function HomeScreen({ navigation }: Props) {
               Hey {firstName || 'there'}, {WISHES[period]}
             </Animated.Text>
           </Pressable>
-          <Pressable onPress={() => navigation.navigate('Profile')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Your account">
-            <Avatar own initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" dark />
-          </Pressable>
+          <View style={styles.me}>
+            <Pressable onPress={() => navigation.navigate('Profile')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Your account">
+              <Avatar own initials={(firstName || '?').slice(0, 1).toUpperCase()} size="sm" dark />
+            </Pressable>
+            {/* Today, under the avatar ("MONDAY / 26 Oct"); it fades and lifts
+                away with the greeting as the page scrolls. */}
+            <Animated.View style={[styles.today, { opacity: greetFade, transform: [{ translateY: dateLift }] }]} pointerEvents="none">
+              <Text style={[styles.todayDay, onPhoto]}>{WEEKDAYS[today.getDay()].toUpperCase()}</Text>
+              <Text style={[styles.todayDate, onPhoto]}>
+                {today.getDate()} {MONTHS[today.getMonth()].slice(0, 3)}
+              </Text>
+            </Animated.View>
+          </View>
         </View>
 
         <Animated.View style={[styles.askWrap, { top: headerHeight, transform: [{ translateY: askY }] }]} pointerEvents="box-none">
@@ -662,7 +704,11 @@ const makeStyles = (colors: ThemeColors) =>
     photoFade: { position: 'absolute', left: 0, right: 0 },
     content: { paddingBottom: FLOATING_TAB_SPACE },
     hero: { paddingHorizontal: SIDE, paddingTop: 2, paddingBottom: 2 },
-    date: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text, opacity: 0.75 },
+    // The avatar, with today's date under it (right-aligned, over the photo).
+    me: { alignItems: 'flex-end' },
+    today: { position: 'absolute', top: 42, right: 0, alignItems: 'flex-end', width: 120 },
+    todayDay: { fontFamily: fonts.monoBold, fontSize: 10, letterSpacing: 1.4, fontWeight: semibold, color: colors.text, opacity: 0.7 },
+    todayDate: { fontFamily: fonts.bodyBold, fontSize: 15, fontWeight: semibold, color: colors.text, marginTop: 1 },
     greeting: { fontFamily: fonts.headingBold, fontSize: 36, lineHeight: 42, fontWeight: semibold, letterSpacing: -1, color: colors.text },
     achieve: { fontSize: 16, lineHeight: 21, color: colors.text, opacity: 0.92 },
     // The title over the photo: ink with a soft light halo on a bright sky,
@@ -688,21 +734,22 @@ const makeStyles = (colors: ThemeColors) =>
     body: { paddingHorizontal: SIDE, paddingTop: 0, paddingBottom: 12, gap: 10 },
     // Prompts scroll sideways, edge to edge.
     chipsBleed: { marginHorizontal: -SIDE },
-    chips: { gap: 8, paddingHorizontal: SIDE },
+    chips: { gap: 6, paddingHorizontal: SIDE, flexDirection: 'column' },
+    chipRow: { flexDirection: 'row', gap: 6 },
     chip: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      height: 38,
-      paddingLeft: 5,
-      paddingRight: 13,
+      gap: 6,
+      height: 30,
+      paddingLeft: 4,
+      paddingRight: 11,
       borderRadius: 999,
       backgroundColor: colors.surface,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.line,
     },
-    chipIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentFill },
-    chipText: { fontSize: 13, color: colors.text },
+    chipIcon: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentFill },
+    chipText: { fontSize: 12, color: colors.text },
     // A quiet line, not a call to action: no box, small muted text.
     setup: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 22, alignSelf: 'flex-start' },
     // No font padding and a fixed line height, so the chevron sits on the text's centre.

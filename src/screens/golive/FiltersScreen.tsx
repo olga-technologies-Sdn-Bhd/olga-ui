@@ -64,7 +64,7 @@ export function FiltersScreen({ navigation }: Props) {
     <Screen>
       <View style={styles.header}>
         <Text style={styles.h2}>Your filter</Text>
-        <Button label="Done" variant="secondary" small onPress={handleDone} />
+        <Button label="Done" small onPress={handleDone} />
       </View>
 
       <Text style={styles.sectionTitle}>What you're looking for</Text>

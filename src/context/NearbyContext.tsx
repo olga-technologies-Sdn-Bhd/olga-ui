@@ -28,7 +28,8 @@ import { useLive } from './LiveContext';
 // plain connection requests once there's a connection; an accept there
 // connects the two and reveals names, as an accepted Commit does.
 
-export type GoLiveMode = 'event' | 'nearby';
+// Go Live at an event, with people close by (Bluetooth), or with members anywhere.
+export type GoLiveMode = 'event' | 'nearby' | 'anywhere';
 
 export type NearbyInRange = { token: string; card: NearbyCard; lastSeenAt: number };
 

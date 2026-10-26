@@ -27,6 +27,8 @@ export type GoLiveStackParamList = {
   NearbyPeople: undefined;
   NearbyCommit: { memberId: string };
   NearbyRequest: { requestId: string };
+  // Go Live > Anywhere: the people general matching found.
+  AnywhereMatches: undefined;
 };
 
 export type EventsStackParamList = {
