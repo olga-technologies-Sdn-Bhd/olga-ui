@@ -2,7 +2,7 @@
 
 **Nearby** is Go Live without an event. While a member is *available*, Ol-ga phones close by find each other over Bluetooth Low Energy, swap cards (role and what they're looking for, never the name) and send each other Commits. It all works with no internet. Commits made this way are saved on the phone and sent to Ol-ga once there's a connection.
 
-It runs in dev and local builds only for now (`BLE_DISCOVERY_ENABLED` in `bleDiscovery.ts`). The dev panel (`BleDebugPanel`) never shows in a production build.
+It runs in every build, production included. The dev panel (`BleDebugPanel`) never shows in a production build.
 
 ## Protocol
 

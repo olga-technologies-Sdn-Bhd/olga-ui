@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import type { Profile } from '../../api/types';
-import { BLE_DISCOVERY_ENABLED } from '../../bluetooth/bleDiscovery';
 import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -21,7 +20,7 @@ import { NearbyPersonSummary } from '../golive/NearbyPeopleScreen';
 type Props = NativeStackScreenProps<HomeStackParamList, 'HowYouAppear'>;
 
 // The match % differs for every viewer, so the preview shows a neutral mark.
-const PREVIEW_PERCENT = '··%';
+const PREVIEW_PERCENT = 'Â·Â·%';
 
 // DS 14.19: a read-only mirror, not an editable profile. It draws the same
 // card components strangers get (event match card, Nearby card), filled with
@@ -65,26 +64,22 @@ export function HowYouAppearScreen({ navigation }: Props) {
         {profile || failed ? (
           <MatchSummary card={eventCard} percent={PREVIEW_PERCENT} />
         ) : (
-          <Text style={styles.sub}>Loading your card…</Text>
+          <Text style={styles.sub}>Loading your cardâ€¦</Text>
         )}
       </Card>
       <Text style={styles.note}>
         {profile && !profile.headline?.trim()
-          ? "You show as “Attendee” because your introduction doesn't say what you do yet. Add it below so people know who they're meeting."
+          ? "You show as â€œAttendeeâ€ because your introduction doesn't say what you do yet. Add it below so people know who they're meeting."
           : "Their match % and why you're relevant are worked out for each person."}
       </Text>
 
-      {BLE_DISCOVERY_ENABLED && (
-        <>
-          <Text style={styles.sectionTitle}>Nearby</Text>
-          {myCard ? (
-            <Card>
-              <NearbyPersonSummary person={{ card: myCard, score: 0, scoreSource: 'estimate' }} percent={PREVIEW_PERCENT} />
-            </Card>
-          ) : (
-            <Text style={styles.note}>Add what you're looking for, and people nearby will see your card here.</Text>
-          )}
-        </>
+      <Text style={styles.sectionTitle}>Nearby</Text>
+      {myCard ? (
+        <Card>
+          <NearbyPersonSummary person={{ card: myCard, score: 0, scoreSource: 'estimate' }} percent={PREVIEW_PERCENT} />
+        </Card>
+      ) : (
+        <Text style={styles.note}>Add what you're looking for, and people nearby will see your card here.</Text>
       )}
 
       <Text style={styles.sectionTitle}>After you both accept</Text>

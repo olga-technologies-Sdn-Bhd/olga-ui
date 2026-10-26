@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import {
-  BLE_DISCOVERY_ENABLED,
   getBleStatus,
   isBleAvailable,
   requestBlePermissions,
@@ -50,7 +49,7 @@ export function useBluetoothDiscovery(enabled: boolean, onMessage?: (payload: st
     return () => subscription.remove();
   }, []);
 
-  const run = enabled && foreground && BLE_DISCOVERY_ENABLED && isBleAvailable();
+  const run = enabled && foreground && isBleAvailable();
 
   useEffect(() => {
     if (!run) return;

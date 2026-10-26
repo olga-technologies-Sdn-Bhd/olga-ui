@@ -4,7 +4,6 @@ import { ApiError, newIdempotencyKey } from '../api/client';
 import { coreApi } from '../api/core';
 import { nlpApi } from '../api/nlp';
 import {
-  BLE_DISCOVERY_ENABLED,
   readBleCard,
   requestNotificationPermission,
   sendBleMessage,
@@ -205,7 +204,7 @@ export function NearbyProvider({ children }: { children: React.ReactNode }) {
 
   const handleMessage = useRef<(payload: string) => void>(() => {});
   const onMessage = useCallback((payload: string) => handleMessage.current(payload), []);
-  const enabled = BLE_DISCOVERY_ENABLED && loaded && saved.available && myCard !== null;
+  const enabled = loaded && saved.available && myCard !== null;
   const ble = useBluetoothDiscovery(enabled, onMessage);
 
   // Read the card of every Ol-ga phone in range (one connection at a time natively).
