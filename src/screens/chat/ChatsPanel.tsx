@@ -24,6 +24,7 @@ import { fonts, semibold } from '../../theme/typography';
 import { formatChatListTime } from '../../utils/chatTime';
 import { getInitials } from '../../utils/initials';
 import { usePollWhileFocused } from '../../utils/usePollWhileFocused';
+import { attachmentPreview } from '../../chat/attachments';
 
 export const FALLBACK_NAME = 'OL-GA member';
 
@@ -34,7 +35,8 @@ function preview(conversation: Conversation, myId: string | null) {
   if (!last) return 'Say hello 👋';
   if (last.deleted_at) return 'This message was deleted';
   if (last.sender_member_id !== myId && isOffensive(last.body ?? '')) return 'Message hidden';
-  return `${last.sender_member_id === myId ? 'You: ' : ''}${last.body ?? ''}`;
+  const text = last.attachment ? attachmentPreview(last.attachment) : last.body ?? '';
+  return `${last.sender_member_id === myId ? 'You: ' : ''}${text}`;
 }
 
 export function ChatsPanel() {

@@ -14,7 +14,8 @@ import { useAuth } from './AuthContext';
 // `null`: the connection came back, anything may have been missed.
 type Listener = (event: ChatEvent | null) => void;
 
-const KNOWN_EVENTS = new Set(['MessageCreated.v1', 'MessageDeleted.v1', 'ConversationRead.v1']);
+// TypingStarted.v1 comes straight from the API (no worker needed).
+const KNOWN_EVENTS = new Set(['MessageCreated.v1', 'MessageDeleted.v1', 'ConversationRead.v1', 'TypingStarted.v1']);
 const MAX_SEEN = 300;
 
 const ChatRealtimeContext = createContext<{ subscribe: (listener: Listener) => () => void } | null>(null);
@@ -60,6 +61,7 @@ export function ChatRealtimeProvider({ children }: { children: React.ReactNode }
       emit(null);
     };
 
+    // Must not return a value: SignalR would treat it as a reply.
     const onEvent = (event: ChatEvent) => {
       // Unknown types and versions (a future .v2) are skipped, not errors.
       if (!event?.event_id || !KNOWN_EVENTS.has(event.event_type) || !event.data?.conversation_id) return;

@@ -31,6 +31,9 @@ import { useNearby } from '../../context/NearbyContext';
 import { useChatEvents } from '../../context/ChatRealtimeContext';
 import { MAX_NEARBY_BODY, NearbyReach, useOfflineChat } from '../../context/OfflineChatContext';
 import { isOffensive } from '../../chat/moderation';
+import { attachmentError, checkFile, pickPdf, pickPhoto, rememberSent, retryDownloads, uploadAttachment, type LocalFile, type PickResult } from '../../chat/attachments';
+import { askMicrophone, cancelRecording, startRecording, stopPlayback, stopRecording } from '../../chat/voice';
+import { ChatAttachment } from '../../components/ChatAttachment';
 import { FALLBACK_NAME } from './ChatsPanel';
 
 type Props = NativeStackScreenProps<ChatStackParamList, 'Conversation'>;
@@ -39,6 +42,11 @@ const PAGE_SIZE = 100; // server max
 const MAX_BODY = 4000;
 const MAX_REPORT_NOTE = 2000;
 const HOUR_MS = 60 * 60 * 1000;
+// "I'm typing" goes to Core at most this often, and only for real text.
+const TYPING_EVERY_MS = 3000;
+// How long their "typing…" shows when expires_at can't be trusted (clock skew).
+const TYPING_FALLBACK_MS = 6000;
+const NOTE_FOR_MS = 4000;
 
 // The prototype's quick replies (pill label -> message text).
 const QUICK_REPLIES = [
@@ -76,6 +84,11 @@ type Outgoing = {
   retryable: boolean;
   // From the last error, for support; never shown.
   correlationId?: string;
+  // A photo, PDF or voice note (body is then the caption, maybe empty). It's
+  // uploaded first, with its own key; file_asset_id once that worked.
+  file?: { local: LocalFile; uploadKey: string; fileAssetId?: string; progress?: number };
+  // Shown instead of "Not sent" (e.g. "This file is too large").
+  errorText?: string;
 };
 
 // A 500 is retried a few times with the same key, then left to the user.
@@ -90,6 +103,8 @@ type Sheet =
   | { kind: 'reported' }
   | { kind: 'confirmBlock' }
   | { kind: 'mute' }
+  // The composer's paperclip: camera, photos, PDF.
+  | { kind: 'attach' }
   // The header's ⋮: mute, report the member, block.
   | { kind: 'menu' };
 
@@ -159,6 +174,20 @@ export function ConversationScreen({ route, navigation }: Props) {
   const [reportingMember, setReportingMember] = useState(false);
   // Ol-ga couldn't be reached on the last try: send over Bluetooth instead.
   const [networkDown, setNetworkDown] = useState(false);
+  // They're typing (TypingStarted.v1), until the timer runs out.
+  const [theyType, setTheyType] = useState(false);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSent = useRef(0);
+  // A voice note being recorded: milliseconds so far, null when not.
+  const [recordingMs, setRecordingMs] = useState<number | null>(null);
+  const recordingRef = useRef(false);
+  const wantsRecording = useRef(false);
+  // A short note above the composer (a file that can't be sent, mic denied).
+  const [composerNote, setComposerNote] = useState<string | null>(null);
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Uploads in flight, to cancel them.
+  const aborts = useRef(new Map<string, () => void>());
+  const lastProgress = useRef(new Map<string, number>());
   const peerId = route.params.memberId ?? conversationPeer?.memberId ?? conversation?.member_id ?? null;
   const peer = peerId ? chat.peerFor(peerId) : undefined;
 
@@ -252,7 +281,18 @@ export function ConversationScreen({ route, navigation }: Props) {
     useCallback(() => {
       needsFullReload.current = true;
       setActivePeer(peerId);
-      return () => setActivePeer(null);
+      // Attachments still being scanned ("Processing…") are asked again.
+      retryDownloads();
+      return () => {
+        setActivePeer(null);
+        stopTypingRef.current();
+        stopPlayback();
+        if (recordingRef.current) {
+          recordingRef.current = false;
+          setRecordingMs(null);
+          cancelRecording();
+        }
+      };
     }, [setActivePeer, peerId])
   );
   // Nearby noticed Ol-ga answering again: catch up from the last sequence.
@@ -271,6 +311,12 @@ export function ConversationScreen({ route, navigation }: Props) {
   useChatEvents((event) => {
     if (!isFocused) return;
     if (event && event.data.conversation_id !== conversationId) return;
+    if (event?.event_type === 'TypingStarted.v1') {
+      if (event.data.member_id && event.data.member_id !== myId) showTyping(event.data.expires_at);
+      return;
+    }
+    // Their message is here: they've stopped typing.
+    if (event?.event_type === 'MessageCreated.v1' && event.data.sender_member_id !== myId) stopTyping();
     if (!event || event.event_type === 'MessageDeleted.v1') needsFullReload.current = true;
     if (event?.event_type === 'ConversationRead.v1') needsHeader.current = true;
     sync();
@@ -302,6 +348,55 @@ export function ConversationScreen({ route, navigation }: Props) {
       });
   }, [messages, isFocused, myId, conversationId]);
 
+  function stopTyping() {
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+    typingTimer.current = null;
+    setTheyType(false);
+  }
+  const stopTypingRef = useRef(stopTyping);
+  stopTypingRef.current = stopTyping;
+
+  // Each event extends the timer. expires_at is the server's clock; if the
+  // phone's disagrees by much, a short fixed time instead.
+  function showTyping(expiresAt?: string) {
+    let ms = expiresAt ? Date.parse(expiresAt) - Date.now() : NaN;
+    if (!(ms > 0 && ms <= 15000)) ms = TYPING_FALLBACK_MS;
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+    typingTimer.current = setTimeout(stopTyping, ms);
+    setTheyType(true);
+  }
+
+  // A new message from them also ends "typing…" (no realtime event needed).
+  const newestTheirsId = [...(messages ?? [])].reverse().find((m) => m.sender_member_id !== myId)?.message_id;
+  const seenTheirs = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (seenTheirs.current !== undefined && newestTheirsId !== seenTheirs.current) stopTypingRef.current();
+    seenTheirs.current = newestTheirsId;
+  }, [newestTheirsId]);
+
+  useEffect(
+    () => () => {
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      if (noteTimer.current) clearTimeout(noteTimer.current);
+      aborts.current.forEach((abort) => abort());
+    },
+    []
+  );
+
+  function changeDraft(text: string) {
+    setDraft(text);
+    const now = Date.now();
+    if (!text.trim() || !canSendOnline || now - lastTypingSent.current < TYPING_EVERY_MS) return;
+    lastTypingSent.current = now;
+    coreApi.sendTyping(conversationId).catch(() => {});
+  }
+
+  function showNote(note: string) {
+    setComposerNote(note);
+    if (noteTimer.current) clearTimeout(noteTimer.current);
+    noteTimer.current = setTimeout(() => setComposerNote(null), NOTE_FOR_MS);
+  }
+
   const patchOutgoing = (id: string, change: Partial<Outgoing>) =>
     setOutbox((current) => current.map((o) => (o.message_id === id ? { ...o, ...change } : o)));
   const dropOutgoing = (id: string) => setOutbox((current) => current.filter((o) => o.message_id !== id));
@@ -309,16 +404,46 @@ export function ConversationScreen({ route, navigation }: Props) {
   async function deliver(item: Outgoing) {
     if (sending.current.has(item.message_id)) return;
     sending.current.add(item.message_id);
-    patchOutgoing(item.message_id, { status: 'pending' });
+    patchOutgoing(item.message_id, { status: 'pending', errorText: undefined });
     try {
+      let file = item.file;
+      if (file && !file.fileAssetId) {
+        const upload = uploadAttachment(conversationId, file.local, file.uploadKey, (fraction) => {
+          // Re-render on whole percents only.
+          const pct = Math.round(fraction * 100);
+          if (lastProgress.current.get(item.message_id) === pct) return;
+          lastProgress.current.set(item.message_id, pct);
+          setOutbox((current) =>
+            current.map((o) => (o.message_id === item.message_id && o.file ? { ...o, file: { ...o.file, progress: fraction } } : o))
+          );
+        });
+        aborts.current.set(item.message_id, upload.abort);
+        try {
+          const uploaded = await upload.done;
+          rememberSent(uploaded.file_asset_id, file.local);
+          file = { ...file, fileAssetId: uploaded.file_asset_id, progress: 1 };
+          patchOutgoing(item.message_id, { file });
+        } finally {
+          aborts.current.delete(item.message_id);
+          lastProgress.current.delete(item.message_id);
+        }
+      }
       const sent = await coreApi.sendMessage(
         conversationId,
-        {
-          message_id: item.message_id,
-          body: item.body,
-          message_type: 'TEXT',
-          client_sent_at: item.client_sent_at,
-        },
+        file?.fileAssetId
+          ? {
+              message_id: item.message_id,
+              message_type: 'FILE',
+              file_asset_id: file.fileAssetId,
+              ...(item.body ? { body: item.body } : {}),
+              client_sent_at: item.client_sent_at,
+            }
+          : {
+              message_id: item.message_id,
+              body: item.body,
+              message_type: 'TEXT',
+              client_sent_at: item.client_sent_at,
+            },
         { idempotencyKey: item.idempotencyKey }
       );
       // The 201 is authoritative: upsert by message_id.
@@ -328,8 +453,39 @@ export function ConversationScreen({ route, navigation }: Props) {
       const status = e instanceof ApiError ? e.status : 0;
       const code = errorCode(e);
       const correlationId = e instanceof ApiError ? e.correlationId : undefined;
+      if (item.file) {
+        // Cancelled by the member.
+        if (code === 'ABORTED') {
+          dropOutgoing(item.message_id);
+          return;
+        }
+        // Sent before (a retry after a lost answer): fetch it.
+        if (code === 'ATTACHMENT_ALREADY_USED') {
+          dropOutgoing(item.message_id);
+          sync();
+          return;
+        }
+        // The upload expired (24 h) or isn't usable: upload again, new key.
+        // Stays pending, so the next poll sends it.
+        if (code === 'ATTACHMENT_NOT_AVAILABLE' || code === 'ATTACHMENT_NOT_FOUND') {
+          const attempts = item.attempts + 1;
+          patchOutgoing(item.message_id, {
+            attempts,
+            correlationId,
+            status: attempts < MAX_SERVER_ERROR_ATTEMPTS ? 'pending' : 'failed',
+            file: { ...item.file, fileAssetId: undefined, uploadKey: newIdempotencyKey(), progress: undefined },
+          });
+          return;
+        }
+        const refused = attachmentError(e);
+        if (refused) {
+          patchOutgoing(item.message_id, { status: 'failed', correlationId, retryable: false, errorText: refused });
+          return;
+        }
+      }
       // No internet: the same message goes over Bluetooth (and to Ol-ga later).
-      if (status === 0 && peerId && chat.peerFor(peerId)) {
+      // Files can't go over Bluetooth: they wait for Ol-ga instead.
+      if (status === 0 && !item.file && peerId && chat.peerFor(peerId)) {
         setNetworkDown(true);
         dropOutgoing(item.message_id);
         chat.sendNearby(peerId, item.body, {
@@ -398,6 +554,89 @@ export function ConversationScreen({ route, navigation }: Props) {
     };
     setOutbox((current) => [...current, item]);
     deliver(item);
+  }
+
+  // A photo, PDF or voice note; whatever is typed goes with it as the caption.
+  function sendFile(local: LocalFile) {
+    const problem = checkFile(local);
+    if (problem) {
+      showNote(problem);
+      return;
+    }
+    const caption = local.type.startsWith('audio/') ? '' : draft.trim();
+    if (caption) setDraft('');
+    const item: Outgoing = {
+      message_id: newIdempotencyKey(),
+      idempotencyKey: newIdempotencyKey(),
+      body: caption,
+      client_sent_at: new Date().toISOString(),
+      status: 'pending',
+      attempts: 0,
+      retryable: true,
+      file: { local, uploadKey: newIdempotencyKey(), progress: 0 },
+    };
+    setOutbox((current) => [...current, item]);
+    deliver(item);
+  }
+
+  function cancelUpload(item: Outgoing) {
+    const abort = aborts.current.get(item.message_id);
+    if (abort) abort();
+    else dropOutgoing(item.message_id);
+  }
+
+  async function attach(pickFile: () => Promise<PickResult>) {
+    setSheet(null);
+    // Let the sheet slide away before the picker comes up.
+    await new Promise<void>((resolve) => setTimeout(() => resolve(), 300));
+    const result = await pickFile();
+    if (!result) return;
+    if ('error' in result) showNote(result.error);
+    else sendFile(result.file);
+  }
+
+  // Hold the mic: record while held, send on release.
+  async function recordStart() {
+    if (!canSendOnline || recordingRef.current) return;
+    wantsRecording.current = true;
+    const allowed = await askMicrophone();
+    if (!allowed) {
+      showNote('Allow microphone access in Settings to send voice messages.');
+      return;
+    }
+    // Let go while the permission prompt was up.
+    if (!wantsRecording.current) return;
+    recordingRef.current = true;
+    stopPlayback();
+    setRecordingMs(0);
+    try {
+      // A tick can still arrive just after release: ignore it, or the
+      // recording pill comes back.
+      await startRecording(
+        (ms) => {
+          if (recordingRef.current) setRecordingMs(ms);
+        },
+        () => recordEnd(false)
+      );
+    } catch {
+      recordingRef.current = false;
+      setRecordingMs(null);
+      showNote('Couldn’t start recording. Please try again.');
+    }
+  }
+
+  async function recordEnd(cancelled: boolean) {
+    wantsRecording.current = false;
+    if (!recordingRef.current) return;
+    recordingRef.current = false;
+    setRecordingMs(null);
+    if (cancelled) {
+      cancelRecording();
+      return;
+    }
+    const note = await stopRecording().catch(() => null);
+    if (note) sendFile(note);
+    else showNote('Hold to record, release to send.');
   }
 
   function openSheet(next: Sheet) {
@@ -544,6 +783,7 @@ export function ConversationScreen({ route, navigation }: Props) {
             key={m.message_id}
             from={mine ? 'me' : 'them'}
             text={m.body ?? ''}
+            media={m.attachment ? <ChatAttachment mine={mine} messageId={m.message_id} attachment={m.attachment} /> : undefined}
             deleted={deleted}
             hidden={!deleted && hiddenFor(m.message_id, mine ? 'me' : 'them', m.body)}
             onPress={!deleted && hiddenFor(m.message_id, mine ? 'me' : 'them', m.body) ? () => reveal(m.message_id) : undefined}
@@ -602,7 +842,19 @@ export function ConversationScreen({ route, navigation }: Props) {
             from="me"
             text={o.body}
             status={o.status}
+            failedText={o.errorText}
+            media={
+              o.file ? (
+                <ChatAttachment
+                  mine
+                  local={o.file.local}
+                  progress={o.status === 'pending' && !o.file.fileAssetId ? o.file.progress ?? 0 : undefined}
+                  onCancel={() => cancelUpload(o)}
+                />
+              ) : undefined
+            }
             onRetry={o.retryable ? () => deliver({ ...o, attempts: 0 }) : undefined}
+            onLongPress={o.status === 'failed' ? () => dropOutgoing(o.message_id) : undefined}
           />
         ),
       }))
@@ -668,12 +920,14 @@ export function ConversationScreen({ route, navigation }: Props) {
               <Text style={styles.h3} numberOfLines={1}>
                 {conversation || peer ? name : ' '}
               </Text>
-              {conversation?.muted_until && (
+              {theyType ? (
+                <Text style={styles.typing}>typing…</Text>
+              ) : conversation?.muted_until ? (
                 <View style={styles.mutedRow}>
                   <BellOff size={12} color={colors.muted} />
                   <Text style={styles.small}>Muted</Text>
                 </View>
-              )}
+              ) : null}
             </View>
           </View>
         }
@@ -762,20 +1016,26 @@ export function ConversationScreen({ route, navigation }: Props) {
           </View>
         )}
         {/* Quick replies sit right above the input, and step aside while typing. */}
-        {canSend && !draft.trim() && (
+        {canSend && !draft.trim() && recordingMs === null && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.quickReplies}>
             {QUICK_REPLIES.map((q) => (
               <Pill key={q.label} label={q.label} tone="white" onPress={() => setDraft(q.text)} />
             ))}
           </ScrollView>
         )}
+        {composerNote && <Text style={styles.note}>{composerNote}</Text>}
         <ChatComposer
           placeholder={firstName ? `Message ${firstName}…` : 'Message…'}
           value={draft}
-          onChangeText={setDraft}
+          onChangeText={changeDraft}
           onSubmit={send}
           disabled={!canSend}
           maxLength={canSendOnline ? MAX_BODY : MAX_NEARBY_BODY}
+          // Files and voice notes need Ol-ga (never over Bluetooth).
+          onAttach={canSendOnline ? () => openSheet({ kind: 'attach' }) : undefined}
+          onRecordStart={canSendOnline ? recordStart : undefined}
+          onRecordEnd={canSendOnline ? recordEnd : undefined}
+          recordingMs={recordingMs}
         />
       </View>
 
@@ -872,6 +1132,13 @@ export function ConversationScreen({ route, navigation }: Props) {
             <SheetOption label={`Block ${firstName ?? 'this member'}`} danger onPress={() => openSheet({ kind: 'confirmBlock' })} />
           </SheetGroup>
         )}
+        {sheet?.kind === 'attach' && (
+          <SheetGroup>
+            <SheetOption label="Take a photo" onPress={() => attach(() => pickPhoto('camera'))} />
+            <SheetOption label="Choose a photo" onPress={() => attach(() => pickPhoto('library'))} />
+            <SheetOption label="PDF document" onPress={() => attach(pickPdf)} />
+          </SheetGroup>
+        )}
         {sheet?.kind === 'mute' && (
           <SheetGroup>
             {MUTE_OPTIONS.map((o) => (
@@ -910,6 +1177,8 @@ function sheetTitle(sheet: Sheet | null, name: string) {
       return `Block ${name}?`;
     case 'mute':
       return 'Mute conversation';
+    case 'attach':
+      return 'Send';
     case 'menu':
       return name;
     default:
@@ -929,6 +1198,8 @@ function sheetSubtitle(sheet: Sheet | null, name: string) {
       return "They won't be able to message you, and they won't be told you blocked them.";
     case 'mute':
       return "You won't be notified about new messages while muted.";
+    case 'attach':
+      return 'Photos and PDFs up to 10 MB. Anything typed goes with it as a caption.';
     default:
       return undefined;
   }
@@ -986,6 +1257,7 @@ const makeStyles = (colors: ThemeColors) =>
     },
     sub: { fontSize: 14, lineHeight: 20, color: colors.muted, marginTop: 6 },
     small: { fontSize: 12, color: colors.muted },
+    typing: { fontSize: 12, color: colors.brand, marginTop: 2 },
     center: { textAlign: 'center', marginTop: 18 },
     error: { fontSize: 14, color: colors.danger },
     loading: { marginTop: 24 },

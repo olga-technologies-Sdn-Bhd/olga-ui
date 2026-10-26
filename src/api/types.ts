@@ -465,6 +465,16 @@ export type ChatMessage = {
   moderation_status: string;
   created_at: string;
   deleted_at?: string; // soft delete: render a placeholder
+  // FILE messages: the photo, PDF or voice note (null once deleted).
+  attachment?: ChatAttachment | null;
+};
+
+// media_type comes from the file's bytes on the server, not its name.
+export type ChatAttachment = {
+  file_asset_id: string;
+  media_type: string;
+  size_bytes: number;
+  file_name: string;
 };
 
 export type Conversation = {
@@ -511,7 +521,7 @@ export type Device = {
 // envelope. At least once, in any order; only ids and sequences, never a body.
 export type ChatEvent = {
   event_id: string;
-  event_type: string; // MessageCreated.v1, MessageDeleted.v1, ConversationRead.v1, more later
+  event_type: string; // MessageCreated.v1, MessageDeleted.v1, ConversationRead.v1, TypingStarted.v1, more later
   aggregate_id: string;
   occurred_at: string;
   data: {
@@ -522,6 +532,9 @@ export type ChatEvent = {
     reader_member_id?: string;
     server_sequence?: number;
     last_read_server_sequence?: number;
+    // TypingStarted.v1: who is typing, and until when.
+    member_id?: string;
+    expires_at?: string;
   };
 };
 
@@ -532,12 +545,20 @@ export type ConversationPage = {
   has_more: boolean;
 };
 
-export type SendMessageRequest = {
-  message_id: string; // client-generated; reused on retry
-  body: string; // 1-4000 chars, not blank
-  message_type: 'TEXT';
-  client_sent_at: string;
-};
+export type SendMessageRequest =
+  | {
+      message_id: string; // client-generated; reused on retry
+      body: string; // 1-4000 chars, not blank
+      message_type: 'TEXT';
+      client_sent_at: string;
+    }
+  | {
+      message_id: string;
+      message_type: 'FILE';
+      file_asset_id: string; // from POST .../attachments, sent once
+      body?: string; // optional caption
+      client_sent_at: string;
+    };
 
 export type ReportCategory = 'SPAM' | 'HARASSMENT' | 'INAPPROPRIATE' | 'SCAM' | 'OTHER';
 
