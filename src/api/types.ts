@@ -394,8 +394,9 @@ export type AcceptCommitResponse = {
 };
 
 // POST /v1/connection-requests with no context_id: a plain connection request
-// (Nearby). Accepting it creates the connection and conversation, as a Commit does.
-export type ConnectionRequestCreate = { recipient_member_id: string; note?: string; expires_in_days?: number };
+// (Nearby, general matching). Accepting it creates the connection and
+// conversation, as a Commit does. match_result_id: the general match it came from.
+export type ConnectionRequestCreate = { recipient_member_id: string; note?: string; expires_in_days?: number; match_result_id?: number };
 export type ConnectionRequestResponse = {
   request_id: string;
   sender_member_id: string;

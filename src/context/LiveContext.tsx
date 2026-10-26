@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import {  } from 'react-native';
 import { ApiError } from '../api/client';
 import { coreApi } from '../api/core';
-import { findMatches, MatchCard, MatchingError } from '../api/matching';
+import { findMatches, GENERAL_CONTEXT, GENERAL_DURATIONS, loadGeneralIntents, MatchCard, MatchingError, stopGeneralSharing } from '../api/matching';
 import type { ConsentDecision, LiveModeSession } from '../api/types';
 import {
   LIVE_MODE_DURATION_MINUTES,
@@ -69,8 +69,9 @@ type LiveState = {
   // The member's current decision for the active policy (GET
   // /v1/consent-policies/{purpose} current_decision). GRANTED is cached.
   checkConsent: (purpose: ConsentPurpose) => Promise<ConsentStatus>;
-  // Records a decision for the active policy version. Throws ApiError.
-  recordConsentDecision: (purpose: ConsentPurpose, decision: Exclude<ConsentDecision, 'WITHDRAWN'>) => Promise<void>;
+  // Records a decision for the active policy version. screen: where it was
+  // asked, kept as evidence (default: Go Live). Throws ApiError.
+  recordConsentDecision: (purpose: ConsentPurpose, decision: Exclude<ConsentDecision, 'WITHDRAWN'>, screen?: string) => Promise<void>;
   stopLive: () => Promise<void>;
   // GOL-02: adds minutes to the live session (same matches). Resolves with
   // 'EXTENDED', 'AT_EVENT_END' (already runs to the event's end, so nothing
@@ -87,6 +88,20 @@ type LiveState = {
   // / ApiError; keeps the previous matches on failure. Pass `next` with values
   // set in the same tick (state isn't updated until the next render).
   runMatching: (next?: { intentText?: string; minMatch?: number }) => Promise<MatchCard[]>;
+  // Go Live > Anywhere (general matching): no event or session. Shares the
+  // same intentText as the general WANT, and the profile offer, until
+  // generalUntil; then finds members anywhere. Event filters don't apply.
+  generalMatches: MatchCard[] | null;
+  // Sharing until (null: not sharing). From the server: refreshGeneral().
+  generalUntil: Date | null;
+  // How long the next share lasts (GENERAL_DURATIONS), chosen before sharing.
+  generalDurationMs: number;
+  setGeneralDurationMs: (ms: number) => void;
+  // Starts sharing (or searches again while sharing). Throws as runMatching.
+  runGeneralMatching: () => Promise<MatchCard[]>;
+  stopGeneral: () => Promise<void>;
+  // Reads whether this member is sharing, and fills intentText when empty.
+  refreshGeneral: () => Promise<void>;
   // Board 09: Pass is silent and only ever stored on this phone.
   passedIds: string[];
   pass: (memberId: string) => void;
@@ -143,6 +158,11 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const [intentText, setIntentText] = useState('');
   const [intentEditSession, setIntentEditSession] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchCard[] | null>(null);
+  const [generalMatches, setGeneralMatches] = useState<MatchCard[] | null>(null);
+  const [generalUntil, setGeneralUntil] = useState<Date | null>(null);
+  const [generalDurationMs, setGeneralDurationMs] = useState(GENERAL_DURATIONS[1].ms);
+  const intentRef = useRef(intentText);
+  intentRef.current = intentText;
   const [passedIds, setPassedIds] = useState<string[]>([]);
   const [committedIds, setCommittedIds] = useState<string[]>([]);
   // Latest known consent decisions for this member (from GET or our POST).
@@ -173,6 +193,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     applySession(null);
     setMatches(null);
+    setGeneralMatches(null);
+    setGeneralUntil(null);
     decisions.current = {};
   }, [memberId, applySession]);
 
@@ -297,7 +319,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const recordConsentDecision = useCallback(
-    async (purpose: ConsentPurpose, decision: Exclude<ConsentDecision, 'WITHDRAWN'>) => {
+    async (purpose: ConsentPurpose, decision: Exclude<ConsentDecision, 'WITHDRAWN'>, screen?: string) => {
       try {
         // The server owns the policy version; never hard-code it. The
         // wording is the app's (Core stores only its content hash).
@@ -307,7 +329,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
           policy_version: policy.version,
           decision,
           capture_channel: 'MOBILE',
-          evidence: { screen: purpose === 'LIVE_MODE' ? 'go_live_consent' : 'go_live_matching_consent' },
+          evidence: { screen: screen ?? (purpose === 'LIVE_MODE' ? 'go_live_consent' : 'go_live_matching_consent') },
         });
         decisions.current[purpose] = decision;
       } catch (e) {
@@ -359,8 +381,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     if (decisions.current.MATCHING === 'DENIED') throw new MatchingError('CONSENT_DENIED');
     try {
       const found = await findMatches({
-        eventId: activeEvent.eventId,
-        eventEndsAt: activeEvent.endsAt,
+        contextId: activeEvent.eventId,
+        expiresAt: activeEvent.endsAt,
         wantText: next?.intentText ?? intentText,
         offerText: await profileOffer(),
         minMatchPercent: next?.minMatch ?? filters.minMatch,
@@ -372,6 +394,49 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       throw e;
     }
   }, [activeEvent, intentText, filters.minMatch]);
+
+  const runGeneralMatching = useCallback(async () => {
+    if (decisions.current.MATCHING === 'DENIED') throw new MatchingError('CONSENT_DENIED');
+    // Searching again while sharing keeps the end time; a new share starts now.
+    const until = generalUntil && generalUntil.getTime() > Date.now() ? generalUntil : new Date(Date.now() + generalDurationMs);
+    try {
+      const found = await findMatches({
+        contextId: GENERAL_CONTEXT,
+        expiresAt: until.toISOString(),
+        wantText: intentText,
+        offerText: await profileOffer(),
+        keepUnchanged: true,
+      });
+      setGeneralUntil(until);
+      setGeneralMatches(found);
+      return found;
+    } catch (e) {
+      logApiError('General matching', e);
+      throw e;
+    }
+  }, [intentText, generalUntil, generalDurationMs]);
+
+  const stopGeneral = useCallback(async () => {
+    try {
+      await stopGeneralSharing();
+    } catch (e) {
+      logApiError('Stop sharing', e);
+      throw e;
+    }
+    setGeneralUntil(null);
+    setGeneralMatches(null);
+  }, []);
+
+  const refreshGeneral = useCallback(async () => {
+    try {
+      const { want, until } = await loadGeneralIntents();
+      if (want && !intentRef.current.trim()) setIntentText(want);
+      setGeneralUntil(until);
+      if (!until) setGeneralMatches(null);
+    } catch (e) {
+      logApiError('General sharing', e);
+    }
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -388,6 +453,13 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       setIntentText,
       matches,
       runMatching,
+      generalMatches,
+      generalUntil,
+      generalDurationMs,
+      setGeneralDurationMs,
+      runGeneralMatching,
+      stopGeneral,
+      refreshGeneral,
       passedIds,
       pass: (id: string) => setPassedIds((current) => (current.includes(id) ? current : [...current, id])),
       committedIds,
@@ -401,7 +473,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     }),
     // activeUntil is derived from session; listing session keeps it stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeEvent, isLive, session, goLive, checkConsent, recordConsentDecision, stopLive, extendLive, intentText, matches, runMatching, filters, setFilters, intentEditSession, passedIds, committedIds]
+    [activeEvent, isLive, session, goLive, checkConsent, recordConsentDecision, stopLive, extendLive, intentText, matches, runMatching, generalMatches, generalUntil, generalDurationMs, runGeneralMatching, stopGeneral, refreshGeneral, filters, setFilters, intentEditSession, passedIds, committedIds]
   );
 
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;

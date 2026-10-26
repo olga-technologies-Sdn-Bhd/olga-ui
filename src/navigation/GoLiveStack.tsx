@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AnywhereMatchesScreen } from '../screens/golive/AnywhereMatchesScreen';
 import { CommitScreen } from '../screens/golive/CommitScreen';
 import { EmptyRoomScreen } from '../screens/golive/EmptyRoomScreen';
 import { FiltersScreen } from '../screens/golive/FiltersScreen';
@@ -23,6 +24,7 @@ export function GoLiveStack() {
       <Stack.Screen name="NearbyPeople" component={NearbyPeopleScreen} />
       <Stack.Screen name="NearbyCommit" component={NearbyCommitScreen} />
       <Stack.Screen name="NearbyRequest" component={NearbyRequestScreen} />
+      <Stack.Screen name="AnywhereMatches" component={AnywhereMatchesScreen} />
     </Stack.Navigator>
   );
 }

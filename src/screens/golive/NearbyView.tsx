@@ -1,10 +1,11 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Bluetooth, ChevronRight, Info, Search, WifiOff } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BleDebugPanel } from '../../components/BleDebugPanel';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { FilterSummary } from '../../components/FilterSummary';
+import { GoLiveModeSwitch, HEADER_ABOVE_WITH_SWITCH } from '../../components/GoLiveModeSwitch';
 import { AVATAR_INK, GoLiveRadar, pastelFor, RadarPerson, RadarPhase, useCountUp } from '../../components/GoLiveRadar';
 import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
@@ -25,13 +26,6 @@ const NEARBY_CONSENT = {
 
 const VISIBLE_LINE = "Your role and what you're looking for. Never your name.";
 
-// The mode switch sits between the header and the radar; the radar flies the
-// wordmark up to the header row, so it needs to know (its default, 27, is for
-// the header alone). Header half-height 15 + gap 12 + switch 34 + gap 12.
-const SWITCH_HEIGHT = 34;
-const SWITCH_OPTION_W = 104;
-export const HEADER_ABOVE_WITH_SWITCH = 15 + 12 + SWITCH_HEIGHT + 12;
-
 // The person's initials on their pastel, as on the radar.
 export function NearbyAvatar({ card, size = 40 }: { card: NearbyCard; size?: number }) {
   return (
@@ -46,60 +40,14 @@ const avatarStyles = StyleSheet.create({
   initials: { fontFamily: fonts.bodyBold, fontWeight: semibold, color: AVATAR_INK },
 });
 
-// "This event | Nearby", when the member has an event to go live in.
-export function GoLiveModeSwitch({
-  mode,
-  onChange,
-  disabled,
-  eventOffline,
-}: {
-  mode: GoLiveMode;
-  onChange: (mode: GoLiveMode) => void;
-  disabled?: boolean;
-  // No internet: "This event" needs Ol-ga, so it's shown faded (still tappable, to explain why).
-  eventOffline?: boolean;
-}) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  // The white pill glides to the chosen side and stretches in flight (native driver).
-  const x = useRef(new Animated.Value(mode === 'nearby' ? SWITCH_OPTION_W : 0)).current;
-  const stretch = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(x, { toValue: mode === 'nearby' ? SWITCH_OPTION_W : 0, damping: 18, stiffness: 190, mass: 0.9, useNativeDriver: true }),
-      Animated.sequence([
-        Animated.timing(stretch, { toValue: 1.18, duration: 120, useNativeDriver: true }),
-        Animated.spring(stretch, { toValue: 1, damping: 11, stiffness: 170, useNativeDriver: true }),
-      ]),
-    ]).start();
-  }, [mode, x, stretch]);
-  const option = (value: GoLiveMode, label: string) => (
-    <Pressable
-      onPress={() => !disabled && onChange(value)}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: mode === value, disabled }}
-      style={styles.switchOption}
-    >
-      <Text style={[styles.switchText, mode === value && styles.switchTextOn, value === 'event' && eventOffline && styles.switchTextOff]}>{label}</Text>
-    </Pressable>
-  );
-  return (
-    <View style={[styles.switch, disabled && styles.dimmed]}>
-      <Animated.View style={[styles.switchPill, { transform: [{ translateX: x }, { scaleX: stretch }] }]} />
-      {option('event', 'This event')}
-      {option('nearby', 'Nearby')}
-    </View>
-  );
-}
-
 type Props = {
   navigation: NativeStackNavigationProp<GoLiveStackParamList, 'GoLive'>;
-  // Shown when the member also has an event room.
-  onSwitchToEvent?: () => void;
+  // Event or Anywhere picked on the mode switch.
+  onSwitchMode: (mode: GoLiveMode) => void;
 };
 
 // Go Live without an event: be found by, and find, Ol-ga members close by.
-export function NearbyView({ navigation, onSwitchToEvent }: Props) {
+export function NearbyView({ navigation, onSwitchMode }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { intentText, filters } = useLive();
@@ -112,17 +60,17 @@ export function NearbyView({ navigation, onSwitchToEvent }: Props) {
   // In the app's own dialog style (not the system alert).
   const [dialog, setDialog] = useState<'intent' | 'consent' | null>(null);
 
-  // "This event" needs internet: offline, stay on Nearby and say why (briefly).
+  // Event and Anywhere need internet: offline, stay on Nearby and say why (briefly).
   const [offlineNote, setOfflineNote] = useState(false);
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tryEvent = () => {
+  const trySwitch = (next: GoLiveMode) => {
     if (online === false) {
       setOfflineNote(true);
       if (noteTimer.current) clearTimeout(noteTimer.current);
       noteTimer.current = setTimeout(() => setOfflineNote(false), 4000);
       return;
     }
-    onSwitchToEvent?.();
+    onSwitchMode(next);
   };
   useEffect(() => () => {
     if (noteTimer.current) clearTimeout(noteTimer.current);
@@ -197,13 +145,11 @@ export function NearbyView({ navigation, onSwitchToEvent }: Props) {
         )}
       </View>
 
-      {onSwitchToEvent && (
-        <GoLiveModeSwitch mode="nearby" onChange={(m) => m === 'event' && tryEvent()} disabled={available} eventOffline={online === false} />
-      )}
+      <GoLiveModeSwitch mode="nearby" onChange={trySwitch} disabled={available} offline={online === false} />
       {offlineNote && (
         <View style={styles.offlineNote} accessibilityLiveRegion="polite">
           <WifiOff size={14} color={colors.muted} strokeWidth={2} />
-          <Text style={styles.offlineNoteText}>“This event” needs internet. Nearby works without it.</Text>
+          <Text style={styles.offlineNoteText}>Event and Anywhere need internet. Nearby works without it.</Text>
         </View>
       )}
 
@@ -212,7 +158,7 @@ export function NearbyView({ navigation, onSwitchToEvent }: Props) {
         people={radarPeople}
         onHoldComplete={onHoldComplete}
         onOpenMatches={openPeople}
-        headerAbove={onSwitchToEvent ? HEADER_ABOVE_WITH_SWITCH : undefined}
+        headerAbove={HEADER_ABOVE_WITH_SWITCH}
       />
 
       {phase === 'idle' && (
@@ -442,11 +388,4 @@ const makeStyles = (colors: ThemeColors) =>
     stacked: { borderRadius: 21, borderWidth: 2, borderColor: colors.surface },
     stackedNext: { marginLeft: -10 },
     visible: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 4, paddingVertical: 4 },
-    switch: { flexDirection: 'row', alignSelf: 'center', height: SWITCH_HEIGHT, backgroundColor: colors.surface2, borderRadius: 999, padding: 3 },
-    // Equal halves, so the pill can slide between them.
-    switchOption: { width: SWITCH_OPTION_W, justifyContent: 'center', alignItems: 'center', borderRadius: 999 },
-    switchPill: { position: 'absolute', top: 3, bottom: 3, left: 3, width: SWITCH_OPTION_W, borderRadius: 999, backgroundColor: colors.surface },
-    switchText: { fontSize: 12, fontWeight: semibold, color: colors.muted },
-    switchTextOff: { opacity: 0.45 },
-    switchTextOn: { color: colors.text },
   });
