@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
-import { Ban, BriefcaseBusiness, Camera, ChevronRight, Eye, Hash, LogOut, LucideIcon, Mail, Moon, Phone, Search, Server } from 'lucide-react-native';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ban, BriefcaseBusiness, Camera, ChevronRight, Eye, FileText, Hash, LogOut, LucideIcon, Mail, Moon, Phone, Search, Server, ShieldCheck } from 'lucide-react-native';
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
 import { BackHeader } from '../../components/BackHeader';
@@ -10,7 +10,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Screen } from '../../components/Screen';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
-import { APP_ENV, TEAM_TOOLS } from '../../config/env';
+import { APP_ENV, PRIVACY_URL, TEAM_TOOLS, TERMS_URL } from '../../config/env';
 import { useAuth } from '../../context/AuthContext';
 import { useLive } from '../../context/LiveContext';
 import { clearPictureError, PictureSource, pickMyPicture, removeMyPicture, useMyPicture } from '../../profile/myPicture';
@@ -146,7 +146,7 @@ export function ProfileScreen({ navigation }: Props) {
           <RowIcon icon={BriefcaseBusiness} styles={styles} colors={colors} />
           <View style={styles.rowText}>
             <Text style={styles.label}>Your work and About you</Text>
-            <Text style={styles.sub}>What relevant people see first</Text>
+            <Text style={styles.rowSub}>What relevant people see first</Text>
           </View>
           <ChevronRight size={18} color={colors.muted} />
         </Pressable>
@@ -159,7 +159,7 @@ export function ProfileScreen({ navigation }: Props) {
           <RowIcon icon={Eye} styles={styles} colors={colors} />
           <View style={styles.rowText}>
             <Text style={styles.label}>How you appear</Text>
-            <Text style={styles.sub}>What people see before you both accept</Text>
+            <Text style={styles.rowSub}>What people see before you both accept</Text>
           </View>
           <ChevronRight size={18} color={colors.muted} />
         </Pressable>
@@ -173,7 +173,7 @@ export function ProfileScreen({ navigation }: Props) {
           <RowIcon icon={Search} styles={styles} colors={colors} />
           <View style={styles.rowText}>
             <Text style={styles.label}>What you're looking for</Text>
-            <Text style={styles.sub} numberOfLines={2}>
+            <Text style={styles.rowSub} numberOfLines={2}>
               {intentText.trim() || 'Add what you’re looking for, so I can find relevant people'}
             </Text>
           </View>
@@ -208,10 +208,34 @@ export function ProfileScreen({ navigation }: Props) {
           <RowIcon icon={Ban} styles={styles} colors={colors} />
           <View style={styles.rowText}>
             <Text style={styles.label}>Blocked members</Text>
-            <Text style={styles.sub}>See who you blocked, or unblock them</Text>
+            <Text style={styles.rowSub}>See who you blocked, or unblock them</Text>
           </View>
           <ChevronRight size={18} color={colors.muted} />
         </Pressable>
+      </Card>
+
+      <Text style={styles.sectionTitle}>Privacy</Text>
+      <Card style={styles.list}>
+        {[
+          { icon: ShieldCheck, label: 'Privacy notice', sub: 'What Ol-ga collects and why', url: PRIVACY_URL },
+          { icon: FileText, label: 'Terms of use', sub: 'The rules for using Ol-ga', url: TERMS_URL },
+        ].map((link, i) => (
+          <View key={link.url}>
+            {i > 0 && <View style={styles.divider} />}
+            <Pressable
+              onPress={() => Linking.openURL(link.url)}
+              accessibilityRole="link"
+              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            >
+              <RowIcon icon={link.icon} styles={styles} colors={colors} />
+              <View style={styles.rowText}>
+                <Text style={styles.label}>{link.label}</Text>
+                <Text style={styles.rowSub}>{link.sub}</Text>
+              </View>
+              <ChevronRight size={18} color={colors.muted} />
+            </Pressable>
+          </View>
+        ))}
       </Card>
 
       <Text style={styles.sectionTitle}>Appearance</Text>
@@ -219,7 +243,7 @@ export function ProfileScreen({ navigation }: Props) {
         <RowIcon icon={Moon} styles={styles} colors={colors} />
         <View style={styles.rowText}>
           <Text style={styles.label}>Dark mode</Text>
-          <Text style={styles.sub}>{scheme === 'dark' ? 'On' : 'Off'} — applies across the app</Text>
+          <Text style={styles.rowSub}>{scheme === 'dark' ? 'On' : 'Off'} — applies across the app</Text>
         </View>
         <ToggleSwitch on={scheme === 'dark'} onToggle={() => setScheme(scheme === 'dark' ? 'light' : 'dark')} />
       </Card>
@@ -294,6 +318,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   list: { paddingVertical: 4 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 10 },
   rowText: { flex: 1 },
+  rowSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
   rowIcon: { width: 22, alignItems: 'center' },
   pressed: { opacity: 0.7 },
   label: { fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text },

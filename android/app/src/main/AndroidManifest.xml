@@ -26,6 +26,11 @@
     <!-- Voice messages in chat. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Added by react-native-blob-util, not needed: chat files are saved in
+         the app's own cache, and nothing goes to shared storage. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" tools:node="remove" />
     <queries>
         <intent>
             <action android:name="android.media.action.IMAGE_CAPTURE" />

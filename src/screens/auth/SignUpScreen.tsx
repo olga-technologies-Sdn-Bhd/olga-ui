@@ -1,6 +1,6 @@
 import { CircleAlert, MailX, Phone, UserRound } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 import { ChatBubble } from '../../components/ChatBubble';
 import { ChatComposer } from '../../components/ChatComposer';
 import { OtpEntry } from '../../components/OtpEntry';
@@ -8,6 +8,7 @@ import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { SocialSignInButton } from '../../components/SocialSignInButton';
 import { warmUpApis } from '../../api/warmup';
+import { PRIVACY_URL, TERMS_URL } from '../../config/env';
 import { AccountDeletionPendingError, MemberRecoveryUnavailableError } from '../../auth/memberSession';
 import { isExpiredSession, isInvalidCode, NativeAuthError } from '../../auth/nativeAuthClient';
 import { EntraProvider, isUserCancelledLogin } from '../../auth/useEntraLogin';
@@ -246,6 +247,18 @@ export function SignUpScreen() {
           </View>
           <SocialSignInButton provider="google" onPress={() => handleProvider('google')} />
           <SocialSignInButton provider="apple" onPress={() => handleProvider('apple')} />
+          {/* Accepted before any account exists, whichever way they sign in. */}
+          <Text style={styles.legal}>
+            By continuing, you agree to Ol-ga's{' '}
+            <Text style={styles.legalLink} onPress={() => Linking.openURL(TERMS_URL)} accessibilityRole="link">
+              Terms of use
+            </Text>{' '}
+            and{' '}
+            <Text style={styles.legalLink} onPress={() => Linking.openURL(PRIVACY_URL)} accessibilityRole="link">
+              Privacy notice
+            </Text>
+            .
+          </Text>
         </>
       )}
       {step === 'verifying' && <Text style={styles.sub}>Signing you in…</Text>}
@@ -285,4 +298,6 @@ const makeStyles = (colors: ThemeColors) =>
     dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
     dividerLine: { flex: 1, height: 1, backgroundColor: colors.line },
     dividerText: { fontSize: 12, color: colors.muted },
+    legal: { fontSize: 12, lineHeight: 18, color: colors.muted, textAlign: 'center', marginTop: 4 },
+    legalLink: { color: colors.text, fontWeight: semibold, textDecorationLine: 'underline' },
   });
