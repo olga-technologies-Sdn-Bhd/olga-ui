@@ -3,7 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Bluetooth, ChevronRight, Search, Sparkles, WifiOff } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { GENERAL_DURATIONS, MatchCard, MatchingError, MatchingFailure } from '../../api/matching';
 import { BleDebugPanel } from '../../components/BleDebugPanel';
@@ -46,7 +46,12 @@ const CONSENT = {
 // disclosure). Shown once; "Not now" still goes live, just not close by.
 const NEARBY_CONSENT = {
   title: 'Also find people close by?',
-  body: "Ol-ga members a few metres away see your role and what you're looking for over Bluetooth, even offline. Never your name. Only while Ol-ga is open.",
+  body:
+    "Ol-ga members a few metres away see your role and what you're looking for over Bluetooth, even offline. Never your name. Only while Ol-ga is open." +
+    // Android 11 and older only allow Bluetooth scans with Location on.
+    (Platform.OS === 'android' && Number(Platform.Version) < 31
+      ? ' This Android version asks for Location to use Bluetooth: Ol-ga never reads or stores where you are.'
+      : ''),
 };
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

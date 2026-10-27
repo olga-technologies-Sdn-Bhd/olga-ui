@@ -16,6 +16,11 @@ export const APP_ENV: AppEnv = environment.name;
 // environment added later hides them too.
 export const TEAM_TOOLS = APP_ENV === 'dev' || APP_ENV === 'local';
 
+// Ol-ga's public legal pages (Google Play wants them reachable in the app).
+// The same in every environment.
+export const PRIVACY_URL = 'https://www.ol-ga.com/privacy/';
+export const TERMS_URL = 'https://www.ol-ga.com/terms/';
+
 // Fail closed: a build with a missing or malformed value must not start, and
 // must never fall back to another environment's value.
 function requireUrl(name: string, value: string) {
