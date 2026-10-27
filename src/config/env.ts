@@ -11,6 +11,11 @@ import type { AppEnv } from './environments/types';
 export type { AppEnv };
 export const APP_ENV: AppEnv = environment.name;
 
+// The team's own tools (the Bluetooth panel, the Environment row, the logo's
+// long-press): dev and local builds only. Listed, not "not prod", so any
+// environment added later hides them too.
+export const TEAM_TOOLS = APP_ENV === 'dev' || APP_ENV === 'local';
+
 // Fail closed: a build with a missing or malformed value must not start, and
 // must never fall back to another environment's value.
 function requireUrl(name: string, value: string) {

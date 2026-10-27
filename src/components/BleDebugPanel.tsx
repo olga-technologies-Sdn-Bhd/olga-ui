@@ -1,7 +1,7 @@
 import { RotateCcw } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { APP_ENV } from '../config/env';
+import { TEAM_TOOLS } from '../config/env';
 import { useOfflineChat } from '../context/OfflineChatContext';
 import { useNearby } from '../context/NearbyContext';
 import { ThemeColors } from '../theme/colors';
@@ -13,7 +13,7 @@ import { showDialog } from './DialogHost';
 // more phones side by side. Never in a production build, whether or not
 // Nearby itself is switched on there.
 export function BleDebugPanel() {
-  if (APP_ENV === 'prod') return null;
+  if (!TEAM_TOOLS) return null;
   return <Panel />;
 }
 

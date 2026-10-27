@@ -3,7 +3,7 @@ import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { consumeOpenedNotification, subscribeNotificationOpened } from '../bluetooth/bleDiscovery';
 import { useNearby } from '../context/NearbyContext';
 import { navigationRef } from '../navigation/navigationRef';
-import { NearbyAvatar } from '../screens/golive/NearbyView';
+import { NearbyAvatar } from './NearbyAvatar';
 import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { fonts, semibold } from '../theme/typography';

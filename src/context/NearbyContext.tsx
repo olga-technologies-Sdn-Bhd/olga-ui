@@ -28,15 +28,16 @@ import { useLive } from './LiveContext';
 // plain connection requests once there's a connection; an accept there
 // connects the two and reveals names, as an accepted Commit does.
 
-// Go Live at an event, with people close by (Bluetooth), or with members anywhere.
-export type GoLiveMode = 'event' | 'nearby' | 'anywhere';
+// Go Live at an event, or everywhere: members anywhere and, over Bluetooth,
+// people close by.
+export type GoLiveMode = 'event' | 'anywhere';
 
 export type NearbyInRange = { token: string; card: NearbyCard; lastSeenAt: number };
 
 export type AvailableResult = 'OK' | 'NEED_INTENT' | 'NEED_CONSENT';
 
 type NearbyState = {
-  // Go Live shows this event's room or Nearby; null lets the screen decide.
+  // Go Live shows this event's room or Everywhere; null lets the screen decide.
   mode: GoLiveMode | null;
   setMode: (mode: GoLiveMode) => void;
   available: boolean;
@@ -534,8 +535,8 @@ export function NearbyProvider({ children }: { children: React.ReactNode }) {
       if (!savedRef.current.consented) return 'NEED_CONSENT';
       await requestNotificationPermission().catch(() => false);
       update((s) => ({ ...s, available: true }));
-      // Going invisible later keeps the member in Nearby, not their event.
-      setMode('nearby');
+      // Going invisible later keeps the member in Everywhere, not their event.
+      setMode('anywhere');
       refreshProfile();
       return 'OK';
     },
