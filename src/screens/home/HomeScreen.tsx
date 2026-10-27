@@ -12,7 +12,7 @@ import { Avatar } from '../../components/Avatar';
 import { CapitalOrb } from '../../components/CapitalOrb';
 import { ComingSoonModal } from '../../components/ComingSoonModal';
 import { GoLiveMark } from '../../components/GoLiveMark';
-import { APP_ENV } from '../../config/env';
+import { TEAM_TOOLS } from '../../config/env';
 import { FLOATING_TAB_SPACE, usePullToRefresh, useTopInset } from '../../components/Screen';
 import { SlidingUnderline } from '../../components/SlidingUnderline';
 import { useAuth } from '../../context/AuthContext';
@@ -629,7 +629,7 @@ export function HomeScreen({ navigation }: Props) {
 
         <View style={[styles.header, { height: headerHeight, paddingTop: topInset }]} pointerEvents="box-none">
           <Pressable
-            disabled={APP_ENV === 'prod'}
+            disabled={!TEAM_TOOLS}
             onLongPress={() => setTryPeriod(PERIODS[(PERIODS.indexOf(period) + 1) % PERIODS.length])}
             accessibilityElementsHidden
           >

@@ -13,7 +13,7 @@ import { GoLiveStackParamList } from '../../navigation/types';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
-import { NearbyAvatar } from './NearbyView';
+import { NearbyAvatar } from '../../components/NearbyAvatar';
 
 type Props = NativeStackScreenProps<GoLiveStackParamList, 'NearbyPeople'>;
 

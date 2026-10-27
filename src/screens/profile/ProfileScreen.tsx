@@ -10,7 +10,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Screen } from '../../components/Screen';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
-import { APP_ENV } from '../../config/env';
+import { APP_ENV, TEAM_TOOLS } from '../../config/env';
 import { useAuth } from '../../context/AuthContext';
 import { useLive } from '../../context/LiveContext';
 import { clearPictureError, PictureSource, pickMyPicture, removeMyPicture, useMyPicture } from '../../profile/myPicture';
@@ -190,7 +190,7 @@ export function ProfileScreen({ navigation }: Props) {
         <Row icon={Hash} label="Member ID" value={memberId} styles={styles} colors={colors} small />
         {/* Which backend this build talks to. For the team only: production
             builds never show it. */}
-        {APP_ENV !== 'prod' && (
+        {TEAM_TOOLS && (
           <>
             <View style={styles.divider} />
             <Row icon={Server} label="Environment" value={APP_ENV} styles={styles} colors={colors} small />

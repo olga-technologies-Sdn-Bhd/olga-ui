@@ -26,7 +26,6 @@ import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
 import { topMatches } from './LiveMatchesScreen';
 import { AnywhereView } from './AnywhereView';
-import { NearbyView } from './NearbyView';
 import { showDialog } from '../../components/DialogHost';
 import { LiveDuration, usePrefs } from '../../context/PrefsContext';
 import { haptics } from '../../utils/haptics';
@@ -336,16 +335,13 @@ export function GoLiveScreen({ navigation }: Props) {
   }, []);
   const openMatches = useCallback(() => navigation.navigate('LiveMatches'), [navigation]);
 
-  // Three ways to Go Live, on one switch: Event (this screen), Nearby
-  // (Bluetooth) and Anywhere (general matching). Live at an event, the
-  // switch waits until it ends. With no choice made: the event when there's
-  // one, else Nearby (also when there's no internet: it works without).
-  if (!isLive && mode === 'anywhere') {
+  // Two ways to Go Live, on one switch: Event (this screen) and Everywhere
+  // (general matching, with Nearby's Bluetooth built in). Live at an event,
+  // the switch waits until it ends. With no choice made: the event when
+  // there's one, else Everywhere (also with no internet: close by works without).
+  const everywhere = !isLive && (mode === 'anywhere' || (mode === null && (!room || nearbyAvailable || online === false)));
+  if (everywhere) {
     return <AnywhereView navigation={navigation} onSwitchMode={setMode} />;
-  }
-  const nearby = !isLive && (mode === 'nearby' || (mode === null && (!room || nearbyAvailable || online === false)));
-  if (nearby) {
-    return <NearbyView navigation={navigation} onSwitchMode={setMode} />;
   }
   // The pinned top bar: a title row, and the mode switch until live.
   const top = (title: React.ReactNode) => (scrollY: Animated.Value) => (

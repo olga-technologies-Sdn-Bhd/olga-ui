@@ -1,4 +1,4 @@
-import { Bluetooth, Globe, Ticket } from 'lucide-react-native';
+import { Globe, Ticket } from 'lucide-react-native';
 import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -7,17 +7,16 @@ import { ThemeColors } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { semibold } from '../theme/typography';
 
-// The three ways to Go Live, side by side: one at an event, one with people
-// close by (Bluetooth), one with members anywhere. The line under the switch
-// says what the chosen one does, so they're never confused.
+// The two ways to Go Live, side by side: at an event, or everywhere (members
+// anywhere, and people close by over Bluetooth, together). The line under the
+// switch says what the chosen one does, so they're never confused.
 const MODES: { value: GoLiveMode; label: string; icon: typeof Ticket; line: string }[] = [
   { value: 'event', label: 'Event', icon: Ticket, line: 'People in your event’s room, while you’re there.' },
-  { value: 'nearby', label: 'Nearby', icon: Bluetooth, line: 'People a few metres away, over Bluetooth. Works offline.' },
-  { value: 'anywhere', label: 'Anywhere', icon: Globe, line: 'Members anywhere who offer what you’re looking for.' },
+  { value: 'anywhere', label: 'Everywhere', icon: Globe, line: 'Members anywhere who can help, and people close by.' },
 ];
 
 const SWITCH_HEIGHT = 36;
-const OPTION_W = 100;
+const OPTION_W = 128;
 const LINE_HEIGHT = 17;
 
 // The radar flies the wordmark up to the header row, so it needs the height
@@ -29,8 +28,8 @@ type Props = {
   onChange: (mode: GoLiveMode) => void;
   // While live in this mode: the others wait until it ends.
   disabled?: boolean;
-  // No internet: Event and Anywhere need Ol-ga, so they're shown faded (still
-  // tappable, so the screen can say why).
+  // No internet: Event needs Ol-ga, so it's shown faded (still tappable, so
+  // the screen can say why). Everywhere still works close by.
   offline?: boolean;
   // In GoLiveTop: the page's scroll position, to tuck the line away.
   scrollY?: Animated.Value;
@@ -60,7 +59,7 @@ export function GoLiveModeSwitch({ mode, onChange, disabled, offline, scrollY }:
         <Animated.View style={[styles.pill, { transform: [{ translateX: x }, { scaleX: stretch }] }]} />
         {MODES.map(({ value, label, icon: Icon }) => {
           const on = mode === value;
-          const faded = offline && value !== 'nearby';
+          const faded = offline && value === 'event';
           return (
             <Pressable
               key={value}
