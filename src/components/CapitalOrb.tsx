@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
+import { useTheme } from '../theme/ThemeContext';
 
 // The Social Capital orb: the member's network, alive. Soft colour currents
 // drift slowly round each other and breathe, with no hard edge, so its outline
@@ -46,6 +47,7 @@ function SoftBlob({ color, size, id, strength = 0.9 }: { color: string; size: nu
 }
 
 export function CapitalOrb({ size = 92 }: { size?: number }) {
+  const { colors } = useTheme();
   const orbits = useRef(CURRENTS.map(() => new Animated.Value(0))).current;
   const breaths = useRef(CURRENTS.map(() => new Animated.Value(0))).current;
   const glow = useRef(new Animated.Value(0)).current;
@@ -81,7 +83,7 @@ export function CapitalOrb({ size = 92 }: { size?: number }) {
 
   return (
     <View style={styles.wrap} pointerEvents="none">
-      {/* A warm halo that swells and settles, slowly. */}
+      {/* A halo in the theme's own light that swells and settles, slowly. */}
       <Animated.View
         style={[
           styles.halo,
@@ -91,7 +93,7 @@ export function CapitalOrb({ size = 92 }: { size?: number }) {
           },
         ]}
       >
-        <SoftBlob color="#FFB385" size={outer} id="orbHalo" strength={0.7} />
+        <SoftBlob color={colors.orbHalo} size={outer} id="orbHalo" strength={0.7} />
       </Animated.View>
 
       <View style={styles.sphere}>

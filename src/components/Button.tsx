@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react
 import { useTheme } from '../theme/ThemeContext';
 import { fonts, semibold } from '../theme/typography';
 
-// charcoal: Commit / Accept (ink, white text in both themes).
+// charcoal: Commit / Accept (the theme's main colour, with its own text colour).
 // danger: an action that can't be undone (Delete account).
 type Variant = 'primary' | 'secondary' | 'ghost' | 'charcoal' | 'danger';
 
@@ -48,7 +48,8 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
         pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
         label: { fontFamily: fonts.bodyBold, fontWeight: semibold, fontSize: 14 },
         labelPrimary: { color: colors.onBrand },
-        labelCharcoal: { color: colors.white },
+        labelCharcoal: { color: colors.onCharcoal },
+        labelDanger: { color: colors.white },
         labelSecondary: { color: colors.text },
         labelGhost: { color: colors.brand },
         labelOnDark: { color: colors.white },
@@ -78,13 +79,16 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.onBrand : variant === 'charcoal' || variant === 'danger' ? colors.white : colors.brand} />
+        <ActivityIndicator
+          color={variant === 'primary' ? colors.onBrand : variant === 'charcoal' ? colors.onCharcoal : variant === 'danger' ? colors.white : colors.brand}
+        />
       ) : (
         <Text
           style={[
             styles.label,
             variant === 'primary' && styles.labelPrimary,
-            (variant === 'charcoal' || variant === 'danger') && styles.labelCharcoal,
+            variant === 'charcoal' && styles.labelCharcoal,
+            variant === 'danger' && styles.labelDanger,
             variant === 'secondary' && styles.labelSecondary,
             variant === 'ghost' && ghostLabelStyle,
             small && styles.labelSmall,

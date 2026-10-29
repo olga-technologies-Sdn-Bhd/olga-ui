@@ -39,5 +39,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   trackOn: { backgroundColor: colors.brand },
   knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: colors.white },
-  knobOn: { transform: [{ translateX: 18 }] },
+  // On a light-coloured track (Midnight's gold) the knob turns dark to stay visible.
+  knobOn: { transform: [{ translateX: 18 }], backgroundColor: colors.onBrand },
 });

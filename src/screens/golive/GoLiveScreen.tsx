@@ -106,7 +106,7 @@ export function GoLiveScreen({ navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { events } = useEvents();
   const { mode, setMode, available: nearbyAvailable, online } = useNearby();
-  const disc = { fill: colors.charcoal, text: colors.white };
+  const disc = { fill: colors.charcoal, text: colors.onCharcoal };
   const {
     activeEvent,
     setActiveEvent,

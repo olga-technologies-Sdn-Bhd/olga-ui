@@ -630,7 +630,7 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
                   }
                   style={styles.button}
                 >
-                  {/* The sunrise: coral into pink, like the Home photos and the orb. */}
+                  {/* The sunrise: the theme's own gradient (coral into pink on Sunrise). */}
                   <LinearGradient
                     colors={[colors.liveFrom, colors.liveTo]}
                     start={{ x: 0.15, y: 0 }}
@@ -651,13 +651,13 @@ export const GoLiveRadar = memo(function GoLiveRadar({ phase, people, disabled, 
                   />
                   {live ? (
                     <>
-                      <Radio size={24} color={colors.white} strokeWidth={1.8} />
+                      <Radio size={24} color={colors.onLive} strokeWidth={1.8} />
                       <Text style={[styles.label, styles.labelLive]}>YOU'RE LIVE</Text>
                       {caption && <SwapText text={caption} style={styles.caption} />}
                     </>
                   ) : (
                     <>
-                      <Radio size={26} color={colors.white} strokeWidth={1.8} />
+                      <Radio size={26} color={colors.onLive} strokeWidth={1.8} />
                       <Text style={styles.label}>GO LIVE</Text>
                       <Text style={styles.caption}>PRESS & HOLD</Text>
                     </>
@@ -713,7 +713,7 @@ const makeStyles = (colors: ThemeColors) =>
     buttonFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
     pressShade: { backgroundColor: 'rgba(90,20,30,0.16)' },
     charge: { position: 'absolute', width: CHARGE, height: CHARGE },
-    label: { fontFamily: fonts.headingBold, fontSize: 21, fontWeight: semibold, letterSpacing: 1, color: colors.white, marginTop: 3 },
-    caption: { fontFamily: fonts.bodyBold, fontSize: 10, fontWeight: semibold, letterSpacing: 2, color: 'rgba(255,255,255,0.78)' },
+    label: { fontFamily: fonts.headingBold, fontSize: 21, fontWeight: semibold, letterSpacing: 1, color: colors.onLive, marginTop: 3 },
+    caption: { fontFamily: fonts.bodyBold, fontSize: 10, fontWeight: semibold, letterSpacing: 2, color: colors.onLive, opacity: 0.78 },
     labelLive: { fontSize: 19 },
   });

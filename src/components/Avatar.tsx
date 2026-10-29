@@ -58,7 +58,7 @@ export function Avatar({ initials, size = 'md', dark, light, memberId, own, prev
         },
         dark: { backgroundColor: colors.charcoal },
         light: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line },
-        textDark: { color: colors.white },
+        textDark: { color: colors.onCharcoal },
         photo: FILL,
         busy: { ...FILL, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)' },
       }),
