@@ -62,7 +62,14 @@ The release build is signed with the Play upload key when `OLGA_UPLOAD_KEY_PROPE
 
 **iOS**
 
-- **Release builds (TestFlight, App Store)** are production (`com.olga.connect`) when you use Product > Archive in Xcode. The Release `OLGA_AUTH_SCHEME` is `olga` in the Xcode project, and `ios/.xcode.env` sets `OLGA_ENV` from the `OLGA_BUNDLE_ENV` build setting (default `prod`).
+- **Release builds (TestFlight, App Store)** are chosen with the scheme at the top of Xcode. Pick the scheme, then **Product > Archive**:
+
+  | Scheme | Archives with | App | Profile |
+  | --- | --- | --- | --- |
+  | `OlgaMobile` | `Release` | `com.olga.connect`, prod servers | `Olga-Prod` |
+  | `OlgaMobile Dev` | `Release-Dev` | `com.olga.dev.connect` ("Ol-ga Dev"), dev servers | `Olga-Dev-AppStore` |
+
+  `ios/.xcode.env` sets `OLGA_ENV` from the `OLGA_BUNDLE_ENV` build setting of the configuration (`prod` or `dev`).
 - **Archive commands** (they also open the archive in the Organizer and print what to do next):
 
   | Command | App | Profile |
