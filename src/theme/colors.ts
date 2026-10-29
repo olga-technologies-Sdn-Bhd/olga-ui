@@ -1,10 +1,20 @@
-// Design system: a warm, quiet ground (ivory, white cards, sand fills) with
-// sunrise coral as the one accent colour: buttons, selection.
-// No blue anywhere. Green is reserved for live/match signals; a muted gold for
+// Design system: three looks that share one shape, so any screen can switch
+// via useTheme() without branching logic.
+//
+//   Sunrise  (light): a warm, quiet ground (ivory, white cards, sand fills)
+//                     with sunrise coral as the one accent: buttons, selection.
+//   Lagoon   (light): the same airy layout in cool mist, with deep lagoon teal
+//                     as the one accent.
+//   Midnight (dark):  warm graphite with champagne gold as the one accent.
+//
+// In every look green is reserved for live/match signals; a muted gold for
 // outcome states; a soft apricot glow belongs to the Olga agent alone (its
-// sparkle, the Ask Olga bar). Both light and dark variants share the same
-// shape so any screen can switch via useTheme() without branching logic.
-export const lightColors = {
+// sparkle, the Ask Olga bar). No blue anywhere.
+//
+// The "on" colours (onBrand, onCharcoal, onLive, onInk, onSelected) are the
+// text and icons that sit on the matching fill. Always use them instead of
+// plain white: on Midnight the fills are gold and need dark text.
+export const sunriseColors = {
   bg: '#FBFAF8', // App ground: a crisp warm white, so white cards still lift off it
   bgClear: 'rgba(251,250,248,0)', // The ground, fully transparent (fades into it)
   surface: '#FFFFFF', // Card surface
@@ -37,8 +47,10 @@ export const lightColors = {
   amber: '#B8975A',
   amberSoft: '#F4ECDC',
   amberText: '#6B5220',
-  // The one large dark element (default Go Live button, dark avatars): coral.
+  // The one large accent element (default Go Live button, dark avatars): coral.
   charcoal: '#EC6A55',
+  // Text/icons on the charcoal fill.
+  onCharcoal: '#FFFFFF',
   // Dark cards: a slow diagonal fade within the same warm ink.
   cardFrom: '#2B2825',
   cardTo: '#161513',
@@ -50,10 +62,14 @@ export const lightColors = {
   glowSoft: '#FBEADC',
   glowRing: '#F2C9A6',
   glowRing2: '#D9C9E8',
-  // The soft sunrise wash at the top of tab screens (TopGlow), to clear.
-  // The Go Live button: a sunrise gradient (coral into pink).
+  // The warm halo that swells behind the Social Capital orb.
+  orbHalo: '#FFB385',
+  // The Go Live button: a sunrise gradient (coral into pink), and the text and
+  // icons on it.
   liveFrom: '#FF8A5B',
   liveTo: '#F2668B',
+  onLive: '#FFFFFF',
+  // The soft sunrise wash at the top of tab screens (TopGlow), to clear.
   glowTop: '#FDF0E6',
   glowTopClear: 'rgba(253,240,230,0)',
   // The floating tab bar: bright white glass. A translucent gradient (lighter
@@ -99,10 +115,83 @@ export const lightColors = {
   chatGround: '#FFFFFF',
 };
 
-export const darkColors = {
-  // Dark mode isn't covered by the brand spec (which is light/warm only).
-  // Warm graphite: near-black greys with a slight warm cast, same roles as
-  // the light palette. Not a client-approved palette yet.
+export type ThemeColors = typeof sunriseColors;
+
+// Cool mist and white cards, with deep lagoon teal as the one accent. Same
+// roles as Sunrise; only the hue of the greys and the accent change. The
+// Olga agent keeps its warm apricot glow, so it stays recognisable.
+export const lagoonColors: ThemeColors = {
+  bg: '#F5F9F9',
+  bgClear: 'rgba(245,249,249,0)',
+  surface: '#FFFFFF',
+  surface2: '#E3EDED', // Cool sand: date blocks, inputs, pill base
+  text: '#14201F', // A cool near-black
+  muted: '#5A6B6A',
+  line: '#DAE5E5',
+  brand: '#17808B',
+  onBrand: '#FFFFFF',
+  brand2: '#C5D6D6',
+  brandSoft: '#DCEAEB',
+  accentSoft: '#EAF2F2',
+  ink: '#17808B',
+  onInk: '#FFFFFF',
+  positive: '#147A3A',
+  positiveSoft: '#E3F2E8',
+  liveFill: '#16A34A',
+  amber: '#B8975A',
+  amberSoft: '#F4ECDC',
+  amberText: '#6B5220',
+  charcoal: '#17808B',
+  onCharcoal: '#FFFFFF',
+  cardFrom: '#22302F',
+  cardTo: '#111A1A',
+  champagne: '#E3CBA4',
+  glow: '#E08A4F',
+  glowSoft: '#FBEADC',
+  glowRing: '#F2C9A6',
+  glowRing2: '#D9C9E8',
+  orbHalo: '#8FD6D6',
+  // Teal into deeper teal: the same sunrise-style gradient in cool tones.
+  liveFrom: '#2FAE9E',
+  liveTo: '#17808B',
+  onLive: '#FFFFFF',
+  glowTop: '#E4F2F2',
+  glowTopClear: 'rgba(228,242,242,0)',
+  glass: 'rgba(255,255,255,0.98)',
+  glassLow: 'rgba(255,255,255,0.96)',
+  glassHighlight: 'rgba(255,255,255,0.95)',
+  glassLine: 'rgba(20,32,31,0.08)',
+  selected: '#17808B',
+  onSelected: '#ffffff',
+  danger: '#D64555',
+  dangerSoft: 'rgba(214,69,85,0.12)',
+  accent: '#17808B',
+  accentFill: '#EEF2F2',
+  accentWash: '#DDF0F1',
+  tintPeach: '#FFE1CC',
+  onTintPeach: '#E0601F',
+  tintGreen: '#D3F2DE',
+  onTintGreen: '#15803D',
+  tintAmber: '#FDE8B4',
+  onTintAmber: '#B26A00',
+  tintViolet: '#E7DFFF',
+  onTintViolet: '#6A45E0',
+  white: '#ffffff',
+  tint: '#E9F1F1',
+  tint2: '#DEE9E9',
+  tintLine: '#C8D8D8',
+  track: '#CFDCDC',
+  progressTrack: '#E2ECEC',
+  bubbleMe: '#D4E9EB',
+  onBubbleMe: '#14201F',
+  bubbleThem: '#F1F3F4',
+  bubbleThemLine: '#E6EAEB',
+  chatGround: '#FFFFFF',
+};
+
+// Warm graphite with champagne gold as the one accent. The accent is light,
+// so everything that sits on a gold fill uses dark text (the "on" colours).
+export const midnightColors: ThemeColors = {
   bg: '#121110',
   bgClear: 'rgba(18,17,16,0)', // The ground, fully transparent (fades into it)
   surface: '#1C1B19',
@@ -110,23 +199,21 @@ export const darkColors = {
   text: '#F3F1EE',
   muted: '#A19C95',
   line: '#302E2B',
-  brand: '#F3F1EE',
-  onBrand: '#121110',
+  brand: '#E3B66B',
+  onBrand: '#1A1917',
   brand2: '#4B4844',
-  brandSoft: '#33312E',
-  accentSoft: '#262422',
-  // Light 'send' button on the dark ground, dark arrow on it (the mirror of
-  // light mode); ink/onInk were both near-black, so the button disappeared.
-  ink: '#F3F1EE',
-  onInk: '#121110',
+  brandSoft: '#3A3328',
+  accentSoft: '#2A2620',
+  ink: '#E3B66B',
+  onInk: '#1A1917',
   positive: '#34D399',
   positiveSoft: '#14291E',
   liveFill: '#16A34A',
   amber: '#F2C98A',
   amberSoft: '#33280F',
   amberText: '#F2C98A',
-  // A step lighter than the surfaces so the dark card and buttons still read.
-  charcoal: '#302E2B',
+  charcoal: '#E3B66B',
+  onCharcoal: '#1A1917',
   cardFrom: '#3A3733',
   cardTo: '#24221F',
   champagne: '#E3CBA4',
@@ -134,21 +221,23 @@ export const darkColors = {
   glowSoft: '#3A2A1E',
   glowRing: '#6E4A30',
   glowRing2: '#4A3F5A',
-  liveFrom: '#F08A5F',
-  liveTo: '#D9607F',
-  glowTop: 'rgba(240,138,79,0.16)',
-  glowTopClear: 'rgba(240,138,79,0)',
+  orbHalo: '#E3B66B',
+  liveFrom: '#EBC27A',
+  liveTo: '#D69A45',
+  onLive: '#1A1917',
+  glowTop: 'rgba(227,182,107,0.14)',
+  glowTopClear: 'rgba(227,182,107,0)',
   glass: 'rgba(44,42,39,0.90)',
   glassLow: 'rgba(28,27,25,0.86)',
   glassHighlight: 'rgba(255,255,255,0.14)',
   glassLine: 'rgba(255,255,255,0.10)',
-  selected: '#F3F1EE',
-  onSelected: '#121110',
+  selected: '#E3B66B',
+  onSelected: '#1A1917',
   danger: '#ff7a86',
   dangerSoft: 'rgba(255,122,134,0.16)',
-  accent: '#F3F1EE',
+  accent: '#E3B66B',
   accentFill: 'rgba(255,255,255,0.1)',
-  accentWash: 'rgba(214,170,130,0.18)',
+  accentWash: 'rgba(227,182,107,0.18)',
   tintPeach: 'rgba(240,138,79,0.2)',
   onTintPeach: '#F5A877',
   tintGreen: 'rgba(52,211,153,0.16)',
@@ -163,18 +252,12 @@ export const darkColors = {
   tintLine: '#423F3B',
   track: '#3D3A36',
   progressTrack: '#2C2A27',
-  bubbleMe: '#3A3733',
-  onBubbleMe: '#FFFFFF',
+  bubbleMe: '#3B3226',
+  onBubbleMe: '#F3F1EE',
   bubbleThem: '#262422',
   bubbleThemLine: '#302E2B',
   chatGround: '#161513',
 };
-
-export type ThemeColors = typeof lightColors;
-
-// Static export kept for screens not yet migrated to useTheme() — always
-// the light palette. New/updated screens should use useTheme() instead.
-export const colors = lightColors;
 
 export const radius = {
   sm: 12,

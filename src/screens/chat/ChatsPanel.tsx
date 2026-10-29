@@ -294,7 +294,7 @@ const makeStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    badgeText: { color: colors.white, fontSize: 11, lineHeight: 14, fontWeight: semibold },
+    badgeText: { color: colors.onBrand, fontSize: 11, lineHeight: 14, fontWeight: semibold },
     empty: { alignItems: 'center', gap: 6, paddingVertical: 40 },
     emptyTitle: { fontFamily: fonts.headingBold, fontSize: 16, fontWeight: semibold, color: colors.text },
   });

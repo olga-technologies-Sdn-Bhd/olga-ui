@@ -21,7 +21,7 @@ import { MainTabParamList } from './types';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export function MainTabs() {
-  const { colors, scheme } = useTheme();
+  const { colors } = useTheme();
   const { bottom } = useSafeAreaInsets();
   const { isLive } = useLive();
   const { available } = useNearby();
@@ -34,11 +34,11 @@ export function MainTabs() {
     return () => setEventOpener(null);
   }, []);
 
-  // While live (or available nearby) Go Live stays bold in the Go Live
-  // button's dark blue, on any tab.
+  // While live (or available nearby) Go Live stays bold in the theme's main
+  // colour, on any tab.
   const tabs: Record<keyof MainTabParamList, GlassTab> = {
     HomeTab: { icon: House, label: 'Home' },
-    GoLiveTab: { icon: Radio, label: 'Go Live', strong: (isLive || available) && scheme === 'light' },
+    GoLiveTab: { icon: Radio, label: 'Go Live', strong: isLive || available },
     EventsTab: { icon: Ticket, label: 'Events' },
     ChatTab: { icon: MessageCircle, label: 'Chat' },
   };

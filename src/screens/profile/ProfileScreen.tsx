@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
-import { Ban, BriefcaseBusiness, Camera, ChevronRight, Eye, FileText, Hash, LogOut, LucideIcon, Mail, Moon, Phone, Search, Server, ShieldCheck } from 'lucide-react-native';
+import { Ban, BriefcaseBusiness, Camera, ChevronRight, Eye, FileText, Hash, LogOut, LucideIcon, Mail, Phone, Search, Server, ShieldCheck } from 'lucide-react-native';
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import { Avatar } from '../../components/Avatar';
@@ -9,7 +9,7 @@ import { BottomSheet, SheetGroup, SheetOption } from '../../components/BottomShe
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Screen } from '../../components/Screen';
-import { ToggleSwitch } from '../../components/ToggleSwitch';
+import { ThemePicker } from '../../components/ThemePicker';
 import { APP_ENV, PRIVACY_URL, TEAM_TOOLS, TERMS_URL } from '../../config/env';
 import { useAuth } from '../../context/AuthContext';
 import { useLive } from '../../context/LiveContext';
@@ -26,7 +26,7 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'Profile'>;
 // `.switch` toggle used on the Filters screen so it reads as the same app.
 export function ProfileScreen({ navigation }: Props) {
   const { name, email, mobile, memberId, logOut } = useAuth();
-  const { colors, scheme, setScheme } = useTheme();
+  const { colors } = useTheme();
   const { intentText } = useLive();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -112,7 +112,7 @@ export function ProfileScreen({ navigation }: Props) {
             busy={photoBusy}
           />
           <View style={styles.cameraBadge}>
-            <Camera size={14} color={colors.white} strokeWidth={2.2} />
+            <Camera size={14} color={colors.onBrand} strokeWidth={2.2} />
           </View>
         </Pressable>
         <Text style={styles.h2}>{name ?? 'Your profile'}</Text>
@@ -239,13 +239,12 @@ export function ProfileScreen({ navigation }: Props) {
       </Card>
 
       <Text style={styles.sectionTitle}>Appearance</Text>
-      <Card style={styles.row}>
-        <RowIcon icon={Moon} styles={styles} colors={colors} />
-        <View style={styles.rowText}>
-          <Text style={styles.label}>Dark mode</Text>
-          <Text style={styles.rowSub}>{scheme === 'dark' ? 'On' : 'Off'} — applies across the app</Text>
+      <Card style={styles.themeCard}>
+        <View>
+          <Text style={styles.label}>Theme</Text>
+          <Text style={styles.rowSub}>Pick a look. It applies across the app.</Text>
         </View>
-        <ToggleSwitch on={scheme === 'dark'} onToggle={() => setScheme(scheme === 'dark' ? 'light' : 'dark')} />
+        <ThemePicker />
       </Card>
 
       <Button label="Log out" variant="secondary" loading={loggingOut} onPress={confirmLogOut} style={styles.logout} />
@@ -318,6 +317,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   list: { paddingVertical: 4 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 10 },
   rowText: { flex: 1 },
+  themeCard: { gap: 14 },
   rowSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
   rowIcon: { width: 22, alignItems: 'center' },
   pressed: { opacity: 0.7 },

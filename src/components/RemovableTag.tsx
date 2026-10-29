@@ -33,7 +33,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.tint,
     borderWidth: 1,
-    borderColor: '#ddd2ff',
+    borderColor: colors.tintLine,
   },
   label: { fontFamily: fonts.bodyBold, fontSize: 11, fontWeight: semibold, color: colors.brand },
   remove: { fontSize: 13, color: colors.brand, lineHeight: 13 },

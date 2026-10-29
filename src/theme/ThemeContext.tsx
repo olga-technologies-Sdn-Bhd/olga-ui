@@ -1,50 +1,47 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as Keychain from 'react-native-keychain';
-import { darkColors, lightColors, ThemeColors } from './colors';
+import { ThemeColors } from './colors';
+import { DEFAULT_THEME, parseStoredTheme, Scheme, themeInfo, ThemeName } from './themes';
 
-export type Scheme = 'light' | 'dark';
+export type { Scheme, ThemeName } from './themes';
 
 type ThemeContextValue = {
   colors: ThemeColors;
+  // Whether the chosen look is light or dark.
   scheme: Scheme;
-  setScheme: (scheme: Scheme) => void;
+  // The chosen look: Sunrise, Lagoon or Midnight.
+  theme: ThemeName;
+  setTheme: (theme: ThemeName) => void;
 };
 
-// Light is the app default — the brand spec is a light/warm palette only.
-// The user's choice (Profile → Appearance) is kept on device. Stored via
-// react-native-keychain only because it's the one storage module already
-// installed — the value itself isn't sensitive.
-const DEFAULT_SCHEME: Scheme = 'light';
+// Sunrise is the app default. The member's choice (Profile → Appearance) is
+// kept on device. Stored via react-native-keychain only because it's the one
+// storage module already installed — the value itself isn't sensitive.
 const STORAGE_SERVICE = 'olga.theme';
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [scheme, setSchemeState] = useState<Scheme>(DEFAULT_SCHEME);
+  const [theme, setThemeState] = useState<ThemeName>(DEFAULT_THEME);
 
   useEffect(() => {
     Keychain.getGenericPassword({ service: STORAGE_SERVICE })
       .then((stored) => {
-        if (stored && (stored.password === 'light' || stored.password === 'dark')) {
-          setSchemeState(stored.password);
-        }
+        const saved = stored ? parseStoredTheme(stored.password) : null;
+        if (saved) setThemeState(saved);
       })
       .catch(() => {});
   }, []);
 
-  const setScheme = useCallback((next: Scheme) => {
-    setSchemeState(next);
+  const setTheme = useCallback((next: ThemeName) => {
+    setThemeState(next);
     Keychain.setGenericPassword(STORAGE_SERVICE, next, { service: STORAGE_SERVICE }).catch(() => {});
   }, []);
 
-  const value = useMemo<ThemeContextValue>(
-    () => ({
-      colors: scheme === 'dark' ? darkColors : lightColors,
-      scheme,
-      setScheme,
-    }),
-    [scheme, setScheme]
-  );
+  const value = useMemo<ThemeContextValue>(() => {
+    const info = themeInfo(theme);
+    return { colors: info.colors, scheme: info.scheme, theme, setTheme };
+  }, [theme, setTheme]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
