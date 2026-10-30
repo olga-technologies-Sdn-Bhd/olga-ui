@@ -8,3 +8,10 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
+
+# Nitro core: HybridObjects are created from C++ by class name.
+-keep class com.margelo.nitro.** { *; }
+-dontwarn com.margelo.nitro.**
+
+# Our Bluetooth module: called from JS and Android services by name.
+-keep class com.olgamobile.ble.** { *; }
