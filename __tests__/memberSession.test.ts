@@ -5,13 +5,17 @@ import {
   activateMember,
   deletionPendingNotice,
   EMPTY_STORE,
+  isPhoneKey,
   lookupExistingMember,
+  lookupMemberByPhone,
   MemberApi,
   MemberRecoveryUnavailableError,
   MemberStore,
+  phoneKey,
   recoverExistingMember,
   refreshMember,
   resolveLogin,
+  resolvePhoneLogin,
   StoredMember,
 } from '../src/auth/memberSession';
 
@@ -36,7 +40,12 @@ function lookedUp(overrides: Partial<MemberLookupResponse> = {}): MemberLookupRe
   return { member_id: 'mem_9', display_name: 'Asha Rao', profile_status: 'ACTIVE', etag: '"5"', ...overrides };
 }
 
-type MockApi = MemberApi & { getMyProfile: jest.Mock; updateMyProfile: jest.Mock; lookupMember: jest.Mock };
+type MockApi = MemberApi & {
+  getMyProfile: jest.Mock;
+  updateMyProfile: jest.Mock;
+  lookupMember: jest.Mock;
+  lookupMemberByPhone: jest.Mock;
+};
 
 // Lookup defaults to "not registered" so cached-member tests are unaffected.
 function api(overrides: Partial<MemberApi> = {}): MockApi {
@@ -44,6 +53,9 @@ function api(overrides: Partial<MemberApi> = {}): MockApi {
     getMyProfile: jest.fn(async () => profile()),
     updateMyProfile: jest.fn(async () => profile({ etag: '"3"' })),
     lookupMember: jest.fn(async () => {
+      throw notRegistered;
+    }),
+    lookupMemberByPhone: jest.fn(async () => {
       throw notRegistered;
     }),
     ...overrides,
@@ -284,5 +296,92 @@ describe('deletion pending (409 MEMBER_DELETION_PENDING)', () => {
   it('notice names the date, or stays general without one', () => {
     expect(deletionPendingNotice('2026-11-17T10:00:00Z')).toBe('This account is being deleted. You can join again with this email after 17 Nov 2026.');
     expect(deletionPendingNotice()).toBe('This account is being deleted. You can join again with this email once it is erased.');
+  });
+});
+
+describe('phone sign-in', () => {
+  const phone = '+60123456789';
+
+  it('keys phone members apart from emails', () => {
+    expect(phoneKey(phone)).toBe('phone:+60123456789');
+    expect(isPhoneKey(phoneKey(phone))).toBe(true);
+    expect(isPhoneKey('asha@example.com')).toBe(false);
+    expect(isPhoneKey(null)).toBe(false);
+  });
+
+  it('existing number -> member stored under the phone key, straight in', async () => {
+    const a = api({ lookupMemberByPhone: jest.fn(async () => lookedUp()) });
+    const result = await resolvePhoneLogin(EMPTY_STORE, phone, 'proof-1', a);
+    expect(a.lookupMemberByPhone).toHaveBeenCalledWith(phone, 'proof-1');
+    expect(result.member).toEqual({ member_id: 'mem_9', etag: '"5"', display_name: 'Asha Rao', profile_status: 'ACTIVE', phone });
+    expect(result.store.current).toBe('phone:+60123456789');
+    expect(result.store.members['phone:+60123456789'].member_id).toBe('mem_9');
+    expect(a.lookupMember).not.toHaveBeenCalled();
+  });
+
+  it('new number (404 MEMBER_NOT_REGISTERED) -> sign-up needed, store untouched', async () => {
+    const result = await resolvePhoneLogin(EMPTY_STORE, phone, 'proof-1', api());
+    expect(result.member).toBeNull();
+    expect(result.lookup).toEqual({ status: 'not_registered' });
+    expect(result.store).toBe(EMPTY_STORE);
+  });
+
+  it('found DRAFT member is activated like an email one', async () => {
+    const a = api({ lookupMemberByPhone: jest.fn(async () => lookedUp({ profile_status: 'DRAFT' })) });
+    const result = await lookupMemberByPhone(phone, 'proof-1', a);
+    expect(a.updateMyProfile).toHaveBeenCalledWith('mem_9', { display_name: 'Asha Rao', visibility: 'MEMBERS' }, '"5"');
+    expect(result).toMatchObject({ status: 'found', member: { etag: '"3"', phone } });
+  });
+
+  it.each([
+    ['offline', offline],
+    ['5xx', serverError],
+  ])('%s -> unavailable, never a new user', async (_label, error) => {
+    const a = api({ lookupMemberByPhone: jest.fn(async () => { throw error; }) });
+    expect(await lookupMemberByPhone(phone, 'proof-1', a)).toMatchObject({ status: 'unavailable' });
+  });
+
+  it('a member waiting for deletion is stopped', async () => {
+    const pending = new ApiError(409, 'MEMBER_DELETION_PENDING', 'Deletion pending', 'c-9', undefined, { due_at: '2026-11-17T10:00:00Z' });
+    const a = api({ lookupMemberByPhone: jest.fn(async () => { throw pending; }) });
+    await expect(resolvePhoneLogin(EMPTY_STORE, phone, 'proof-1', a)).rejects.toBeInstanceOf(AccountDeletionPendingError);
+  });
+
+  it('notice says number, not email, for a phone member', () => {
+    expect(deletionPendingNotice('2026-11-17T10:00:00Z', 'number')).toBe(
+      'This account is being deleted. You can join again with this number after 17 Nov 2026.'
+    );
+  });
+});
+
+describe('recoverExistingMember with a phone proof', () => {
+  const conflict = new ApiError(409, 'MEMBER_IDENTITY_ALREADY_REGISTERED', 'Already registered', 'corr-9');
+  const proof = { phone: '+60123456789', token: 'proof-1' };
+
+  it('email lookup finds nothing -> the verified phone finds the same person', async () => {
+    const a = api({ lookupMemberByPhone: jest.fn(async () => lookedUp()) });
+    const recovered = await recoverExistingMember('asha@example.com', conflict, a, proof);
+    expect(recovered.member_id).toBe('mem_9');
+    expect(a.lookupMember).toHaveBeenCalled();
+    expect(a.lookupMemberByPhone).toHaveBeenCalledWith('+60123456789', 'proof-1');
+  });
+
+  it('email lookup finds the member -> the phone is not asked', async () => {
+    const a = api({ lookupMember: jest.fn(async () => lookedUp()) });
+    await recoverExistingMember('asha@example.com', conflict, a, proof);
+    expect(a.lookupMemberByPhone).not.toHaveBeenCalled();
+  });
+
+  it('phone-only sign-up (no email) goes straight to the phone lookup', async () => {
+    const a = api({ lookupMemberByPhone: jest.fn(async () => lookedUp()) });
+    await recoverExistingMember(null, conflict, a, proof);
+    expect(a.lookupMember).not.toHaveBeenCalled();
+  });
+
+  it('neither finds it -> MemberRecoveryUnavailableError with the conflict id', async () => {
+    await expect(recoverExistingMember('asha@example.com', conflict, api(), proof)).rejects.toMatchObject({
+      name: 'MemberRecoveryUnavailableError',
+      correlationId: 'corr-9',
+    });
   });
 });

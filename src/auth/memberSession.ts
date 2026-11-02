@@ -15,7 +15,9 @@ export type StoredMember = {
 };
 
 export type MemberStore = {
-  current: string | null; // normalized email of the signed-in member
+  // Key of the signed-in member: the normalized email, or phoneKey() for a
+  // member who signed in with a phone code.
+  current: string | null;
   members: Record<string, StoredMember>;
 };
 
@@ -27,10 +29,23 @@ export type MemberApi = {
   getMyProfile: (memberId: string) => Promise<Profile>;
   updateMyProfile: (memberId: string, body: UpdateProfileRequest, ifMatch: string) => Promise<Profile>;
   lookupMember: (email: string) => Promise<MemberLookupResponse>;
+  lookupMemberByPhone: (phone: string, verificationToken: string) => Promise<MemberLookupResponse>;
 };
 
 export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+// A member who signed in by phone has no email, so the store keeps them under
+// the verified phone number instead.
+const PHONE_KEY_PREFIX = 'phone:';
+
+export function phoneKey(phone: string) {
+  return `${PHONE_KEY_PREFIX}${phone}`;
+}
+
+export function isPhoneKey(key: string | null | undefined) {
+  return Boolean(key?.startsWith(PHONE_KEY_PREFIX));
 }
 
 export function withMember(store: MemberStore, email: string, member: StoredMember): MemberStore {
@@ -109,10 +124,10 @@ export type LookupResult =
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // Shown on the sign-in screen when a member waiting for deletion signs in.
-export function deletionPendingNotice(dueAt?: string): string {
+export function deletionPendingNotice(dueAt?: string, identity: 'email' | 'number' = 'email'): string {
   const due = dueAt ? new Date(dueAt) : null;
   const when = due && !isNaN(due.getTime()) ? ` after ${due.getDate()} ${MONTHS[due.getMonth()]} ${due.getFullYear()}` : ' once it is erased';
-  return `This account is being deleted. You can join again with this email${when}.`;
+  return `This account is being deleted. You can join again with this ${identity}${when}.`;
 }
 
 export class AccountDeletionPendingError extends Error {
@@ -129,14 +144,14 @@ export function deletionDueAt(error: ApiError): string | undefined {
   return typeof due === 'string' ? due : undefined;
 }
 
-// POST /v1/members/lookup for a verified email. A found DRAFT member is
+// Looks a member up (by verified email or phone). A found DRAFT member is
 // activated silently (same needs_activation retry rule as registration).
 // Never throws. A 404 without the MEMBER_NOT_REGISTERED code means the
 // route itself is missing, so it counts as unavailable, not as a new user.
-export async function lookupExistingMember(email: string, api: MemberApi): Promise<LookupResult> {
+async function lookupVia(call: () => Promise<MemberLookupResponse>, api: MemberApi): Promise<LookupResult> {
   let found: MemberLookupResponse;
   try {
-    found = await api.lookupMember(normalizeEmail(email));
+    found = await call();
   } catch (error) {
     if (error instanceof ApiError && error.status === 404 && error.code === 'MEMBER_NOT_REGISTERED') {
       return { status: 'not_registered' };
@@ -154,6 +169,17 @@ export async function lookupExistingMember(email: string, api: MemberApi): Promi
   };
   if (found.profile_status === 'DRAFT') member = await activateMember(member, api);
   return { status: 'found', member };
+}
+
+// POST /v1/members/lookup for a verified email.
+export function lookupExistingMember(email: string, api: MemberApi): Promise<LookupResult> {
+  return lookupVia(() => api.lookupMember(normalizeEmail(email)), api);
+}
+
+// POST /v1/members/lookup/phone for a phone just verified with a code.
+export async function lookupMemberByPhone(phone: string, verificationToken: string, api: MemberApi): Promise<LookupResult> {
+  const result = await lookupVia(() => api.lookupMemberByPhone(phone, verificationToken), api);
+  return result.status === 'found' ? { status: 'found', member: { ...result.member, phone } } : result;
 }
 
 // After Entra login: the member for this email, or null when sign-up must run
@@ -185,6 +211,22 @@ export async function resolveLogin(
   return { store: withMember(base, key, result.member), member: result.member };
 }
 
+// After the phone code was checked: the member for this number, or null when
+// sign-up must run (new number, or the lookup is unavailable). The lookup
+// always asks Core, since the fresh proof is in hand.
+export async function resolvePhoneLogin(
+  store: MemberStore,
+  phone: string,
+  verificationToken: string,
+  api: MemberApi
+): Promise<{ store: MemberStore; member: StoredMember | null; lookup: LookupResult }> {
+  const lookup = await lookupMemberByPhone(phone, verificationToken, api);
+  if (lookup.status === 'deletion_pending') throw new AccountDeletionPendingError(lookup.dueAt);
+  if (lookup.status !== 'found') return { store, member: null, lookup };
+  const key = phoneKey(phone);
+  return { store: withMember({ ...store, current: key }, key, lookup.member), member: lookup.member, lookup };
+}
+
 export class MemberRecoveryUnavailableError extends Error {
   correlationId?: string;
   constructor(correlationId?: string) {
@@ -195,15 +237,26 @@ export class MemberRecoveryUnavailableError extends Error {
 }
 
 // Called when POST /v1/members returns 409 MEMBER_IDENTITY_ALREADY_REGISTERED
-// (registered, but not on this device). Recovers the member via the lookup;
-// the name/mobile just typed are deliberately not applied to it. Throws
-// MemberRecoveryUnavailableError when the lookup can't find it (e.g. the
-// conflict was on the phone number) or is unavailable.
-export async function recoverExistingMember(email: string, conflict: ApiError, api: MemberApi): Promise<StoredMember> {
-  const lookup = await lookupExistingMember(email, api);
-  if (lookup.status === 'found') return lookup.member;
-  if (lookup.status === 'deletion_pending') throw new AccountDeletionPendingError(lookup.dueAt);
-  throw new MemberRecoveryUnavailableError(
-    (lookup.status === 'unavailable' ? lookup.correlationId : undefined) ?? conflict.correlationId
-  );
+// (registered, but not on this device). Recovers the member via the email
+// lookup, then (when a phone proof is in hand) the phone lookup, e.g. the
+// number was already verified for the same person; the name/mobile just typed
+// are deliberately not applied to it. Throws MemberRecoveryUnavailableError
+// when neither finds it or the lookup is unavailable.
+export async function recoverExistingMember(
+  email: string | null,
+  conflict: ApiError,
+  api: MemberApi,
+  phone?: { phone: string; token: string }
+): Promise<StoredMember> {
+  let correlationId = conflict.correlationId;
+  const attempts: LookupResult[] = [];
+  if (email) attempts.push(await lookupExistingMember(email, api));
+  if (phone && attempts[0]?.status !== 'found') attempts.push(await lookupMemberByPhone(phone.phone, phone.token, api));
+  for (const lookup of attempts) {
+    if (lookup.status === 'found') return lookup.member;
+    if (lookup.status === 'deletion_pending') throw new AccountDeletionPendingError(lookup.dueAt);
+  }
+  const unavailable = attempts.find((lookup) => lookup.status === 'unavailable');
+  if (unavailable?.status === 'unavailable') correlationId = unavailable.correlationId ?? correlationId;
+  throw new MemberRecoveryUnavailableError(correlationId);
 }

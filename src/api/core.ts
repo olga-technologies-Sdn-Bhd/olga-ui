@@ -36,6 +36,11 @@ import type {
   LiveModeSession,
   MemberLookupBody,
   MemberLookupRequest,
+  MemberPhoneLookupRequest,
+  PhoneVerificationCheckRequest,
+  PhoneVerificationCheckResponse,
+  PhoneVerificationRequest,
+  PhoneVerificationResponse,
   PresenceRequest,
   PrivacyRequestCreate,
   PrivacyRequestResponse,
@@ -81,6 +86,35 @@ export const coreApi = {
   lookupMember: async (email: string, options?: RequestOptions) =>
     withEtag(
       await client.send<MemberLookupBody>('POST', '/v1/members/lookup', { email } satisfies MemberLookupRequest, options)
+    ),
+
+  // Phone OTP. Core talks to Twilio; the app never does. Each distinct send or
+  // check is its own logical action (new Idempotency-Key); reuse the key only
+  // to retry that exact request.
+  sendPhoneCode: (phone: string, options?: RequestOptions) =>
+    client.post<PhoneVerificationResponse>(
+      '/v1/auth/phone/verifications',
+      { phone, channel: 'sms' } satisfies PhoneVerificationRequest,
+      options
+    ),
+
+  checkPhoneCode: (phone: string, code: string, options?: RequestOptions) =>
+    client.post<PhoneVerificationCheckResponse>(
+      '/v1/auth/phone/verification-checks',
+      { phone, code } satisfies PhoneVerificationCheckRequest,
+      options
+    ),
+
+  // Existing member for a verified phone. No X-Member-Id. 404
+  // MEMBER_NOT_REGISTERED = new user.
+  lookupMemberByPhone: async (phone: string, verificationToken: string, options?: RequestOptions) =>
+    withEtag(
+      await client.send<MemberLookupBody>(
+        'POST',
+        '/v1/members/lookup/phone',
+        { phone, verification_token: verificationToken } satisfies MemberPhoneLookupRequest,
+        options
+      )
     ),
 
   // Reads marked cached() are kept on the phone (encrypted) and answered from
