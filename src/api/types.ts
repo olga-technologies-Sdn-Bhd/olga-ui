@@ -34,6 +34,9 @@ export type RegisterMemberRequest = {
   role_category?: string;
   locale?: string;
   visibility?: Visibility;
+  // From POST /v1/auth/phone/verification-checks. Required whenever `phone`
+  // is sent (even with an email), and bound to that exact phone.
+  phone_verification_token?: string;
 };
 
 export type RegisterMemberBody = {
@@ -57,6 +60,33 @@ export type MemberLookupBody = {
   e_tag?: string;
 };
 export type MemberLookupResponse = WithEtag<MemberLookupBody>;
+
+// Phone OTP (Twilio Verify behind Core). Phones are E.164, e.g. +60123456789.
+// POST /v1/auth/phone/verifications -> 202 { status: 'PENDING' }.
+export type PhoneVerificationRequest = {
+  phone: string;
+  channel: 'sms';
+};
+export type PhoneVerificationResponse = {
+  status: 'PENDING';
+};
+
+// POST /v1/auth/phone/verification-checks. The token is a signed proof bound
+// to the phone, good for 300 s; memory only, never stored or logged.
+export type PhoneVerificationCheckRequest = {
+  phone: string;
+  code: string;
+};
+export type PhoneVerificationCheckResponse = {
+  verification_token: string;
+  expires_at: string;
+};
+
+// POST /v1/members/lookup/phone (no X-Member-Id). 404 MEMBER_NOT_REGISTERED = new user.
+export type MemberPhoneLookupRequest = {
+  phone: string;
+  verification_token: string;
+};
 
 // GET /v1/me/profile, PATCH /v1/me/profile, GET /v1/members/{memberId}.
 // Email and phone are never returned.

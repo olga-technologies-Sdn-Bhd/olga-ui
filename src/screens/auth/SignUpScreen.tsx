@@ -2,6 +2,7 @@ import { CircleAlert, MailX, Phone, UserRound } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 import { ChatBubble } from '../../components/ChatBubble';
+import { Button } from '../../components/Button';
 import { ChatComposer } from '../../components/ChatComposer';
 import { OtpEntry } from '../../components/OtpEntry';
 import { Pill } from '../../components/Pill';
@@ -11,6 +12,7 @@ import { warmUpApis } from '../../api/warmup';
 import { PRIVACY_URL, TERMS_URL } from '../../config/env';
 import { AccountDeletionPendingError, MemberRecoveryUnavailableError } from '../../auth/memberSession';
 import { isExpiredSession, isInvalidCode, NativeAuthError } from '../../auth/nativeAuthClient';
+import { maskPhone, normalizePhone, PHONE_CODE_LENGTH, PHONE_RESEND_COOLDOWN_S, phoneProblem } from '../../auth/phone';
 import { EntraProvider, isUserCancelledLogin } from '../../auth/useEntraLogin';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeColors } from '../../theme/colors';
@@ -18,22 +20,43 @@ import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
 import { showDialog } from '../../components/DialogHost';
 
-type Step = 'email' | 'verifying' | 'otp' | 'name' | 'mobile' | 'registering';
+type Step = 'email' | 'verifying' | 'otp' | 'name' | 'mobile' | 'phone' | 'sendingCode' | 'phoneOtp' | 'registering';
 
-// One continuous chat: email -> verify -> name -> mobile, all on this same
-// screen. No screen transition after login — the user comes back to exactly
-// where they started, and the conversation just continues.
+// One continuous chat, all on this same screen. No screen transition after
+// login — the user comes back to exactly where they started, and the
+// conversation just continues.
+//   email:  email -> code -> name -> mobile -> text code -> in
+//   phone:  mobile -> text code -> (name) -> in
 export function SignUpScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { login, startEmail, submitEmailCode, resendEmailCode, cancelEmail, completeOnboarding, logOut, isAuthenticated, notice, clearNotice } =
-    useAuth();
+  const {
+    login,
+    startEmail,
+    submitEmailCode,
+    resendEmailCode,
+    cancelEmail,
+    startPhone,
+    resendPhoneCode,
+    submitPhoneCode,
+    cancelPhone,
+    completeOnboarding,
+    logOut,
+    needsOnboarding,
+    notice,
+    clearNotice,
+  } = useAuth();
   // Already signed in to Entra but no Olga member yet (e.g. restored session
-  // whose member was removed) -> only name + mobile are needed, no new OTP.
-  const [step, setStep] = useState<Step>(isAuthenticated ? 'name' : 'email');
+  // whose member was removed) -> only name + mobile are needed, no new email OTP.
+  const [step, setStep] = useState<Step>(needsOnboarding ? 'name' : 'email');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [mobile, setMobile] = useState('');
+  // Continue with Phone: the number is the sign-in, so there is no mobile question.
+  const [viaPhone, setViaPhone] = useState(false);
+  // The number's code was checked: the next step registers the member.
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  // Outside the number field the phone is only ever shown masked.
+  const [phoneShown, setPhoneShown] = useState('');
   // Verifying waits on the dev API, which can take up to a minute to wake
   // from a cold start; say so instead of looking stuck.
   const [slowVerify, setSlowVerify] = useState(false);
@@ -151,28 +174,114 @@ export function SignUpScreen() {
     signIn({ provider }, provider === 'google' ? 'Continue with Google' : 'Continue with Apple');
   }
 
-  function handleNameSubmit(value: string) {
-    setName(value);
-    setStep('mobile');
+  // Back to the first question, forgetting everything typed.
+  function startOver() {
+    cancelPhone();
+    setName('');
+    setEmail('');
+    setViaPhone(false);
+    setPhoneVerified(false);
+    setPhoneShown('');
+    setStep('email');
   }
 
-  async function handleMobileSubmit(value: string) {
-    // Olga.Core only accepts E.164 (+<country code><number>).
-    const e164 = value.replace(/[\s\-().]/g, '');
-    if (!/^\+[1-9]\d{7,14}$/.test(e164)) {
+  function handleUsePhone() {
+    clearNotice();
+    setViaPhone(true);
+    setStep('phone');
+  }
+
+  function handleUseEmail() {
+    cancelPhone();
+    setViaPhone(false);
+    setPhoneShown('');
+    setStep('email');
+  }
+
+  // The number box of both paths: texts a code to the number.
+  async function handlePhoneSubmit(value: string) {
+    if (inProgress.current) return;
+    const phone = normalizePhone(value);
+    if (!phone) {
       showDialog('Check your number', 'Please include your country code, e.g. +60 12 345 6789.', undefined, { icon: Phone });
       return;
     }
-    setMobile(value);
+    inProgress.current = true;
+    clearNotice();
+    warmUpApis(); // Core starts while the user waits for the text
+    const back = step;
+    setPhoneShown(maskPhone(phone));
+    setStep('sendingCode');
+    try {
+      await startPhone(phone);
+      setStep('phoneOtp');
+    } catch (error) {
+      setPhoneShown('');
+      setStep(back);
+      showDialog("Couldn't send a code", phoneProblem(error).message, undefined, { icon: Phone, tone: 'danger' });
+    } finally {
+      inProgress.current = false;
+    }
+  }
+
+  async function handlePhoneCodeSubmit(code: string) {
+    try {
+      const existingMember = await submitPhoneCode(code, viaPhone ? 'signIn' : 'verify');
+      if (viaPhone) {
+        // Existing members go straight in (the navigator switches to the app).
+        if (!existingMember) {
+          setPhoneVerified(true);
+          setStep('name');
+        }
+        return;
+      }
+      // Signed in by email: the number is verified, so register now.
+      setPhoneVerified(true);
+      register(name);
+    } catch (error) {
+      if (error instanceof AccountDeletionPendingError) {
+        startOver();
+        return;
+      }
+      const problem = phoneProblem(error);
+      if (problem.restart) {
+        setPhoneShown('');
+        setStep(viaPhone ? 'phone' : 'mobile');
+        showDialog('Verify your number again', problem.message, undefined, { icon: Phone });
+        return;
+      }
+      throw new Error(problem.message);
+    }
+  }
+
+  async function handlePhoneResend() {
+    try {
+      await resendPhoneCode();
+    } catch (error) {
+      throw new Error(phoneProblem(error).message);
+    }
+  }
+
+  function handleChangeNumber() {
+    cancelPhone();
+    setPhoneShown('');
+    setStep(viaPhone ? 'phone' : 'mobile');
+  }
+
+  function handleNameSubmit(value: string) {
+    setName(value);
+    // By phone the number is already verified; by email it is asked next.
+    if (phoneVerified) register(value);
+    else setStep('mobile');
+  }
+
+  async function register(value: string) {
     setStep('registering');
     try {
-      await completeOnboarding(name.trim(), e164);
+      await completeOnboarding(value.trim());
     } catch (error) {
-      setMobile('');
       if (error instanceof AccountDeletionPendingError) {
-        setName('');
-        setEmail('');
-        setStep('email');
+        startOver();
         return;
       }
       if (error instanceof MemberRecoveryUnavailableError) {
@@ -182,15 +291,27 @@ export function SignUpScreen() {
           icon: UserRound,
         });
         await logOut();
-        setName('');
-        setEmail('');
-        setStep('email');
+        startOver();
         return;
       }
-      setStep('mobile');
+      const problem = phoneProblem(error);
+      if (problem.restart) {
+        // The text-message proof ran out or was refused: verify the number again.
+        setPhoneVerified(false);
+        setPhoneShown('');
+        setStep(viaPhone ? 'phone' : 'mobile');
+        showDialog('Verify your number again', problem.message, undefined, { icon: Phone });
+        return;
+      }
+      // Same name and proof on the next try, so no second member is created.
+      setStep('name');
       showDialog("Couldn't create your profile", 'Please check your connection and try again.', undefined, { icon: CircleAlert, tone: 'danger' });
     }
   }
+
+  // The name question (and the mobile one, for an email sign-in) is on screen.
+  const onboarding =
+    step === 'name' || step === 'registering' || (!viaPhone && (step === 'mobile' || step === 'sendingCode' || step === 'phoneOtp'));
 
   return (
     // No tab bar before sign-in: no room reserved for it under the input.
@@ -220,21 +341,38 @@ export function SignUpScreen() {
         )}
         {step === 'otp' && <ChatBubble from="them" text="I've sent a verification code to your email. Enter it here when it arrives." />}
 
-        {(step === 'name' || step === 'mobile' || step === 'registering') && (
+        {viaPhone && (
+          <ChatBubble from="them" text="Of course. What's your mobile number? Include the country code and I'll text you a code." />
+        )}
+        {viaPhone && phoneShown !== '' && <ChatBubble from="me" text={phoneShown} />}
+
+        {onboarding && (
           <>
-            <ChatBubble from="them" text="You're in. Two quick things and I'll take you to the room." />
+            <ChatBubble
+              from="them"
+              text={
+                viaPhone
+                  ? "You're verified. One quick thing and I'll take you to the room."
+                  : "You're in. Two quick things and I'll take you to the room."
+              }
+            />
             <ChatBubble from="them" text="What should I call you?" />
           </>
         )}
         {name !== '' && <ChatBubble from="me" text={name} />}
 
-        {(step === 'mobile' || step === 'registering') && (
+        {!viaPhone && name !== '' && (step === 'mobile' || step === 'sendingCode' || step === 'phoneOtp') && (
           <ChatBubble
             from="them"
-            text={`Lovely to meet you, ${name}. What's the best number to reach you on? I'll only use it to arrange your meetings.`}
+            text={`Lovely to meet you, ${name}. What's the best number to reach you on? I'll text you a code to check it, and only use it to arrange your meetings.`}
           />
         )}
-        {mobile !== '' && <ChatBubble from="me" text={mobile} />}
+        {!viaPhone && phoneShown !== '' && <ChatBubble from="me" text={phoneShown} />}
+
+        {step === 'sendingCode' && <ChatBubble from="them" text="Sending your code…" />}
+        {step === 'phoneOtp' && (
+          <ChatBubble from="them" text={`I've texted a ${PHONE_CODE_LENGTH}-digit code to ${phoneShown}. Enter it here when it arrives.`} />
+        )}
       </View>
 
       {step === 'email' && (
@@ -247,6 +385,7 @@ export function SignUpScreen() {
           </View>
           <SocialSignInButton provider="google" onPress={() => handleProvider('google')} />
           <SocialSignInButton provider="apple" onPress={() => handleProvider('apple')} />
+          <Button label="Continue with phone" variant="ghost" onPress={handleUsePhone} />
           {/* Accepted before any account exists, whichever way they sign in. */}
           <Text style={styles.legal}>
             By continuing, you agree to Ol-ga's{' '}
@@ -270,11 +409,31 @@ export function SignUpScreen() {
           onChangeEmail={handleChangeEmail}
         />
       )}
+      {step === 'phone' && (
+        <>
+          <ChatComposer placeholder="+60 12 345 6789" keyboardType="phone-pad" onSubmit={handlePhoneSubmit} />
+          <Text style={styles.legal}>
+            <Text style={styles.legalLink} onPress={handleUseEmail} accessibilityRole="link">
+              Use email instead
+            </Text>
+          </Text>
+        </>
+      )}
+      {step === 'sendingCode' && <Text style={styles.sub}>Sending your code…</Text>}
+      {step === 'phoneOtp' && (
+        <OtpEntry
+          codeLength={PHONE_CODE_LENGTH}
+          onSubmit={handlePhoneCodeSubmit}
+          onResend={handlePhoneResend}
+          onChangeEmail={handleChangeNumber}
+          resendCooldownS={PHONE_RESEND_COOLDOWN_S}
+          changeLabel="Use a different number"
+          busyLabel="Checking your code…"
+        />
+      )}
       {step === 'registering' && <Text style={styles.sub}>Setting up your profile…</Text>}
       {step === 'name' && <ChatComposer placeholder="Type your name…" onSubmit={handleNameSubmit} />}
-      {step === 'mobile' && (
-        <ChatComposer placeholder="+60 12 345 6789" keyboardType="phone-pad" onSubmit={handleMobileSubmit} />
-      )}
+      {step === 'mobile' && <ChatComposer placeholder="+60 12 345 6789" keyboardType="phone-pad" onSubmit={handlePhoneSubmit} />}
     </Screen>
   );
 }
