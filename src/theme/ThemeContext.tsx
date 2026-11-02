@@ -9,7 +9,7 @@ type ThemeContextValue = {
   colors: ThemeColors;
   // Whether the chosen look is light or dark.
   scheme: Scheme;
-  // The chosen look: Sunrise, Lagoon or Midnight.
+  // The chosen look: Sunrise, Harbor or Midnight.
   theme: ThemeName;
   setTheme: (theme: ThemeName) => void;
 };

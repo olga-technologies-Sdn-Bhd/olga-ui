@@ -310,7 +310,7 @@ const makeStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       gap: 12,
       borderWidth: 1.5,
-      borderColor: colors.brand2,
+      borderColor: colors.outline,
       borderRadius: radius.md,
       padding: 14,
     },

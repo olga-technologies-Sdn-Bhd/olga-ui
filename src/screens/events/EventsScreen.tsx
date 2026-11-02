@@ -260,7 +260,7 @@ const makeStyles = (colors: ThemeColors) =>
       paddingHorizontal: 14,
       borderRadius: 999,
       borderWidth: 1,
-      borderColor: colors.brand2,
+      borderColor: colors.outline,
     },
     locationText: { flexShrink: 1, fontFamily: fonts.bodyBold, fontSize: 13, fontWeight: semibold, color: colors.text },
     tabs: { flexDirection: 'row', marginTop: 10 },

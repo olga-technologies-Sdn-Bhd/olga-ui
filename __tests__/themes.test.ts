@@ -1,4 +1,4 @@
-import { lagoonColors, midnightColors, sunriseColors, ThemeColors } from '../src/theme/colors';
+import { harborColors, midnightColors, sunriseColors, ThemeColors } from '../src/theme/colors';
 import { DEFAULT_THEME, parseStoredTheme, THEMES, themeInfo } from '../src/theme/themes';
 
 // WCAG contrast between two #rrggbb colours.
@@ -17,22 +17,23 @@ function contrast(a: string, b: string) {
 
 describe('themes', () => {
   it('has three looks, Sunrise first and the default', () => {
-    expect(THEMES.map((t) => t.name)).toEqual(['sunrise', 'lagoon', 'midnight']);
+    expect(THEMES.map((t) => t.name)).toEqual(['sunrise', 'harbor', 'midnight']);
     expect(DEFAULT_THEME).toBe('sunrise');
     expect(themeInfo('midnight').scheme).toBe('dark');
-    expect(themeInfo('lagoon').scheme).toBe('light');
+    expect(themeInfo('harbor').scheme).toBe('light');
   });
 
   it('gives every look the same set of colours', () => {
     const keys = Object.keys(sunriseColors).sort();
-    expect(Object.keys(lagoonColors).sort()).toEqual(keys);
+    expect(Object.keys(harborColors).sort()).toEqual(keys);
     expect(Object.keys(midnightColors).sort()).toEqual(keys);
   });
 
   it('keeps what was saved by the old light/dark switch', () => {
     expect(parseStoredTheme('light')).toBe('sunrise');
     expect(parseStoredTheme('dark')).toBe('midnight');
-    expect(parseStoredTheme('lagoon')).toBe('lagoon');
+    expect(parseStoredTheme('harbor')).toBe('harbor');
+    expect(parseStoredTheme('lagoon')).toBe('harbor');
     expect(parseStoredTheme('purple')).toBeNull();
     expect(parseStoredTheme(undefined)).toBeNull();
   });
@@ -70,5 +71,41 @@ describe.each(THEMES.map((t) => [t.name, t.colors] as [string, ThemeColors]))('%
 
   it('my chat messages', () => {
     expect(contrast(c.onBubbleMe, c.bubbleMe)).toBeGreaterThanOrEqual(7);
+  });
+});
+
+// Sunrise is the original look and keeps its own softer outline; the two newer
+// looks are held to the stricter everyday-text standard.
+describe('outlines', () => {
+  it('Sunrise keeps its soft grey outline', () => {
+    expect(sunriseColors.outline).toBe(sunriseColors.brand2);
+  });
+
+  it('Harbor outlines buttons in its blue, Midnight in its gold', () => {
+    expect(harborColors.outline).toBe(harborColors.brand);
+    expect(midnightColors.outline).toBe(midnightColors.brand);
+  });
+});
+
+describe.each([
+  ['harbor', harborColors],
+  ['midnight', midnightColors],
+] as [string, ThemeColors][])('%s meets the stricter standard', (_name, c) => {
+  it('button text and outlined buttons are readable at normal size', () => {
+    expect(contrast(c.onBrand, c.brand)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c.onCharcoal, c.charcoal)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c.onSelected, c.selected)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c.outline, c.bg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c.outline, c.surface)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('the main colour is readable as text on the ground and on cards', () => {
+    expect(contrast(c.accent, c.bg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c.accent, c.surface)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('the Go Live label is readable at both ends of its gradient', () => {
+    expect(contrast(c.onLive, c.liveFrom)).toBeGreaterThanOrEqual(3.5);
+    expect(contrast(c.onLive, c.liveTo)).toBeGreaterThanOrEqual(3.5);
   });
 });

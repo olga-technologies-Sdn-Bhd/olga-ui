@@ -3,17 +3,18 @@
 //
 //   Sunrise  (light): a warm, quiet ground (ivory, white cards, sand fills)
 //                     with sunrise coral as the one accent: buttons, selection.
-//   Lagoon   (light): the same airy layout in cool mist, with deep lagoon teal
-//                     as the one accent.
-//   Midnight (dark):  warm graphite with champagne gold as the one accent.
+//   Harbor   (light): white cards on a cool grey-blue ground, with navy blue as
+//                     the one accent, and blue outlines on secondary buttons.
+//   Midnight (dark):  deep navy with champagne gold as the one accent.
 //
 // In every look green is reserved for live/match signals; a muted gold for
 // outcome states; a soft apricot glow belongs to the Olga agent alone (its
-// sparkle, the Ask Olga bar). No blue anywhere.
+// sparkle, the Ask Olga bar).
 //
 // The "on" colours (onBrand, onCharcoal, onLive, onInk, onSelected) are the
 // text and icons that sit on the matching fill. Always use them instead of
 // plain white: on Midnight the fills are gold and need dark text.
+// `outline` is the border of outlined (ghost) buttons and pills.
 export const sunriseColors = {
   bg: '#FBFAF8', // App ground: a crisp warm white, so white cards still lift off it
   bgClear: 'rgba(251,250,248,0)', // The ground, fully transparent (fades into it)
@@ -30,6 +31,8 @@ export const sunriseColors = {
   onBrand: '#ffffff',
   // Outline button border.
   brand2: '#D8D1C6',
+  // Border of outlined buttons and pills.
+  outline: '#D8D1C6',
   // Selected chips, icon-wrap fills.
   brandSoft: '#ECE6DD',
   // Avatar/icon backgrounds, soft pill tint, chat "me" bubble.
@@ -117,23 +120,25 @@ export const sunriseColors = {
 
 export type ThemeColors = typeof sunriseColors;
 
-// Cool mist and white cards, with deep lagoon teal as the one accent. Same
-// roles as Sunrise; only the hue of the greys and the accent change. The
+// White cards on a cool grey-blue ground, with navy blue as the one accent and
+// blue outlines on secondary buttons: the familiar professional-network look.
+// Same roles as Sunrise; only the hue of the greys and the accent change. The
 // Olga agent keeps its warm apricot glow, so it stays recognisable.
-export const lagoonColors: ThemeColors = {
-  bg: '#F5F9F9',
-  bgClear: 'rgba(245,249,249,0)',
+export const harborColors: ThemeColors = {
+  bg: '#F3F6FA',
+  bgClear: 'rgba(243,246,250,0)',
   surface: '#FFFFFF',
-  surface2: '#E3EDED', // Cool sand: date blocks, inputs, pill base
-  text: '#14201F', // A cool near-black
-  muted: '#5A6B6A',
-  line: '#DAE5E5',
-  brand: '#17808B',
+  surface2: '#E8EEF5', // Cool grey: date blocks, inputs, pill base
+  text: '#0F1B2D', // A navy near-black
+  muted: '#546377',
+  line: '#DCE3EC',
+  brand: '#0B52A3',
   onBrand: '#FFFFFF',
-  brand2: '#C5D6D6',
-  brandSoft: '#DCEAEB',
-  accentSoft: '#EAF2F2',
-  ink: '#17808B',
+  brand2: '#BFCBDB',
+  outline: '#0B52A3',
+  brandSoft: '#DCE7F5',
+  accentSoft: '#EAF0F8',
+  ink: '#0B52A3',
   onInk: '#FFFFFF',
   positive: '#147A3A',
   positiveSoft: '#E3F2E8',
@@ -141,33 +146,33 @@ export const lagoonColors: ThemeColors = {
   amber: '#B8975A',
   amberSoft: '#F4ECDC',
   amberText: '#6B5220',
-  charcoal: '#17808B',
+  charcoal: '#0B52A3',
   onCharcoal: '#FFFFFF',
-  cardFrom: '#22302F',
-  cardTo: '#111A1A',
+  cardFrom: '#1B2A44',
+  cardTo: '#0D1626',
   champagne: '#E3CBA4',
   glow: '#E08A4F',
   glowSoft: '#FBEADC',
   glowRing: '#F2C9A6',
   glowRing2: '#D9C9E8',
-  orbHalo: '#8FD6D6',
-  // Teal into deeper teal: the same sunrise-style gradient in cool tones.
-  liveFrom: '#2FAE9E',
-  liveTo: '#17808B',
+  orbHalo: '#8EB8EA',
+  // Mid blue into navy: the Go Live gradient in cool tones.
+  liveFrom: '#2A7BCB',
+  liveTo: '#0B52A3',
   onLive: '#FFFFFF',
-  glowTop: '#E4F2F2',
-  glowTopClear: 'rgba(228,242,242,0)',
+  glowTop: '#E3EDF8',
+  glowTopClear: 'rgba(227,237,248,0)',
   glass: 'rgba(255,255,255,0.98)',
   glassLow: 'rgba(255,255,255,0.96)',
   glassHighlight: 'rgba(255,255,255,0.95)',
-  glassLine: 'rgba(20,32,31,0.08)',
-  selected: '#17808B',
+  glassLine: 'rgba(15,27,45,0.08)',
+  selected: '#0B52A3',
   onSelected: '#ffffff',
   danger: '#D64555',
   dangerSoft: 'rgba(214,69,85,0.12)',
-  accent: '#17808B',
-  accentFill: '#EEF2F2',
-  accentWash: '#DDF0F1',
+  accent: '#0B52A3',
+  accentFill: '#EDF1F6',
+  accentWash: '#DDE9F7',
   tintPeach: '#FFE1CC',
   onTintPeach: '#E0601F',
   tintGreen: '#D3F2DE',
@@ -177,45 +182,46 @@ export const lagoonColors: ThemeColors = {
   tintViolet: '#E7DFFF',
   onTintViolet: '#6A45E0',
   white: '#ffffff',
-  tint: '#E9F1F1',
-  tint2: '#DEE9E9',
-  tintLine: '#C8D8D8',
-  track: '#CFDCDC',
-  progressTrack: '#E2ECEC',
-  bubbleMe: '#D4E9EB',
-  onBubbleMe: '#14201F',
-  bubbleThem: '#F1F3F4',
-  bubbleThemLine: '#E6EAEB',
+  tint: '#E8EEF5',
+  tint2: '#DCE5F0',
+  tintLine: '#C5D1E0',
+  track: '#CBD6E4',
+  progressTrack: '#E1E9F2',
+  bubbleMe: '#D6E6F8',
+  onBubbleMe: '#0F1B2D',
+  bubbleThem: '#F0F2F5',
+  bubbleThemLine: '#E3E7EC',
   chatGround: '#FFFFFF',
 };
 
-// Warm graphite with champagne gold as the one accent. The accent is light,
-// so everything that sits on a gold fill uses dark text (the "on" colours).
+// Deep navy with champagne gold as the one accent. The accent is light, so
+// everything that sits on a gold fill uses dark text (the "on" colours).
 export const midnightColors: ThemeColors = {
-  bg: '#121110',
-  bgClear: 'rgba(18,17,16,0)', // The ground, fully transparent (fades into it)
-  surface: '#1C1B19',
-  surface2: '#262422',
-  text: '#F3F1EE',
-  muted: '#A19C95',
-  line: '#302E2B',
+  bg: '#0B1220',
+  bgClear: 'rgba(11,18,32,0)', // The ground, fully transparent (fades into it)
+  surface: '#111A2B',
+  surface2: '#192438',
+  text: '#EEF2F8',
+  muted: '#9AA8BE',
+  line: '#243049',
   brand: '#E3B66B',
-  onBrand: '#1A1917',
-  brand2: '#4B4844',
-  brandSoft: '#3A3328',
-  accentSoft: '#2A2620',
+  onBrand: '#101624',
+  brand2: '#3A4968',
+  outline: '#E3B66B',
+  brandSoft: '#222D44',
+  accentSoft: '#18233A',
   ink: '#E3B66B',
-  onInk: '#1A1917',
+  onInk: '#101624',
   positive: '#34D399',
-  positiveSoft: '#14291E',
+  positiveSoft: '#10281F',
   liveFill: '#16A34A',
   amber: '#F2C98A',
   amberSoft: '#33280F',
   amberText: '#F2C98A',
   charcoal: '#E3B66B',
-  onCharcoal: '#1A1917',
-  cardFrom: '#3A3733',
-  cardTo: '#24221F',
+  onCharcoal: '#101624',
+  cardFrom: '#22304C',
+  cardTo: '#121B2E',
   champagne: '#E3CBA4',
   glow: '#F0A46C',
   glowSoft: '#3A2A1E',
@@ -224,15 +230,15 @@ export const midnightColors: ThemeColors = {
   orbHalo: '#E3B66B',
   liveFrom: '#EBC27A',
   liveTo: '#D69A45',
-  onLive: '#1A1917',
-  glowTop: 'rgba(227,182,107,0.14)',
-  glowTopClear: 'rgba(227,182,107,0)',
-  glass: 'rgba(44,42,39,0.90)',
-  glassLow: 'rgba(28,27,25,0.86)',
+  onLive: '#101624',
+  glowTop: 'rgba(80,125,205,0.20)',
+  glowTopClear: 'rgba(80,125,205,0)',
+  glass: 'rgba(24,34,54,0.92)',
+  glassLow: 'rgba(17,26,43,0.88)',
   glassHighlight: 'rgba(255,255,255,0.14)',
   glassLine: 'rgba(255,255,255,0.10)',
   selected: '#E3B66B',
-  onSelected: '#1A1917',
+  onSelected: '#101624',
   danger: '#ff7a86',
   dangerSoft: 'rgba(255,122,134,0.16)',
   accent: '#E3B66B',
@@ -247,16 +253,16 @@ export const midnightColors: ThemeColors = {
   tintViolet: 'rgba(155,123,255,0.2)',
   onTintViolet: '#B9A4FF',
   white: '#ffffff',
-  tint: '#1F1E1C',
-  tint2: '#282624',
-  tintLine: '#423F3B',
-  track: '#3D3A36',
-  progressTrack: '#2C2A27',
-  bubbleMe: '#3B3226',
-  onBubbleMe: '#F3F1EE',
-  bubbleThem: '#262422',
-  bubbleThemLine: '#302E2B',
-  chatGround: '#161513',
+  tint: '#152036',
+  tint2: '#1C2942',
+  tintLine: '#33425F',
+  track: '#34425C',
+  progressTrack: '#222E46',
+  bubbleMe: '#2B3A57',
+  onBubbleMe: '#EEF2F8',
+  bubbleThem: '#192438',
+  bubbleThemLine: '#243049',
+  chatGround: '#0E1626',
 };
 
 export const radius = {
