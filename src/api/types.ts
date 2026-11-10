@@ -626,3 +626,138 @@ export type BlockedMember = {
   display_name: string | null;
   blocked_at: string;
 };
+
+// ---- Businesses and the Social Capital Index (SCI) ----
+// "Business" or "Project" in the app's words; `venture` on the wire. Source:
+// SCI UI Integration Guide (Core + NLP pilot API). The pilot has no business
+// list or detail endpoint: the app keeps the venture_id from the create call.
+
+// POST /v1/ventures -> 201. The app chooses venture_id (max 64 chars). The
+// code lists (industry, stage, bands) are not published yet.
+export type CreateVentureRequest = {
+  venture_id: string;
+  name: string; // max 250
+  organization_id?: string | null;
+  industry_code?: string | null;
+  stage_code?: string | null;
+  revenue_band_code?: string | null;
+  team_size_band_code?: string | null;
+  geography_codes?: string[]; // max 20, each max 64
+};
+
+export type VentureBody = {
+  venture_id: string;
+  name: string;
+  status: string;
+  geography_codes: string[];
+  updated_at: string;
+  e_tag?: string;
+};
+
+// POST /v1/venture-intent-sets (NLP) -> 202. intent_set_id must equal the
+// Idempotency-Key header. Make new IDs for all three on every update.
+export type VentureIntentSetRequest = {
+  intent_set_id: string;
+  venture_id: string;
+  offer_intent_id: string;
+  want_intent_id: string;
+  offer_text: string;
+  want_text: string;
+  expires_at: string;
+  // Must not be null. SCI reads only `competitor` and `qualification_met`.
+  structured_intent: { competitor?: boolean; qualification_met?: boolean };
+  category?: string;
+  industry?: string;
+  geography?: string;
+  language?: string;
+};
+
+export type VentureIntentSummary = {
+  intent_id: string;
+  status: string; // PROCESSING ... MATCH_READY, or FAILED
+  model_version: string;
+  preprocessing_version: string;
+  normalized_hash?: string;
+  language?: string;
+  contains_pii: boolean;
+  updated_at?: string;
+};
+
+export type VentureIntentSetResponse = {
+  intent_set_id: string;
+  venture_id: string;
+  offer: VentureIntentSummary;
+  want: VentureIntentSummary;
+};
+
+// POST /v1/contacts/imports -> 200. 1-500 contacts, each with an email or a
+// phone; IDs max 64 chars and not repeated in the request. Never sent to NLP,
+// never logged.
+export type ImportContact = {
+  contact_record_id: string;
+  link_id: string;
+  label: string; // max 250
+  email?: string | null;
+  phone?: string | null;
+};
+
+export type ImportContactsRequest = {
+  contacts: ImportContact[];
+  retention_days: number; // 30-730
+};
+
+export type ImportContactsResponse = {
+  imported_count: number;
+  link_ids: string[];
+};
+
+// POST /v1/invite-batches -> 201. 1-20 unique link_ids; expires_in_days 1-30.
+// venture_id, if sent, must be an active business of the caller.
+export type CreateInviteBatchRequest = {
+  batch_id: string;
+  venture_id?: string;
+  link_ids: string[];
+  expires_in_days: number;
+};
+
+// The token is a secret (64 hex chars): never log it or send it to analytics.
+export type Invitation = {
+  invitation_id: string;
+  link_id: string;
+  token: string;
+  expires_at: string;
+};
+
+export type InviteBatchBody = {
+  batch_id: string;
+  status: string;
+  invitations: Invitation[];
+  e_tag?: string;
+};
+
+// POST /v1/invitations/{token}/accept -> 200. No request body.
+export type AcceptInvitationResponse = {
+  invitation_id: string;
+  connection_id: string;
+  conversation_id: string;
+  link_id: string;
+};
+
+// GET /v1/ventures/{venture_id}/sci. Show the server's score as it is.
+export type SciContact = {
+  link_id: string;
+  contact_member_id?: string; // absent until the contact is linked to a member
+  label: string;
+  score: number;
+  relationship_role: string; // e.g. CLIENT, SUPPLIER
+  competitor_overlay: boolean;
+  is_stale: boolean; // keep the score visible and show "Updating"
+  origin_type: string;
+  scored_at: string;
+  e_tag?: string;
+};
+
+export type SciPage = {
+  items: SciContact[];
+  next_cursor?: string | null; // pass back unchanged; null/absent = last page
+};

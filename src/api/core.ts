@@ -3,6 +3,14 @@ import { imageHeaders, makeApiClient, RequestOptions, withEtag } from './client'
 import { cached } from './offlineCache';
 import type {
   AcceptCommitResponse,
+  AcceptInvitationResponse,
+  CreateInviteBatchRequest,
+  CreateVentureRequest,
+  ImportContactsRequest,
+  ImportContactsResponse,
+  InviteBatchBody,
+  SciPage,
+  VentureBody,
   MemberReportRequest,
   MemberReportResponse,
   BlockedMember,
@@ -76,6 +84,16 @@ export function memberPictureSource(memberId: string, size: PictureSize, version
   };
 }
 
+// The SCI list is read a page at a time. limit is 1-100 (default 50); the
+// cursor is Core's own and goes back exactly as it came, only URL-encoded.
+export const SCI_PAGE_SIZE = 50;
+
+export function sciPath(ventureId: string, params: { limit?: number; cursor?: string | null } = {}) {
+  const limit = Math.min(100, Math.max(1, Math.floor(params.limit ?? SCI_PAGE_SIZE)));
+  const cursor = params.cursor ? `&cursor=${encodeURIComponent(params.cursor)}` : '';
+  return `/v1/ventures/${encodeURIComponent(ventureId)}/sci?limit=${limit}${cursor}`;
+}
+
 export const coreApi = {
   // Once, right after Entra OTP succeeds. X-Member-Id isn't set yet.
   registerMember: async (body: RegisterMemberRequest, options?: RequestOptions) =>
@@ -116,6 +134,26 @@ export const coreApi = {
         options
       )
     ),
+
+  // Businesses and the Social Capital Index. Every write is its own logical
+  // action (new Idempotency-Key); reuse the key only to retry that exact
+  // request. Contact details and invitation tokens are never logged.
+  createVenture: async (body: CreateVentureRequest, options?: RequestOptions) =>
+    withEtag(await client.send<VentureBody>('POST', '/v1/ventures', body, options)),
+
+  importContacts: (body: ImportContactsRequest, options?: RequestOptions) =>
+    client.post<ImportContactsResponse>('/v1/contacts/imports', body, options),
+
+  createInviteBatch: async (body: CreateInviteBatchRequest, options?: RequestOptions) =>
+    withEtag(await client.send<InviteBatchBody>('POST', '/v1/invite-batches', body, options)),
+
+  // The token is exactly 64 hex characters; it travels in the path, so the
+  // client must never log request URLs.
+  acceptInvitation: (token: string, options?: RequestOptions) =>
+    client.post<AcceptInvitationResponse>(`/v1/invitations/${encodeURIComponent(token)}/accept`, undefined, options),
+
+  getVentureSci: (ventureId: string, params?: { limit?: number; cursor?: string | null }, options?: RequestOptions) =>
+    client.get<SciPage>(sciPath(ventureId, params), options),
 
   // Reads marked cached() are kept on the phone (encrypted) and answered from
   // there when there's no network: see offlineCache.ts.

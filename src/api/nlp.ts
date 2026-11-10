@@ -11,6 +11,8 @@ import type {
   UpsertIntentBody,
   UpsertIntentRequest,
   UpsertIntentResponse,
+  VentureIntentSetRequest,
+  VentureIntentSetResponse,
 } from './types';
 
 const client = makeApiClient(NLP_API_URL);
@@ -70,6 +72,13 @@ export const nlpApi = {
   },
   getIntent: async (intentId: string) =>
     withEtag(await client.send<IntentBody>('GET', `/v1/intents/${encodeURIComponent(intentId)}`, undefined, nlp())),
+
+  // A business's OFFER and WANT, sent together (SCI). 202 = accepted, not yet
+  // scored: poll getIntent for both IDs until MATCH_READY (stop on FAILED).
+  // Core insists the Idempotency-Key equals intent_set_id, so it is set here
+  // and callers cannot send them apart. Retry with the same body only.
+  submitVentureIntentSet: (body: VentureIntentSetRequest, options?: RequestOptions) =>
+    client.post<VentureIntentSetResponse>('/v1/venture-intent-sets', body, nlp({ ...options, idempotencyKey: body.intent_set_id })),
 
   // Leave request_id out: the server uses the Idempotency-Key. status other
   // than COMPLETED → poll getMatchRequest(request_id) every 1–2 s.
