@@ -6,6 +6,7 @@ import { DeleteAccountScreen } from '../screens/profile/DeleteAccountScreen';
 import { HowYouAppearScreen } from '../screens/profile/HowYouAppearScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { ProfileSetupScreen } from '../screens/profile/ProfileSetupScreen';
+import { BusinessScreen } from '../screens/sci/BusinessScreen';
 import { HomeStackParamList } from './types';
 import { STACK_OPTIONS } from './stackOptions';
 
@@ -20,6 +21,7 @@ export function HomeStack() {
       <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
       <Stack.Screen name="HowYouAppear" component={HowYouAppearScreen} />
       <Stack.Screen name="BlockedMembers" component={BlockedMembersScreen} />
+      <Stack.Screen name="Business" component={BusinessScreen} />
       {/* Olga rises from the bottom, like a sheet you close with X. */}
       <Stack.Screen name="OlgaAgent" component={OlgaAgentScreen} options={{ animation: 'slide_from_bottom' }} />
     </Stack.Navigator>

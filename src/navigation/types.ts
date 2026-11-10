@@ -13,6 +13,8 @@ export type HomeStackParamList = {
   DeleteAccount: undefined;
   HowYouAppear: undefined;
   BlockedMembers: undefined;
+  // The member's Business or Project, the start of their Social Capital Index.
+  Business: undefined;
   // The Olga agent (a preview); prompt: sent as the first message.
   OlgaAgent: { prompt?: string } | undefined;
 };
