@@ -14,6 +14,8 @@ export class ApiError extends Error {
   correlationId?: string;
   fieldErrors?: Record<string, string[]>;
   details?: Record<string, unknown>;
+  // Seconds from a Retry-After header (429), when Core sent one.
+  retryAfterSeconds?: number;
 
   constructor(
     status: number,
@@ -96,7 +98,10 @@ export type ApiResponse<T> = {
 
 async function toApiError(response: Response): Promise<ApiError> {
   const text = await response.text().catch(() => '');
-  return apiErrorFrom(response.status, response.statusText, text, response.headers.get('X-Correlation-Id') ?? undefined);
+  const error = apiErrorFrom(response.status, response.statusText, text, response.headers.get('X-Correlation-Id') ?? undefined);
+  const retryAfter = Number(response.headers.get('Retry-After'));
+  if (Number.isFinite(retryAfter) && retryAfter > 0) error.retryAfterSeconds = retryAfter;
+  return error;
 }
 
 // The problem body Core sends, or the raw text when there is none. Also used

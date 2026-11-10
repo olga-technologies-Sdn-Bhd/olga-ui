@@ -11,20 +11,32 @@ type Props = {
   onSubmit: (code: string) => Promise<void>;
   onResend: () => Promise<void>;
   onChangeEmail: () => void;
+  // Email codes by default; the phone code overrides these.
+  resendCooldownS?: number;
+  changeLabel?: string;
+  busyLabel?: string;
 };
 
 const RESEND_COOLDOWN_S = 30;
 
-// In-app email OTP entry. One field (not one box per digit) so paste and the
+// In-app OTP entry (email, or phone). One field (not one box per digit) so paste and the
 // keyboard's one-time-code suggestion fill it in a single step. The code lives
 // only in this component's state: never stored or logged.
-export function OtpEntry({ codeLength, onSubmit, onResend, onChangeEmail }: Props) {
+export function OtpEntry({
+  codeLength,
+  onSubmit,
+  onResend,
+  onChangeEmail,
+  resendCooldownS = RESEND_COOLDOWN_S,
+  changeLabel = 'Use a different email',
+  busyLabel = 'Signing you in…',
+}: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_S);
+  const [cooldown, setCooldown] = useState(resendCooldownS);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -60,7 +72,7 @@ export function OtpEntry({ codeLength, onSubmit, onResend, onChangeEmail }: Prop
     setCode('');
     try {
       await onResend();
-      setCooldown(RESEND_COOLDOWN_S);
+      setCooldown(resendCooldownS);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't send a new code. Please try again.");
     } finally {
@@ -87,7 +99,7 @@ export function OtpEntry({ codeLength, onSubmit, onResend, onChangeEmail }: Prop
       {busy && (
         <View style={styles.row}>
           <ActivityIndicator color={colors.text} />
-          <Text style={styles.sub}>Signing you in…</Text>
+          <Text style={styles.sub}>{busyLabel}</Text>
         </View>
       )}
       {error && <Text style={styles.error}>{error}</Text>}
@@ -99,7 +111,7 @@ export function OtpEntry({ codeLength, onSubmit, onResend, onChangeEmail }: Prop
           </Text>
         </Pressable>
         <Pressable onPress={onChangeEmail} disabled={busy} hitSlop={8}>
-          <Text style={[styles.link, busy && styles.linkDisabled]}>Use a different email</Text>
+          <Text style={[styles.link, busy && styles.linkDisabled]}>{changeLabel}</Text>
         </Pressable>
       </View>
     </View>
