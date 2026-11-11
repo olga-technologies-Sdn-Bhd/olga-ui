@@ -110,6 +110,7 @@ export function BusinessScreen({ navigation }: Props) {
             </View>
           </Card>
           <Button label="What you offer and want" onPress={() => navigation.navigate('OfferWant', { ventureId: business.venture_id })} />
+          <Button label="Invite people" variant="secondary" onPress={() => navigation.navigate('Invite', { ventureId: business.venture_id })} />
           <Button
             label="Your network"
             variant="secondary"

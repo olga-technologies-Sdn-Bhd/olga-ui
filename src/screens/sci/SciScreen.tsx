@@ -107,6 +107,7 @@ export function SciScreen({ navigation, route }: Props) {
               <Text style={styles.body}>
                 Invite people you know and Ol-ga will show how well each one fits your business. If you already did, check again in a little while.
               </Text>
+              <Button label="Invite people" small onPress={() => navigation.navigate('Invite', { ventureId })} style={styles.action} />
               <Button label="Check again" variant="secondary" small onPress={refresh} style={styles.action} />
             </>
           ) : (
@@ -145,6 +146,7 @@ export function SciScreen({ navigation, route }: Props) {
           })}
           {problem && <Text style={styles.sub}>{problem}</Text>}
           {cursor && <Button label="Show more" variant="secondary" loading={loadingMore} onPress={more} />}
+          <Button label="Invite more people" variant="secondary" onPress={() => navigation.navigate('Invite', { ventureId })} />
         </>
       )}
     </Screen>

@@ -19,6 +19,10 @@ export type HomeStackParamList = {
   OfferWant: { ventureId: string };
   // The business's Social Capital Index: the people scored for it.
   Sci: { ventureId: string; name?: string };
+  // Pick people from the phone's contacts and send them invitation links.
+  Invite: { ventureId: string };
+  // Someone opened an invitation link; the token is held in memory, not here.
+  AcceptInvitation: undefined;
   // The Olga agent (a preview); prompt: sent as the first message.
   OlgaAgent: { prompt?: string } | undefined;
 };
