@@ -2,7 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Briefcase, CircleAlert } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { ApiError, newIdempotencyKey, withRetries } from '../../api/client';
+import { newIdempotencyKey, withRetries } from '../../api/client';
 import { coreApi } from '../../api/core';
 import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
@@ -11,9 +11,10 @@ import { showDialog } from '../../components/DialogHost';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { HomeStackParamList } from '../../navigation/types';
-import { BUSINESS_NAME_MAX, businessProblem, cleanBusinessName, SavedBusiness } from '../../sci/business';
+import { BUSINESS_NAME_MAX, businessesFrom, businessProblem, chooseBusiness, cleanBusinessName, SavedBusiness } from '../../sci/business';
 import { loadBusiness, saveBusiness } from '../../sci/businessStore';
 import { newId } from '../../sci/ids';
+import { safeLogLine } from '../../sci/problems';
 import { radius, ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
@@ -40,9 +41,24 @@ export function BusinessScreen({ navigation }: Props) {
       setLoading(false);
       return;
     }
-    loadBusiness(memberId)
-      .then((saved) => active && setBusiness(saved))
-      .finally(() => active && setLoading(false));
+    (async () => {
+      const saved = await loadBusiness(memberId);
+      if (active) {
+        setBusiness(saved);
+        setLoading(false);
+      }
+      // Ask Core too, so a business made before a reinstall comes back. If
+      // that fails, what is on the phone stays.
+      try {
+        const found = chooseBusiness(saved, businessesFrom(await coreApi.listVentures()));
+        if (found && active) {
+          setBusiness(found);
+          if (found.venture_id !== saved?.venture_id || found.name !== saved?.name) await saveBusiness(memberId, found);
+        }
+      } catch {
+        // Offline or Core asleep: nothing to show the member.
+      }
+    })();
     return () => {
       active = false;
     };
@@ -67,7 +83,8 @@ export function BusinessScreen({ navigation }: Props) {
       const problem = businessProblem(e);
       if (problem.newId) attempt.current = null;
       // Only the code and correlation id: never the name or the request.
-      if (e instanceof ApiError) console.warn(`Save business failed (${e.code}), correlation_id=${e.correlationId ?? 'none'}`);
+      const line = safeLogLine('Save business', e);
+      if (line) console.warn(line);
       showDialog("Couldn't save your business", problem.message, undefined, { icon: CircleAlert, tone: 'danger' });
     } finally {
       setSaving(false);
@@ -92,7 +109,12 @@ export function BusinessScreen({ navigation }: Props) {
               </View>
             </View>
           </Card>
-          <Text style={styles.body}>Next, you will tell Ol-ga what you offer and what you want, then invite people you know.</Text>
+          <Button label="What you offer and want" onPress={() => navigation.navigate('OfferWant', { ventureId: business.venture_id })} />
+          <Button
+            label="Your network"
+            variant="secondary"
+            onPress={() => navigation.navigate('Sci', { ventureId: business.venture_id, name: business.name })}
+          />
         </>
       ) : (
         <>

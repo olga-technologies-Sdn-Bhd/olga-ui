@@ -141,6 +141,13 @@ export const coreApi = {
   createVenture: async (body: CreateVentureRequest, options?: RequestOptions) =>
     withEtag(await client.send<VentureBody>('POST', '/v1/ventures', body, options)),
 
+  // The member's businesses (to bring one back after a reinstall) and one by
+  // ID. The list's shape isn't in the guide: read it with businessesFrom().
+  listVentures: (options?: RequestOptions) => client.get<unknown>('/v1/ventures', options),
+
+  getVenture: async (ventureId: string, options?: RequestOptions) =>
+    withEtag(await client.send<VentureBody>('GET', `/v1/ventures/${encodeURIComponent(ventureId)}`, undefined, options)),
+
   importContacts: (body: ImportContactsRequest, options?: RequestOptions) =>
     client.post<ImportContactsResponse>('/v1/contacts/imports', body, options),
 
