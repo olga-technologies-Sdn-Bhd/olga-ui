@@ -13,6 +13,16 @@ export type HomeStackParamList = {
   DeleteAccount: undefined;
   HowYouAppear: undefined;
   BlockedMembers: undefined;
+  // The member's Business or Project, the start of their Social Capital Index.
+  Business: undefined;
+  // What the business offers and wants (OFFER and WANT).
+  OfferWant: { ventureId: string };
+  // The business's Social Capital Index: the people scored for it.
+  Sci: { ventureId: string; name?: string };
+  // Pick people from the phone's contacts and send them invitation links.
+  Invite: { ventureId: string };
+  // Someone opened an invitation link; the token is held in memory, not here.
+  AcceptInvitation: undefined;
   // The Olga agent (a preview); prompt: sent as the first message.
   OlgaAgent: { prompt?: string } | undefined;
 };

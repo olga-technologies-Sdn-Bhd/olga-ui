@@ -488,7 +488,9 @@ export function HomeScreen({ navigation }: Props) {
 
           <Pressable
             style={({ pressed }) => [styles.capital, pressed && styles.pressed]}
-            onPress={() => setIndexSoon(true)}
+            // The Social Capital Index is still being built: team builds open it,
+            // everyone else still sees "coming soon".
+            onPress={() => (TEAM_TOOLS ? navigation.navigate('Business') : setIndexSoon(true))}
             accessibilityRole="button"
             accessibilityLabel="Your Social Capital Index"
           >

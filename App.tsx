@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { warmUpApis } from './src/api/warmup';
 import { DialogHost } from './src/components/DialogHost';
 import { startEventLinks } from './src/navigation/eventLinks';
+import { startInviteLinks } from './src/navigation/inviteLinks';
 import { AuthProvider } from './src/context/AuthContext';
 import { EventsProvider } from './src/context/EventsContext';
 import { LiveProvider } from './src/context/LiveContext';
@@ -31,6 +32,7 @@ function ThemedApp() {
     warmUpApis();
     // Event links (QR codes, shares) can open the app before sign-in.
     startEventLinks();
+    startInviteLinks();
   }, []);
   const { scheme, colors } = useTheme();
   const navTheme = useMemo(() => {

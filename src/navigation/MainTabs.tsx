@@ -14,6 +14,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { EventsStack } from './EventsStack';
 import { GlassTab, GlassTabBar, TAB_BAR_HEIGHT } from './GlassTabBar';
 import { setEventOpener } from './eventLinks';
+import { setInviteOpener } from './inviteLinks';
 import { GoLiveStack } from './GoLiveStack';
 import { navigationRef } from './navigationRef';
 import { MainTabParamList } from './types';
@@ -32,6 +33,14 @@ export function MainTabs() {
       if (navigationRef.isReady()) navigationRef.navigate('EventsTab', { screen: 'EventDetail', params: { eventId }, initial: false });
     });
     return () => setEventOpener(null);
+  }, []);
+
+  // An invitation link (now or held from before sign-in) opens the Accept screen.
+  useEffect(() => {
+    setInviteOpener(() => {
+      if (navigationRef.isReady()) navigationRef.navigate('HomeTab', { screen: 'AcceptInvitation', initial: false });
+    });
+    return () => setInviteOpener(null);
   }, []);
 
   // While live (or available nearby) Go Live stays bold in the theme's main

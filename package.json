@@ -35,6 +35,7 @@
     "react-native": "0.87.1",
     "react-native-app-auth": "^8.4.1",
     "react-native-blob-util": "0.25.1",
+    "react-native-contacts": "^8.0.10",
     "react-native-haptic-feedback": "3.0.0",
     "react-native-image-picker": "^8.3.0",
     "react-native-keychain": "^10.0.0",
