@@ -185,6 +185,17 @@ export const coreApi = {
       options,
     ),
 
+  // The link stops working and the invite leaves the invitee's inbox. 204;
+  // repeating is fine. 409 INVITATION_NOT_REVOKABLE once accepted.
+  revokeInvitation: (invitationId: string, options?: RequestOptions) =>
+    client.post<void>(`/v1/invitations/${encodeURIComponent(invitationId)}/revoke`, undefined, options),
+
+  // Permanently deletes an imported contact (label, lookups, link, invitations
+  // and scores). A connection/chat with them stays. 204; repeating is fine.
+  // 409 CONTACT_NOT_REMOVABLE for contacts that weren't imported.
+  removeContact: (linkId: string, options?: RequestOptions) =>
+    client.del<void>(`/v1/contacts/${encodeURIComponent(linkId)}`, options),
+
   // Dev Core requires an Idempotency-Key here too (400 without one), so a fresh
   // one is sent. The token is in the path, so the URL must never be logged.
   openInvitation: (token: string) =>

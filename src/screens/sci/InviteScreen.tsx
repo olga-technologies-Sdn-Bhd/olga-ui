@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Check, CircleAlert } from 'lucide-react-native';
+import { Check, CircleAlert, Ellipsis, Trash2 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, FlatList, Keyboard, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -27,7 +27,17 @@ import {
   RawContact,
 } from '../../sci/contacts';
 import { askForContactsAccess, openPhoneSettings, readDeviceContacts } from '../../sci/deviceContacts';
-import { canResend, INVITE_STATUS_LABEL, inviteMessage, inviteProblem, loadInvitedContacts, resendProblem } from '../../sci/invitations';
+import {
+  canResend,
+  canWithdraw,
+  INVITE_STATUS_LABEL,
+  inviteMessage,
+  inviteProblem,
+  loadImportedContacts,
+  removeProblem,
+  resendProblem,
+  withdrawProblem,
+} from '../../sci/invitations';
 import { inviteUrl } from '../../sci/inviteLink';
 import { safeLogLine } from '../../sci/problems';
 import { radius, ThemeColors } from '../../theme/colors';
@@ -37,7 +47,9 @@ import { semibold } from '../../theme/typography';
 type Props = NativeStackScreenProps<HomeStackParamList, 'Invite'>;
 
 type Phase = 'intro' | 'reading' | 'denied' | 'pick' | 'done';
-type Link = { link_id: string; name: string; url: string; status?: InvitationStatus };
+type Link = { link_id: string; invitation_id: string; name: string; url: string; status?: InvitationStatus };
+// Someone who can be withdrawn or removed: from the list or a new batch.
+type Person = { link_id: string; invitation_id?: string | null; name: string; status?: InvitationStatus | null };
 
 // Invite people the member knows: they pick up to 20 contacts, Ol-ga imports
 // those people and makes an invitation link for each, and the member sends each
@@ -66,9 +78,13 @@ export function InviteScreen({ navigation, route }: Props) {
   const [resending, setResending] = useState<string | null>(null);
   // One key per invitation being sent again, kept until it works.
   const resendKeys = useRef<Record<string, string>>({});
+  // A withdraw or remove under way (link_id), and one key per action, kept
+  // until it works.
+  const [working, setWorking] = useState<string | null>(null);
+  const actionKeys = useRef<Record<string, string>>({});
 
   const loadInvited = useCallback(() => {
-    loadInvitedContacts()
+    loadImportedContacts()
       .then(setInvited)
       .catch((e) => {
         const line = safeLogLine('Load invitations', e);
@@ -196,7 +212,7 @@ export function InviteScreen({ navigation, route }: Props) {
         a.imported = true;
       }
       const batch = await withRetries((timeoutMs) => coreApi.createInviteBatch(a.batch, { idempotencyKey: a.batchKey, timeoutMs }));
-      setLinks(batch.invitations.map((i) => ({ link_id: i.link_id, name: a.names[i.link_id] ?? '', url: inviteUrl(i.token), status: 'APPROVED' })));
+      setLinks(batch.invitations.map((i) => ({ link_id: i.link_id, invitation_id: i.invitation_id, name: a.names[i.link_id] ?? '', url: inviteUrl(i.token), status: 'APPROVED' })));
       setBatchId(batch.batch_id);
       attempt.current = null;
       setSelected(new Set());
@@ -226,7 +242,7 @@ export function InviteScreen({ navigation, route }: Props) {
       const sent = await withRetries((timeoutMs) => coreApi.resendInvitation(invitationId, INVITE_VALID_DAYS, { idempotencyKey: key, timeoutMs }));
       delete resendKeys.current[invitationId];
       loadInvited();
-      share({ link_id: sent.link_id, name: person.label, url: inviteUrl(sent.token) });
+      share({ link_id: sent.link_id, invitation_id: sent.invitation_id, name: person.label, url: inviteUrl(sent.token) });
     } catch (e) {
       const line = safeLogLine('Resend invitation', e);
       if (line) console.warn(line);
@@ -235,6 +251,80 @@ export function InviteScreen({ navigation, route }: Props) {
       setResending(null);
     }
   };
+
+  // Withdraw: the link stops working and it leaves their inbox.
+  const withdraw = async (person: Person) => {
+    const invitationId = person.invitation_id;
+    if (!invitationId || working) return;
+    const keyName = `withdraw:${invitationId}`;
+    const key = (actionKeys.current[keyName] ??= newIdempotencyKey());
+    setWorking(person.link_id);
+    try {
+      await withRetries((timeoutMs) => coreApi.revokeInvitation(invitationId, { idempotencyKey: key, timeoutMs }));
+      delete actionKeys.current[keyName];
+      setLinks((prev) => prev.map((l) => (l.link_id === person.link_id ? { ...l, status: 'REVOKED' } : l)));
+    } catch (e) {
+      const line = safeLogLine('Withdraw invitation', e);
+      if (line) console.warn(line);
+      showDialog("Couldn't withdraw it", withdrawProblem(e), undefined, { icon: CircleAlert, tone: 'danger' });
+    } finally {
+      setWorking(null);
+      loadInvited();
+      loadBatch();
+    }
+  };
+
+  // Remove: deletes the contact from Ol-ga for good.
+  const remove = async (person: Person) => {
+    if (working) return;
+    const keyName = `remove:${person.link_id}`;
+    const key = (actionKeys.current[keyName] ??= newIdempotencyKey());
+    setWorking(person.link_id);
+    try {
+      await withRetries((timeoutMs) => coreApi.removeContact(person.link_id, { idempotencyKey: key, timeoutMs }));
+      delete actionKeys.current[keyName];
+      setLinks((prev) => prev.filter((l) => l.link_id !== person.link_id));
+      setInvited((prev) => prev?.filter((c) => c.link_id !== person.link_id) ?? prev);
+    } catch (e) {
+      const line = safeLogLine('Remove contact', e);
+      if (line) console.warn(line);
+      showDialog("Couldn't remove them", removeProblem(e), undefined, { icon: CircleAlert, tone: 'danger' });
+    } finally {
+      setWorking(null);
+      loadInvited();
+    }
+  };
+
+  const confirmRemove = (person: Person) =>
+    showDialog(
+      `Remove ${person.name || 'this contact'}?`,
+      'This permanently deletes them from Ol-ga, including their invitation and scores. Any chat you already have with them stays.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => remove(person) },
+      ],
+      { icon: Trash2, tone: 'danger' },
+    );
+
+  const manage = (person: Person) =>
+    showDialog(person.name || 'Contact', undefined, [
+      ...(canWithdraw(person.status) ? [{ text: 'Withdraw invite', onPress: () => withdraw(person) }] : []),
+      { text: 'Remove contact', style: 'destructive' as const, onPress: () => confirmRemove(person) },
+      { text: 'Cancel', style: 'cancel' as const },
+    ]);
+
+  const moreButton = (person: Person) => (
+    <Pressable
+      onPress={() => manage(person)}
+      disabled={!!working}
+      hitSlop={10}
+      style={styles.more}
+      accessibilityRole="button"
+      accessibilityLabel={`More for ${person.name}`}
+    >
+      <Ellipsis size={20} color={working === person.link_id ? colors.line : colors.muted} />
+    </Pressable>
+  );
 
   const sentList =
     invited && invited.length > 0 ? (
@@ -247,11 +337,12 @@ export function InviteScreen({ navigation, route }: Props) {
                 <Text style={styles.name} numberOfLines={1}>
                   {p.label}
                 </Text>
-                <Text style={styles.note}>{p.invitation_status ? INVITE_STATUS_LABEL[p.invitation_status] : ''}</Text>
+                <Text style={styles.note}>{p.invitation_status ? INVITE_STATUS_LABEL[p.invitation_status] : 'Not invited'}</Text>
               </View>
               {canResend(p.invitation_status) && (
                 <Button label="Resend" small variant="secondary" loading={resending === p.invitation_id} onPress={() => resend(p)} />
               )}
+              {moreButton({ link_id: p.link_id, invitation_id: p.invitation_id, name: p.label, status: p.invitation_status })}
             </View>
           </Card>
         ))}
@@ -296,7 +387,9 @@ export function InviteScreen({ navigation, route }: Props) {
     return (
       <Screen>
         {header}
-        <Text style={styles.lead}>Your invitations are ready. Send each link to the person it is for.</Text>
+        <Text style={styles.lead}>
+          {links.length > 0 ? 'Your invitations are ready. Send each link to the person it is for.' : 'No invitations left to send.'}
+        </Text>
         {links.map((l) => (
           <Card key={l.link_id}>
             <View style={styles.row}>
@@ -306,11 +399,12 @@ export function InviteScreen({ navigation, route }: Props) {
                 </Text>
                 {l.status && <Text style={styles.note}>{INVITE_STATUS_LABEL[l.status]}</Text>}
               </View>
-              <Button label="Share" small onPress={() => share(l)} />
+              {l.status !== 'REVOKED' && <Button label="Share" small onPress={() => share(l)} />}
+              {moreButton({ link_id: l.link_id, invitation_id: l.invitation_id, name: l.name, status: l.status })}
             </View>
           </Card>
         ))}
-        <Text style={styles.note}>The links are shown only here. If you leave this screen, use Resend to make a new one.</Text>
+        {links.length > 0 && <Text style={styles.note}>The links are shown only here. If you leave this screen, use Resend to make a new one.</Text>}
         <Button label="Done" variant="secondary" onPress={() => navigation.goBack()} />
       </Screen>
     );
@@ -394,6 +488,7 @@ const makeStyles = (colors: ThemeColors) =>
     note: { fontSize: 12, lineHeight: 17, color: colors.muted },
     name: { fontSize: 15, fontWeight: semibold, color: colors.text },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    more: { paddingVertical: 8, paddingLeft: 4 },
     input: {
       backgroundColor: colors.surface,
       borderWidth: 1,
