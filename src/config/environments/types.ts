@@ -23,9 +23,10 @@ export type Environment = {
   // Event links (<linkScheme>://event/<id>), from QR codes and shares. Its own
   // scheme: Android's sign-in redirect handler claims every redirectScheme URL.
   linkScheme: string;
-  // Where shared invitation links point: <inviteLinkBase>/invitations/<token>,
-  // no trailing slash. Not set until the web host exists: links then use the
-  // app's own scheme (<linkScheme>://invitations/<token>).
+  // Where shared invitation links point: <inviteLinkBase>/i#<token>, no
+  // trailing slash. Core serves the fallback page and the App Links / Universal
+  // Links files there; the Android host is also in android/app/build.gradle.
+  // Not set: links use the app's own scheme (<linkScheme>://invitations/<token>).
   inviteLinkBase?: string;
   // Continue with Email inside the app (Entra native auth). Off: the email
   // code is entered on the Microsoft-hosted page instead.

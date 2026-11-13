@@ -185,10 +185,10 @@ export const coreApi = {
       options,
     ),
 
-  // Read-only by contract: no Idempotency-Key. The token is in the path, so
-  // the URL must never be logged.
+  // Dev Core requires an Idempotency-Key here too (400 without one), so a fresh
+  // one is sent. The token is in the path, so the URL must never be logged.
   openInvitation: (token: string) =>
-    client.post<OpenedInvitation>(`/v1/invitations/${encodeURIComponent(token)}/open`, undefined, { idempotencyKey: null }),
+    client.post<OpenedInvitation>(`/v1/invitations/${encodeURIComponent(token)}/open`),
 
   // Invitations waiting for me (no link needed), and accepting one of them:
   // the same answer as accepting by link.

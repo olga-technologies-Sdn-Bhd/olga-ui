@@ -10,7 +10,7 @@ const noBase = { linkScheme: 'olgaapp' };
 describe('invitation links', () => {
   it('uses the app scheme until a host is set, then the host', () => {
     expect(inviteUrl(TOKEN, noBase)).toBe(`olgaapp://invitations/${TOKEN}`);
-    expect(inviteUrl(TOKEN, withBase)).toBe(`https://app.example.com/invitations/${TOKEN}`);
+    expect(inviteUrl(TOKEN, withBase)).toBe(`https://app.example.com/i#${TOKEN}`);
   });
 
   it('reads the token from either kind of link', () => {
