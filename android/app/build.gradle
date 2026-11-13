@@ -88,6 +88,9 @@ def olgaLinkScheme = olgaEnv == "prod" ? "olgaapp" : "olgaapp-dev"
 // Prod is the store app. Every other environment installs next to it as a separate
 // app, with its own app ID and launcher name, so a phone can hold both.
 def olgaApplicationId = olgaEnv == "prod" ? "com.olga.connect" : "com.olga.connect.dev"
+// Host of https invite links (<host>/i#<token>), verified as an App Link.
+// Must match inviteLinkBase in src/config/environments.
+def olgaInviteHost = olgaEnv == "prod" ? "ca-olga-core-api-prod.blueground-4e984cd4.malaysiawest.azurecontainerapps.io" : "ca-olga-core-api-dev.agreeableocean-8bb4ca77.malaysiawest.azurecontainerapps.io"
 def olgaAppLabel = olgaEnv == "prod" ? "Ol-ga" : "Ol-ga Dev"
 
 /**
@@ -141,7 +144,7 @@ android {
         versionName "1.0"
         // Claimed by react-native-app-auth to catch the <scheme>://auth
         // redirect back from Entra External ID's hosted sign-in page.
-        manifestPlaceholders = [appAuthRedirectScheme: olgaAuthRedirectScheme, appLabel: olgaAppLabel, linkScheme: olgaLinkScheme]
+        manifestPlaceholders = [appAuthRedirectScheme: olgaAuthRedirectScheme, appLabel: olgaAppLabel, linkScheme: olgaLinkScheme, inviteHost: olgaInviteHost]
     }
     signingConfigs {
         debug {

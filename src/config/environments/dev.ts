@@ -14,5 +14,7 @@ export const environment: Environment = {
     redirectScheme: 'olga-dev',
   },
   linkScheme: 'olgaapp-dev',
+  // Core dev host until a link domain (e.g. link-dev.ol-ga.com) exists.
+  inviteLinkBase: 'https://ca-olga-core-api-dev.agreeableocean-8bb4ca77.malaysiawest.azurecontainerapps.io',
   inAppEmailOtp: true,
 };
