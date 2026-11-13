@@ -63,6 +63,22 @@ export const INVITE_STATUS_LABEL: Record<InvitationStatus, string> = {
 export const canResend = (status: InvitationStatus | null | undefined) =>
   status === 'APPROVED' || status === 'OPENED' || status === 'EXPIRED';
 
+// Sent or opened invitations can be withdrawn; accepted ones can't (409).
+export const canWithdraw = (status: InvitationStatus | null | undefined) => status === 'APPROVED' || status === 'OPENED';
+
+export function withdrawProblem(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.code === 'INVITATION_NOT_REVOKABLE' || error.status === 409) return 'This invitation was already accepted, so it can’t be withdrawn.';
+    if (error.status === 404) return "This invitation isn't there any more.";
+  }
+  return connectionProblem(error) ?? GENERIC_PROBLEM;
+}
+
+export function removeProblem(error: unknown): string {
+  if (error instanceof ApiError && (error.code === 'CONTACT_NOT_REMOVABLE' || error.status === 409)) return 'This contact can’t be removed.';
+  return connectionProblem(error) ?? GENERIC_PROBLEM;
+}
+
 export function resendProblem(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.code === 'INVITATION_NOT_RESENDABLE' || error.status === 409) return "This invitation can't be sent again.";
@@ -82,16 +98,17 @@ export function openProblem(error: unknown): string | null {
 
 export const EXPIRED_INVITATION = 'This invitation has expired. Ask the person who sent it for a new one.';
 
-// Everyone this member has invited (people imported but never invited are
-// left out), newest first. A few pages at most: a batch holds 20 people.
-export async function loadInvitedContacts(maxPages = 5): Promise<ImportedContact[]> {
+// Everyone this member imported from the phone, newest first: those invited
+// and those whose invitation never got made (so they can still be removed).
+// A few pages at most.
+export async function loadImportedContacts(maxPages = 5): Promise<ImportedContact[]> {
   const people: ImportedContact[] = [];
   const seen = new Set<string>();
   let cursor: string | null | undefined = null;
   for (let page = 0; page < maxPages; page++) {
     const result: ImportedContactPage = await coreApi.listImportedContacts(cursor);
     for (const c of result.items) {
-      if (!c.invitation_id || seen.has(c.link_id)) continue;
+      if (seen.has(c.link_id)) continue;
       seen.add(c.link_id);
       people.push(c);
     }
