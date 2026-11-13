@@ -1,9 +1,11 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Check, CircleAlert } from 'lucide-react-native';
-import { useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
-import { withRetries } from '../../api/client';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, FlatList, Keyboard, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { newIdempotencyKey, withRetries } from '../../api/client';
 import { coreApi } from '../../api/core';
+import type { ImportedContact, InvitationStatus } from '../../api/types';
 import { maskPhone } from '../../auth/phone';
 import { BackHeader } from '../../components/BackHeader';
 import { Button } from '../../components/Button';
@@ -11,9 +13,21 @@ import { Card } from '../../components/Card';
 import { showDialog } from '../../components/DialogHost';
 import { Screen } from '../../components/Screen';
 import { HomeStackParamList } from '../../navigation/types';
-import { attemptSignature, buildInviteAttempt, CONTACT_RETENTION_DAYS, DeviceContact, INVITE_BATCH_MAX, InviteAttempt } from '../../sci/contacts';
+import {
+  attemptSignature,
+  buildInviteAttempt,
+  CONTACT_RETENTION_DAYS,
+  DeviceContact,
+  deviceContactsFrom,
+  DIAL_CODES,
+  guessDialCode,
+  INVITE_BATCH_MAX,
+  INVITE_VALID_DAYS,
+  InviteAttempt,
+  RawContact,
+} from '../../sci/contacts';
 import { askForContactsAccess, openPhoneSettings, readDeviceContacts } from '../../sci/deviceContacts';
-import { inviteMessage, inviteProblem } from '../../sci/invitations';
+import { canResend, INVITE_STATUS_LABEL, inviteMessage, inviteProblem, loadInvitedContacts, resendProblem } from '../../sci/invitations';
 import { inviteUrl } from '../../sci/inviteLink';
 import { safeLogLine } from '../../sci/problems';
 import { radius, ThemeColors } from '../../theme/colors';
@@ -23,7 +37,7 @@ import { semibold } from '../../theme/typography';
 type Props = NativeStackScreenProps<HomeStackParamList, 'Invite'>;
 
 type Phase = 'intro' | 'reading' | 'denied' | 'pick' | 'done';
-type Link = { link_id: string; name: string; url: string };
+type Link = { link_id: string; name: string; url: string; status?: InvitationStatus };
 
 // Invite people the member knows: they pick up to 20 contacts, Ol-ga imports
 // those people and makes an invitation link for each, and the member sends each
@@ -33,7 +47,12 @@ export function InviteScreen({ navigation, route }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [phase, setPhase] = useState<Phase>('intro');
-  const [contacts, setContacts] = useState<DeviceContact[]>([]);
+  // Everyone on the phone, as read; who can be invited depends on the
+  // country code used for numbers saved without one.
+  const [raw, setRaw] = useState<RawContact[]>([]);
+  const [chosenCode, setChosenCode] = useState<string | null>(null);
+  const dialCode = useMemo(() => chosenCode ?? guessDialCode(raw), [chosenCode, raw]);
+  const contacts = useMemo<DeviceContact[]>(() => deviceContactsFrom(raw, dialCode), [raw, dialCode]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
@@ -41,12 +60,76 @@ export function InviteScreen({ navigation, route }: Props) {
   // The same people picked again reuse the same IDs and keys (a retry of one
   // action); a different pick is a new action.
   const attempt = useRef<InviteAttempt | null>(null);
+  // People already invited (any business), from Ol-ga; null until loaded.
+  const [invited, setInvited] = useState<ImportedContact[] | null>(null);
+  const [batchId, setBatchId] = useState<string | null>(null);
+  const [resending, setResending] = useState<string | null>(null);
+  // One key per invitation being sent again, kept until it works.
+  const resendKeys = useRef<Record<string, string>>({});
+
+  const loadInvited = useCallback(() => {
+    loadInvitedContacts()
+      .then(setInvited)
+      .catch((e) => {
+        const line = safeLogLine('Load invitations', e);
+        if (line) console.warn(line);
+      });
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadInvited();
+    }, [loadInvited]),
+  );
+
+  // Where each new invitation stands, read again when the member comes back
+  // from sending the links.
+  const loadBatch = useCallback(() => {
+    if (!batchId) return;
+    coreApi
+      .getInviteBatch(batchId)
+      .then((b) => {
+        const status: Record<string, InvitationStatus> = {};
+        for (const i of b.invitations) status[i.link_id] = i.status;
+        setLinks((prev) => prev.map((l) => ({ ...l, status: status[l.link_id] ?? l.status })));
+      })
+      .catch((e) => {
+        const line = safeLogLine('Load invitation batch', e);
+        if (line) console.warn(line);
+      });
+  }, [batchId]);
+
+  useEffect(() => {
+    if (phase !== 'done') return;
+    loadBatch();
+    const sub = AppState.addEventListener('change', (state) => state === 'active' && loadBatch());
+    return () => sub.remove();
+  }, [phase, loadBatch]);
+
+  // The tab bar hides under the keyboard, so its space is given to the list
+  // while typing; otherwise only a row or two of results would show.
+  const [typing, setTyping] = useState(false);
+  useEffect(() => {
+    const shown = Keyboard.addListener('keyboardDidShow', () => setTyping(true));
+    const hidden = Keyboard.addListener('keyboardDidHide', () => setTyping(false));
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
+  }, []);
+
+  // Invited people by name, to mark them in the picker.
+  const invitedByName = useMemo(() => {
+    const map = new Map<string, InvitationStatus>();
+    for (const c of invited ?? []) if (c.invitation_status && !map.has(c.label)) map.set(c.label, c.invitation_status);
+    return map;
+  }, [invited]);
 
   const start = async () => {
     setPhase('reading');
     try {
       if (!(await askForContactsAccess())) return setPhase('denied');
-      setContacts(await readDeviceContacts());
+      setRaw(await readDeviceContacts());
       setPhase('pick');
     } catch {
       setPhase('intro');
@@ -62,10 +145,44 @@ export function InviteScreen({ navigation, route }: Props) {
       return next;
     });
 
+  // By name, email or number (digits only, so "+91 98" finds "+9198...").
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return q ? contacts.filter((c) => c.name.toLowerCase().includes(q)) : contacts;
+    if (!q) return contacts;
+    const digits = q.replace(/\D/g, '');
+    // Best matches first: a name starting with the search, or a number ending
+    // with the digits typed; then any other match. Stable within each group.
+    const rank = (c: DeviceContact): number => {
+      const name = c.name.toLowerCase();
+      const phone = digits.length >= 3 && c.phone ? c.phone.replace(/\D/g, '') : '';
+      if (name.startsWith(q) || (phone && phone.endsWith(digits))) return 0;
+      if (name.includes(q) || (!!c.email && c.email.toLowerCase().includes(q)) || (phone && phone.includes(digits))) return 1;
+      return 2;
+    };
+    return contacts
+      .map((c) => ({ c, r: rank(c) }))
+      .filter((x) => x.r < 2)
+      .sort((x, y) => x.r - y.r)
+      .map((x) => x.c);
   }, [contacts, search]);
+
+  const pickDialCode = () =>
+    showDialog(
+      'Country code',
+      'Used for numbers saved without one.',
+      [
+        ...DIAL_CODES.map((d) => ({
+          text: `${d.country} (${d.code})`,
+          onPress: () => {
+            // The same people now have other numbers: a new attempt.
+            attempt.current = null;
+            setChosenCode(d.code);
+          },
+        })),
+        { text: 'Cancel', style: 'cancel' as const },
+      ],
+    );
+  const dialName = DIAL_CODES.find((d) => d.code === dialCode)?.country ?? '';
 
   const send = async () => {
     const people = contacts.filter((c) => selected.has(c.id));
@@ -79,7 +196,8 @@ export function InviteScreen({ navigation, route }: Props) {
         a.imported = true;
       }
       const batch = await withRetries((timeoutMs) => coreApi.createInviteBatch(a.batch, { idempotencyKey: a.batchKey, timeoutMs }));
-      setLinks(batch.invitations.map((i) => ({ link_id: i.link_id, name: a.names[i.link_id] ?? '', url: inviteUrl(i.token) })));
+      setLinks(batch.invitations.map((i) => ({ link_id: i.link_id, name: a.names[i.link_id] ?? '', url: inviteUrl(i.token), status: 'APPROVED' })));
+      setBatchId(batch.batch_id);
       attempt.current = null;
       setSelected(new Set());
       setPhase('done');
@@ -98,6 +216,49 @@ export function InviteScreen({ navigation, route }: Props) {
     Share.share({ message: inviteMessage(link.url) }).catch(() => undefined);
   };
 
+  // A new link for someone already invited: the old link stops working.
+  const resend = async (person: ImportedContact) => {
+    const invitationId = person.invitation_id;
+    if (!invitationId || resending) return;
+    const key = (resendKeys.current[invitationId] ??= newIdempotencyKey());
+    setResending(invitationId);
+    try {
+      const sent = await withRetries((timeoutMs) => coreApi.resendInvitation(invitationId, INVITE_VALID_DAYS, { idempotencyKey: key, timeoutMs }));
+      delete resendKeys.current[invitationId];
+      loadInvited();
+      share({ link_id: sent.link_id, name: person.label, url: inviteUrl(sent.token) });
+    } catch (e) {
+      const line = safeLogLine('Resend invitation', e);
+      if (line) console.warn(line);
+      showDialog("Couldn't send it again", resendProblem(e), undefined, { icon: CircleAlert, tone: 'danger' });
+    } finally {
+      setResending(null);
+    }
+  };
+
+  const sentList =
+    invited && invited.length > 0 ? (
+      <>
+        <Text style={styles.section}>Sent invitations</Text>
+        {invited.map((p) => (
+          <Card key={p.link_id}>
+            <View style={styles.row}>
+              <View style={styles.flex}>
+                <Text style={styles.name} numberOfLines={1}>
+                  {p.label}
+                </Text>
+                <Text style={styles.note}>{p.invitation_status ? INVITE_STATUS_LABEL[p.invitation_status] : ''}</Text>
+              </View>
+              {canResend(p.invitation_status) && (
+                <Button label="Resend" small variant="secondary" loading={resending === p.invitation_id} onPress={() => resend(p)} />
+              )}
+            </View>
+          </Card>
+        ))}
+        <Text style={styles.note}>Resending makes a new link. The old one stops working.</Text>
+      </>
+    ) : null;
+
   const header = <BackHeader onBack={() => navigation.goBack()} title="Invite people" />;
 
   if (phase === 'intro' || phase === 'reading') {
@@ -113,6 +274,7 @@ export function InviteScreen({ navigation, route }: Props) {
           </Text>
         </Card>
         <Button label="Continue" loading={phase === 'reading'} onPress={start} />
+        {sentList}
       </Screen>
     );
   }
@@ -138,26 +300,29 @@ export function InviteScreen({ navigation, route }: Props) {
         {links.map((l) => (
           <Card key={l.link_id}>
             <View style={styles.row}>
-              <Text style={[styles.name, styles.flex]} numberOfLines={1}>
-                {l.name}
-              </Text>
+              <View style={styles.flex}>
+                <Text style={styles.name} numberOfLines={1}>
+                  {l.name}
+                </Text>
+                {l.status && <Text style={styles.note}>{INVITE_STATUS_LABEL[l.status]}</Text>}
+              </View>
               <Button label="Share" small onPress={() => share(l)} />
             </View>
           </Card>
         ))}
-        <Text style={styles.note}>The links are shown only here. If you leave this screen, you will need to make new ones.</Text>
+        <Text style={styles.note}>The links are shown only here. If you leave this screen, use Resend to make a new one.</Text>
         <Button label="Done" variant="secondary" onPress={() => navigation.goBack()} />
       </Screen>
     );
   }
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} contentStyle={typing ? styles.typing : undefined}>
       {header}
       <TextInput
         value={search}
         onChangeText={setSearch}
-        placeholder="Search your contacts"
+        placeholder="Search by name, email or number"
         placeholderTextColor={colors.muted}
         style={styles.input}
         autoCorrect={false}
@@ -168,6 +333,11 @@ export function InviteScreen({ navigation, route }: Props) {
           ? 'No contacts with an email or a phone number with its country code were found.'
           : `Pick up to ${INVITE_BATCH_MAX} people. ${selected.size} picked.`}
       </Text>
+      <Pressable onPress={pickDialCode} accessibilityRole="button" accessibilityLabel={`Country code for numbers without one: ${dialName} ${dialCode}. Change`}>
+        <Text style={styles.note}>
+          Numbers without a country code use {dialCode} ({dialName}). <Text style={styles.link}>Change</Text>
+        </Text>
+      </Pressable>
       <FlatList
         style={styles.flex}
         data={shown}
@@ -175,6 +345,7 @@ export function InviteScreen({ navigation, route }: Props) {
         keyboardShouldPersistTaps="handled"
         renderItem={({ item }) => {
           const on = selected.has(item.id);
+          const already = invitedByName.get(item.name);
           return (
             <Pressable
               onPress={() => toggle(item.id)}
@@ -189,19 +360,24 @@ export function InviteScreen({ navigation, route }: Props) {
                   {item.name}
                 </Text>
                 <Text style={styles.note} numberOfLines={1}>
-                  {item.email ?? (item.phone ? maskPhone(item.phone) : '')}
+                  {already
+                    ? `Already invited · ${INVITE_STATUS_LABEL[already]}`
+                    : item.email ?? (item.phone ? `${maskPhone(item.phone)}${item.assumedCode ? ` · ${dialCode} added` : ''}` : '')}
                 </Text>
               </View>
             </Pressable>
           );
         }}
       />
-      <Button
-        label={selected.size ? `Invite ${selected.size} ${selected.size === 1 ? 'person' : 'people'}` : 'Pick people to invite'}
-        loading={busy}
-        disabled={selected.size === 0}
-        onPress={send}
-      />
+      {/* Hidden while typing so the results get the room; back when the keyboard closes. */}
+      {!typing && (
+        <Button
+          label={selected.size ? `Invite ${selected.size} ${selected.size === 1 ? 'person' : 'people'}` : 'Pick people to invite'}
+          loading={busy}
+          disabled={selected.size === 0}
+          onPress={send}
+        />
+      )}
     </Screen>
   );
 }
@@ -209,6 +385,9 @@ export function InviteScreen({ navigation, route }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1 },
+    link: { color: colors.brand, fontWeight: semibold },
+    typing: { paddingBottom: 12 },
+    section: { fontSize: 14, fontWeight: semibold, color: colors.text, marginTop: 8 },
     lead: { fontSize: 14, lineHeight: 20, color: colors.text },
     title: { fontSize: 16, fontWeight: semibold, color: colors.text, marginBottom: 6 },
     body: { fontSize: 13, lineHeight: 19, color: colors.text },

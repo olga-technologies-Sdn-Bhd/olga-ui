@@ -9,6 +9,12 @@ import type {
   ImportContactsRequest,
   ImportContactsResponse,
   InviteBatchBody,
+  InviteBatchDetail,
+  ImportedContactPage,
+  OpenedInvitation,
+  PendingInvitation,
+  ResendInvitationResponse,
+  SciSummary,
   SciPage,
   VentureBody,
   MemberReportRequest,
@@ -161,6 +167,34 @@ export const coreApi = {
 
   getVentureSci: (ventureId: string, params?: { limit?: number; cursor?: string | null }, options?: RequestOptions) =>
     client.get<SciPage>(sciPath(ventureId, params), options),
+
+  // All businesses at once, for the Home card.
+  getSciSummary: (options?: RequestOptions) => client.get<SciSummary>('/v1/sci/summary', options),
+
+  // Imported people with their latest invitation (limit 1-100).
+  listImportedContacts: (cursor?: string | null, limit = 100) =>
+    client.get<ImportedContactPage>(`/v1/contacts?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`),
+
+  getInviteBatch: (batchId: string) => client.get<InviteBatchDetail>(`/v1/invite-batches/${encodeURIComponent(batchId)}`),
+
+  // A new token: share a new link. Pass the same idempotencyKey when retrying.
+  resendInvitation: (invitationId: string, expiresInDays: number, options?: RequestOptions) =>
+    client.post<ResendInvitationResponse>(
+      `/v1/invitations/${encodeURIComponent(invitationId)}/resend`,
+      { expires_in_days: expiresInDays },
+      options,
+    ),
+
+  // Read-only by contract: no Idempotency-Key. The token is in the path, so
+  // the URL must never be logged.
+  openInvitation: (token: string) =>
+    client.post<OpenedInvitation>(`/v1/invitations/${encodeURIComponent(token)}/open`, undefined, { idempotencyKey: null }),
+
+  // Invitations waiting for me (no link needed), and accepting one of them:
+  // the same answer as accepting by link.
+  listPendingInvitations: () => client.get<PendingInvitation[]>('/v1/me/invitations'),
+  acceptPendingInvitation: (invitationId: string, options?: RequestOptions) =>
+    client.post<AcceptInvitationResponse>(`/v1/me/invitations/${encodeURIComponent(invitationId)}/accept`, undefined, options),
 
   // Reads marked cached() are kept on the phone (encrypted) and answered from
   // there when there's no network: see offlineCache.ts.
