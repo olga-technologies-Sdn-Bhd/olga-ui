@@ -7,9 +7,10 @@ import { ElementRef, useCallback, useEffect, useMemo, useRef, useState } from 'r
 import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { coreApi } from '../../api/core';
-import type { Meeting } from '../../api/types';
+import type { Meeting, SciSummary } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
 import { CapitalOrb } from '../../components/CapitalOrb';
+import { PendingInvitations } from '../sci/PendingInvitations';
 import { ComingSoonModal } from '../../components/ComingSoonModal';
 import { GoLiveMark } from '../../components/GoLiveMark';
 import { TEAM_TOOLS } from '../../config/env';
@@ -25,6 +26,14 @@ import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
 import { OlgaMark } from '../../components/OlgaMark';
 import { OLGA_PROMPTS } from './OlgaAgentScreen';
+
+// Bands of the Social Capital Index, strongest first (the server's bands).
+const SCI_BANDS = [
+  ['exact', 'Exact'],
+  ['strong', 'Strong'],
+  ['relevant', 'Relevant'],
+  ['emerging', 'Emerging'],
+] as const;
 
 type Props = CompositeScreenProps<NativeStackScreenProps<HomeStackParamList, 'Home'>, BottomTabScreenProps<MainTabParamList>>;
 
@@ -156,6 +165,8 @@ export function HomeScreen({ navigation }: Props) {
   const { events, refresh: refreshEvents, refreshIfStale } = useEvents();
   // null until the first load finishes.
   const [relationships, setRelationships] = useState<number | null>(null);
+  // Team builds: the Social Capital Index from Ol-ga (null until loaded).
+  const [sci, setSci] = useState<SciSummary | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
   const [indexSoon, setIndexSoon] = useState(false);
@@ -175,10 +186,20 @@ export function HomeScreen({ navigation }: Props) {
   const photo = PHOTOS[period];
   const { requests: nearbyRequests, setMode: setGoLiveMode } = useNearby();
 
+  // Team builds count the people scored for this member's businesses (each
+  // once, at their best score); everyone else sees confirmed relationships.
+  const shownCount = TEAM_TOOLS ? (sci ? sci.contact_count : null) : relationships;
+
   const loadNetwork = useCallback(async () => {
     const [connections, page] = await Promise.all([coreApi.getConnections().catch(() => null), coreApi.getMeetings().catch(() => null)]);
     if (connections) setRelationships(connections.filter(c => c.status === 'ACTIVE').length);
     if (page) setMeetings(page.items);
+    if (TEAM_TOOLS) {
+      coreApi
+        .getSciSummary()
+        .then(setSci)
+        .catch(() => undefined);
+    }
   }, []);
 
   useFocusEffect(
@@ -486,6 +507,9 @@ export function HomeScreen({ navigation }: Props) {
             ))}
           </ScrollView>
 
+          {/* Invitations waiting for me, above the index. */}
+          <PendingInvitations />
+
           <Pressable
             style={({ pressed }) => [styles.capital, pressed && styles.pressed]}
             // The Social Capital Index is still being built: team builds open it,
@@ -503,9 +527,14 @@ export function HomeScreen({ navigation }: Props) {
               <CapitalOrb size={76} />
               <View style={styles.flex} collapsable={false}>
                 <View style={styles.countRow}>
-                  <Text style={styles.count}>{relationships === null ? '–' : relationships.toLocaleString('en-US')}</Text>
+                  <Text style={styles.count}>{shownCount === null ? '–' : shownCount.toLocaleString('en-US')}</Text>
                 </View>
-                <Text style={styles.countLabel}>Confirmed professional relationships</Text>
+                <Text style={styles.countLabel}>{TEAM_TOOLS ? 'People scored for your businesses' : 'Confirmed professional relationships'}</Text>
+                {TEAM_TOOLS && sci && sci.contact_count > 0 && (
+                  <Text style={styles.bands}>
+                    {SCI_BANDS.map(([key, label]) => `${label} ${sci.bands[key]}`).join('  ·  ')}
+                  </Text>
+                )}
                 {changesThisMonth > 0 && (
                   <View style={styles.delta}>
                     {/* Growth: an up-trend mark before the count. */}
@@ -773,6 +802,7 @@ const makeStyles = (colors: ThemeColors) =>
     delta: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', marginTop: 6, backgroundColor: colors.positiveSoft, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 8 },
     deltaText: { fontFamily: fonts.bodyBold, fontSize: 11.5, fontWeight: semibold, color: colors.positive },
     countLabel: { fontSize: 13, color: colors.muted },
+    bands: { fontSize: 11.5, color: colors.muted, marginTop: 4 },
     pressed: { opacity: 0.85 },
     // The updates' white sheet: rounded top.
     sheet: { backgroundColor: colors.bg, paddingTop: 6 },

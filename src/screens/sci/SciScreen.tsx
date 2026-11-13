@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { coreApi } from '../../api/core';
 import type { SciContact } from '../../api/types';
@@ -10,13 +10,15 @@ import { Pill } from '../../components/Pill';
 import { Screen } from '../../components/Screen';
 import { HomeStackParamList } from '../../navigation/types';
 import { connectionProblem, GENERIC_PROBLEM, safeLogLine } from '../../sci/problems';
-import { appendPage, displayScore, refreshFirstPage, roleLabel, scoreBand, scoringSettled } from '../../sci/score';
+import { appendPage, displayScore, refreshFirstPage, roleLabel, scoreBand, scoringSettled, SHIFT_LABEL, shiftCounts, ShiftGroup } from '../../sci/score';
 import { useBackoffPoll } from '../../sci/useBackoffPoll';
 import { ThemeColors } from '../../theme/colors';
 import { useTheme } from '../../theme/ThemeContext';
-import { semibold } from '../../theme/typography';
+import { fonts, semibold } from '../../theme/typography';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Sci'>;
+
+const SHIFT_ORDER: ShiftGroup[] = ['clients', 'partners', 'space', 'none'];
 
 function updatedOn(iso: string): string {
   const d = new Date(iso);
@@ -38,6 +40,15 @@ export function SciScreen({ navigation, route }: Props) {
   const itemsRef = useRef<SciContact[]>([]);
   // Once a later page is loaded, a refresh no longer moves the cursor back.
   const pagedOn = useRef(false);
+  // How many people the business has in all (the list may have more pages).
+  const [total, setTotal] = useState<number | null>(null);
+
+  useEffect(() => {
+    coreApi
+      .getSciSummary()
+      .then((s) => setTotal(s.ventures.find((v) => v.venture_id === ventureId)?.contact_count ?? null))
+      .catch(() => undefined);
+  }, [ventureId]);
 
   const show = (next: SciContact[]) => {
     itemsRef.current = next;
@@ -86,10 +97,17 @@ export function SciScreen({ navigation, route }: Props) {
   };
 
   const anyUpdating = items.some((c) => c.is_stale);
+  const shifted = useMemo(() => shiftCounts(items), [items]);
+  const people = Math.max(total ?? 0, items.length);
 
   return (
     <Screen onRefresh={refreshNow}>
-      <BackHeader onBack={() => navigation.goBack()} title="Your network" />
+      <BackHeader
+        onBack={() => navigation.goBack()}
+        right={items.length > 0 ? <Pill label={`${people.toLocaleString('en-US')} ${people === 1 ? 'person' : 'people'}`} /> : undefined}
+      />
+      <Text style={styles.heading}>Your network</Text>
+      <Text style={styles.lead}>A private view of how your real-world relationships are evolving.</Text>
       {!!name && <Text style={styles.sub}>{name}</Text>}
 
       {items.length === 0 ? (
@@ -120,6 +138,18 @@ export function SciScreen({ navigation, route }: Props) {
         </Card>
       ) : (
         <>
+          <Text style={styles.section}>How it has shifted</Text>
+          <Card>
+            <View style={styles.grid}>
+              {SHIFT_ORDER.map((g) => (
+                <View key={g} style={styles.cell} accessible accessibilityLabel={`${shifted[g]} ${SHIFT_LABEL[g]}`}>
+                  <Text style={styles.metric}>{shifted[g]}</Text>
+                  <Text style={styles.sub}>{SHIFT_LABEL[g]}</Text>
+                </View>
+              ))}
+            </View>
+          </Card>
+          <Text style={styles.section}>People</Text>
           {anyUpdating && <Text style={styles.sub}>Some scores are updating.</Text>}
           {items.map((c) => {
             const band = scoreBand(c.score);
@@ -156,6 +186,12 @@ export function SciScreen({ navigation, route }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     sub: { fontSize: 12, color: colors.muted },
+    heading: { fontFamily: fonts.headingBold, fontSize: 26, fontWeight: semibold, color: colors.text },
+    lead: { fontSize: 14, lineHeight: 20, color: colors.muted, marginTop: -6 },
+    section: { fontSize: 13, fontWeight: semibold, color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 6 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    cell: { flexBasis: '47%', flexGrow: 1, backgroundColor: colors.accentSoft, borderRadius: 14, padding: 12, gap: 2 },
+    metric: { fontSize: 25, fontWeight: '800', color: colors.text },
     title: { fontSize: 16, fontWeight: semibold, color: colors.text, marginBottom: 4 },
     body: { fontSize: 13, lineHeight: 19, color: colors.text },
     action: { marginTop: 10, alignSelf: 'flex-start' },

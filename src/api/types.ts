@@ -761,3 +761,101 @@ export type SciPage = {
   items: SciContact[];
   next_cursor?: string | null; // pass back unchanged; null/absent = last page
 };
+
+// GET /v1/sci/summary: every business at once. Each contact counts once, at
+// its best score. Bands: Emerging 10-24, Relevant 25-49, Strong 50-74,
+// Exact 75-100 (the server's numbers, never worked out here).
+export type SciBands = { emerging: number; relevant: number; strong: number; exact: number };
+
+export type SciVentureSummary = {
+  venture_id: string;
+  name: string;
+  contact_count: number;
+  top_score?: number | null;
+  average_score?: number | null;
+  stale_count: number;
+  last_scored_at?: string | null;
+};
+
+export type SciSummary = {
+  venture_count: number;
+  contact_count: number;
+  bands: SciBands;
+  average_score?: number | null;
+  last_scored_at?: string | null;
+  ventures: SciVentureSummary[];
+};
+
+export type InvitationStatus = 'APPROVED' | 'OPENED' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
+
+// GET /v1/contacts: people this member imported, newest first, with their
+// latest invitation. No contact details come back, only the label.
+export type ImportedContact = {
+  link_id: string;
+  contact_record_id: string;
+  label: string;
+  lifecycle_state: string;
+  contact_member_id?: string | null;
+  has_email: boolean;
+  has_phone: boolean;
+  invitation_id?: string | null;
+  invitation_status?: InvitationStatus | null;
+  invitation_expires_at?: string | null;
+  imported_at: string;
+  expires_at: string;
+};
+
+export type ImportedContactPage = {
+  items: ImportedContact[];
+  next_cursor?: string | null;
+};
+
+// GET /v1/invite-batches/{batch_id}: no tokens come back.
+export type InviteBatchDetail = {
+  batch_id: string;
+  venture_id?: string | null;
+  status: string;
+  expires_at: string;
+  created_at: string;
+  invitations: {
+    invitation_id: string;
+    link_id: string;
+    label: string;
+    status: InvitationStatus;
+    first_opened_at?: string | null;
+    accepted_at?: string | null;
+    expires_at: string;
+  }[];
+};
+
+// POST /v1/invitations/{invitation_id}/resend -> a NEW token (the old link
+// stops working). 409 INVITATION_NOT_RESENDABLE once accepted or revoked.
+export type ResendInvitationResponse = {
+  invitation_id: string;
+  link_id: string;
+  token: string;
+  expires_at: string;
+};
+
+// POST /v1/invitations/{token}/open: who sent it, before Accept. 404 when the
+// token is unknown or the invitation was withdrawn.
+export type OpenedInvitation = {
+  invitation_id: string;
+  inviter_member_id: string;
+  inviter_display_name: string;
+  venture_name?: string | null;
+  status: InvitationStatus;
+  expires_at: string;
+};
+
+// GET /v1/me/invitations: invitations waiting for the signed-in member, found
+// by their verified phone or email. No tokens.
+export type PendingInvitation = {
+  invitation_id: string;
+  inviter_member_id: string;
+  inviter_display_name: string;
+  inviter_headline?: string | null;
+  venture_name?: string | null;
+  invited_at: string;
+  expires_at: string;
+};

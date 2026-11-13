@@ -24,26 +24,35 @@ export type RawContact = {
   phoneNumbers?: { number: string }[];
 };
 
-export type DeviceContact = { id: string; name: string; email: string | null; phone: string | null };
+// assumedCode: the phone was saved without a country code and the member's
+// chosen one was put in front.
+export type DeviceContact = { id: string; name: string; email: string | null; phone: string | null; assumedCode?: boolean };
 
-// "0044 ..." is "+44 ...". A number with no country code can't be sent as
-// E.164, so that contact is reached by email only.
-export function phoneForImport(raw: string): string | null {
+// "0044 ..." is "+44 ...". A number saved without a country code gets
+// dialCode (e.g. "+91") in front, minus its leading 0; with no dialCode it
+// can't be sent as E.164.
+export function phoneForImport(raw: string, dialCode?: string): string | null {
   const trimmed = raw.trim().replace(/^00/, '+');
-  return normalizePhone(trimmed);
+  if (trimmed.startsWith('+') || !dialCode) return normalizePhone(trimmed);
+  const local = trimmed.replace(/\D/g, '').replace(/^0+/, '');
+  return local ? normalizePhone(`${dialCode}${local}`) : null;
 }
 
 const looksLikeEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-// People who can be invited (an email or a usable phone), by name.
-export function deviceContactsFrom(raw: RawContact[]): DeviceContact[] {
+// People who can be invited (an email or a usable phone), by name. A full
+// international number wins over one that needs dialCode.
+export function deviceContactsFrom(raw: RawContact[], dialCode?: string): DeviceContact[] {
   const people: DeviceContact[] = [];
   for (const c of raw) {
     const email = (c.emailAddresses ?? []).map((e) => e.email.trim()).find(looksLikeEmail) ?? null;
-    const phone = (c.phoneNumbers ?? []).map((p) => phoneForImport(p.number)).find((p): p is string => !!p) ?? null;
+    const numbers = (c.phoneNumbers ?? []).map((p) => p.number);
+    const full = numbers.map((n) => phoneForImport(n)).find((p): p is string => !!p) ?? null;
+    const assumed = full || !dialCode ? null : (numbers.map((n) => phoneForImport(n, dialCode)).find((p): p is string => !!p) ?? null);
+    const phone = full ?? assumed;
     if (!email && !phone) continue;
     const name = (c.displayName || `${c.givenName ?? ''} ${c.familyName ?? ''}`).trim().replace(/\s+/g, ' ') || email || phone || '';
-    people.push({ id: c.recordID, name: name.slice(0, LABEL_MAX), email, phone });
+    people.push({ id: c.recordID, name: name.slice(0, LABEL_MAX), email, phone, ...(assumed ? { assumedCode: true } : {}) });
   }
   return people.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -81,4 +90,30 @@ export function buildInviteAttempt(ventureId: string, people: DeviceContact[], n
     names,
     imported: false,
   };
+}
+
+// Country codes offered for numbers saved without one (Ol-ga's markets first).
+export const DIAL_CODES = [
+  { code: '+60', country: 'Malaysia' },
+  { code: '+91', country: 'India' },
+  { code: '+65', country: 'Singapore' },
+  { code: '+62', country: 'Indonesia' },
+  { code: '+44', country: 'United Kingdom' },
+  { code: '+1', country: 'US / Canada' },
+] as const;
+
+// The likeliest country code for numbers saved without one: the one most
+// common among this phone's full numbers (Malaysia when there are none).
+export function guessDialCode(raw: RawContact[]): string {
+  const counts = new Map<string, number>();
+  for (const c of raw) {
+    for (const p of c.phoneNumbers ?? []) {
+      const full = phoneForImport(p.number);
+      const match = full && DIAL_CODES.find((d) => full.startsWith(d.code));
+      if (match) counts.set(match.code, (counts.get(match.code) ?? 0) + 1);
+    }
+  }
+  let best: string = DIAL_CODES[0].code;
+  for (const [code, n] of counts) if (n > (counts.get(best) ?? 0)) best = code;
+  return best;
 }
