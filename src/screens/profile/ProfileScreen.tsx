@@ -212,6 +212,24 @@ export function ProfileScreen({ navigation }: Props) {
           </View>
           <ChevronRight size={18} color={colors.muted} />
         </Pressable>
+        {/* Matching by phone or email belongs to the Social Capital Index. */}
+        {TEAM_TOOLS && (
+          <>
+            <View style={styles.divider} />
+            <Pressable
+              onPress={() => navigation.navigate('Discovery')}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            >
+              <RowIcon icon={Search} styles={styles} colors={colors} />
+              <View style={styles.rowText}>
+                <Text style={styles.label}>Who can find me</Text>
+                <Text style={styles.rowSub}>By your phone number or email</Text>
+              </View>
+              <ChevronRight size={18} color={colors.muted} />
+            </Pressable>
+          </>
+        )}
       </Card>
 
       <Text style={styles.sectionTitle}>Privacy</Text>

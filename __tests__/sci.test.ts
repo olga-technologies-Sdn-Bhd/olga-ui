@@ -1,4 +1,4 @@
-import { coreApi, sciPath } from '../src/api/core';
+import { coreApi, pagedPath } from '../src/api/core';
 import { nlpApi } from '../src/api/nlp';
 import { newId } from '../src/sci/ids';
 
@@ -41,23 +41,23 @@ describe('newId', () => {
   });
 });
 
-describe('sciPath', () => {
+describe('pagedPath', () => {
   it('asks for 50 by default', () => {
-    expect(sciPath('venture_1')).toBe('/v1/ventures/venture_1/sci?limit=50');
+    expect(pagedPath('/v1/sci/contacts')).toBe('/v1/sci/contacts?limit=50');
   });
 
   it('keeps the limit between 1 and 100', () => {
-    expect(sciPath('v', { limit: 0 })).toContain('limit=1');
-    expect(sciPath('v', { limit: 500 })).toContain('limit=100');
-    expect(sciPath('v', { limit: 20.7 })).toContain('limit=20');
+    expect(pagedPath('/x', { limit: 0 })).toContain('limit=1');
+    expect(pagedPath('/x', { limit: 500 })).toContain('limit=100');
+    expect(pagedPath('/x', { limit: 20.7 })).toContain('limit=20');
   });
 
   it('passes the cursor back unchanged, only URL-encoded', () => {
-    expect(sciPath('v', { cursor: 'a+b/c==' })).toBe('/v1/ventures/v/sci?limit=50&cursor=a%2Bb%2Fc%3D%3D');
+    expect(pagedPath('/x', { cursor: 'a+b/c==' })).toBe('/x?limit=50&cursor=a%2Bb%2Fc%3D%3D');
   });
 
   it('leaves the cursor out on the first page', () => {
-    expect(sciPath('v', { cursor: null })).not.toContain('cursor');
+    expect(pagedPath('/x', { cursor: null })).not.toContain('cursor');
   });
 });
 
@@ -74,9 +74,11 @@ describe('Core calls for businesses and SCI', () => {
   it('reuses the key it is given when retrying', async () => {
     const sent = mockFetch(200, { imported_count: 1, link_ids: ['link_1'] });
     await coreApi.importContacts(
-      { contacts: [{ contact_record_id: 'c1', link_id: 'link_1', label: 'Priya', email: 'p@example.com' }], retention_days: 365 },
+      { contacts: [{ contact_record_id: 'c1', link_id: 'link_1', label: 'Priya', email: 'p@example.com' }] },
       { idempotencyKey: 'key-1' }
     );
+    // Retention is the backend's policy: the app never sends it.
+    expect(sent[0].body).not.toContain('retention_days');
     expect(sent[0].url).toMatch(/\/v1\/contacts\/imports$/);
     expect(sent[0].headers['Idempotency-Key']).toBe('key-1');
   });
@@ -97,24 +99,69 @@ describe('Core calls for businesses and SCI', () => {
     expect(accepted.conversation_id).toBe('chat_1');
   });
 
-  it('reads one page of the SCI network with GET and no Idempotency-Key', async () => {
+  it('reads one page of SCI contacts with GET and no Idempotency-Key', async () => {
     const sent = mockFetch(200, { items: [], next_cursor: null });
-    const page = await coreApi.getVentureSci('venture_1', { limit: 20, cursor: 'c=' });
+    const page = await coreApi.getSciContacts({ limit: 20, cursor: 'c=' });
     expect(sent[0].method).toBe('GET');
-    expect(sent[0].url).toMatch(/\/v1\/ventures\/venture_1\/sci\?limit=20&cursor=c%3D$/);
+    expect(sent[0].url).toMatch(/\/v1\/sci\/contacts\?limit=20&cursor=c%3D$/);
     expect(sent[0].headers['Idempotency-Key']).toBeUndefined();
     expect(page.items).toEqual([]);
+  });
+
+  it('reads the SCI summary and the first three reach-out items', async () => {
+    const sent = mockFetch(200, { sci_count: 1742, projection_status: 'READY' });
+    const summary = await coreApi.getSciSummary();
+    expect(sent[0].url).toMatch(/\/v1\/sci\/summary$/);
+    expect(summary.sci_count).toBe(1742);
+    const sent2 = mockFetch(200, { items: [], next_cursor: null });
+    await coreApi.getSciReachOut({ limit: 3 });
+    expect(sent2[0].url).toMatch(/\/v1\/sci\/reach-out\?limit=3$/);
+  });
+
+  it('creates an outcome and decides on it, each with its own key', async () => {
+    const sent = mockFetch(201, { outcome_id: 'o1', points: 0, confirmation_count: 0, e_tag: '"1"' });
+    await coreApi.createRelationshipOutcome({ outcome_id: 'o1', contact_member_id: 'm1', outcome_type: 'MEETING', occurred_at: '2026-11-22T09:00:00Z' });
+    await coreApi.decideRelationshipOutcome('o1', 'CONFIRM');
+    expect(sent[0].url).toMatch(/\/v1\/relationship-outcomes$/);
+    expect(sent[1].url).toMatch(/\/v1\/relationship-outcomes\/o1\/decisions$/);
+    expect(JSON.parse(sent[1].body!)).toEqual({ decision: 'CONFIRM' });
+    expect(sent[0].headers['Idempotency-Key']).not.toBe(sent[1].headers['Idempotency-Key']);
+  });
+
+  it('writes the discovery preference with the ETag in If-Match', async () => {
+    const sent = mockFetch(200, { find_by_phone: true, find_by_email: false, e_tag: '"2"', updated_at: 'x' });
+    await coreApi.updateDiscoveryPreference({ find_by_phone: true, find_by_email: false }, '"1"');
+    expect(sent[0].method).toBe('PUT');
+    expect(sent[0].headers['If-Match']).toBe('"1"');
+    expect(sent[0].headers['Idempotency-Key']).toBeTruthy();
+  });
+
+  it('updates a notification preference with PATCH', async () => {
+    const sent = mockFetch(200, { purpose_code: 'p', push_enabled: true, email_enabled: false, updated_at: 'x', e_tag: '"1"' });
+    await coreApi.updateNotificationPreference({ purpose_code: 'p', push_enabled: true, email_enabled: false, timezone_id: 'Asia/Kuala_Lumpur' });
+    expect(sent[0].method).toBe('PATCH');
+    expect(sent[0].url).toMatch(/\/v1\/me\/notification-preferences$/);
+  });
+});
+
+describe('NLP calls for the primary intent', () => {
+  it('previews without an Idempotency-Key', async () => {
+    const sent = mockFetch(200, { canonical_tags: ['malaysia'], tag_fingerprint: 'f', previewed_at: 'x', preview_text: 'You offer: ...' });
+    const preview = await nlpApi.previewPrimaryIntent({ offer_text: 'o', want_text: 'w', tags: ['Malaysia'] });
+    expect(sent[0].url).toMatch(/\/v1\/primary-intents\/preview$/);
+    expect(preview.canonical_tags).toEqual(['malaysia']);
+  });
+
+  it('reads the history with the cursor unchanged', async () => {
+    const sent = mockFetch(200, { items: [], next_cursor: null });
+    await nlpApi.getPrimaryIntentHistory({ cursor: 'a+b=' });
+    expect(sent[0].url).toMatch(/\/v1\/primary-intents\/history\?limit=50&cursor=a%2Bb%3D$/);
   });
 });
 
 describe('NLP call for a business OFFER and WANT', () => {
   it('always sends the intent_set_id as the Idempotency-Key', async () => {
-    const sent = mockFetch(202, {
-      intent_set_id: 'intent_set_1',
-      venture_id: 'venture_1',
-      offer: { intent_id: 'intent_1', status: 'PROCESSING', model_version: '', preprocessing_version: 'v1', contains_pii: false },
-      want: { intent_id: 'intent_2', status: 'PROCESSING', model_version: '', preprocessing_version: 'v1', contains_pii: false },
-    });
+    const sent = mockFetch(202, { intent_set_id: 'intent_set_1', venture_id: 'venture_1', projection_status: 'RECALCULATING' });
     await nlpApi.submitVentureIntentSet(
       {
         intent_set_id: 'intent_set_1',
@@ -124,7 +171,10 @@ describe('NLP call for a business OFFER and WANT', () => {
         offer_text: 'We design packaging.',
         want_text: 'We want brand introductions.',
         expires_at: '2027-02-02T10:30:00Z',
-        structured_intent: { competitor: false, qualification_met: true },
+        structured_intent: { tags: ['malaysia'] },
+        tags: ['malaysia'],
+        tag_fingerprint: 'f',
+        previewed_at: '2026-11-22T10:00:00Z',
       },
       // A caller cannot send a different key.
       { idempotencyKey: 'something-else' }

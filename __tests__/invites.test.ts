@@ -55,21 +55,52 @@ describe('contacts from the phone', () => {
   });
 });
 
+describe('optional details from the phone', () => {
+  it('reads job title, company and the first city', () => {
+    const [p] = deviceContactsFrom([
+      {
+        recordID: '1',
+        displayName: 'Priya',
+        emailAddresses: [{ email: 'priya@example.com' }],
+        jobTitle: ' Operations   Director ',
+        company: 'Example Manufacturing',
+        postalAddresses: [{ city: '' }, { city: 'Kuala Lumpur' }],
+      },
+    ]);
+    expect(p).toMatchObject({ jobTitle: 'Operations Director', company: 'Example Manufacturing', city: 'Kuala Lumpur' });
+  });
+
+  it('leaves them out when the phone has none', () => {
+    const [p] = deviceContactsFrom([{ recordID: '1', displayName: 'Bo', emailAddresses: [{ email: 'bo@example.com' }] }]);
+    expect(p).toMatchObject({ jobTitle: null, company: null, city: null });
+  });
+});
+
 describe('an invite attempt', () => {
   const people = [
-    { id: 'a', name: 'Amy', email: 'amy@example.com', phone: null },
-    { id: 'b', name: 'Bo', email: null, phone: '+919885554624' },
+    { id: 'a', name: 'Amy', email: 'amy@example.com', phone: null, jobTitle: 'Director', company: 'Acme', city: 'Kuala Lumpur' },
+    { id: 'b', name: 'Bo', email: null, phone: '+919885554624', jobTitle: null, company: null, city: null },
   ];
 
   it('makes IDs once: link IDs match the import and the batch', () => {
     const a = buildInviteAttempt('venture_x', people);
     expect(a.importRequest.contacts).toHaveLength(2);
-    expect(a.importRequest.retention_days).toBe(365);
+    // Retention is the backend's policy, so it is never sent.
+    expect(a.importRequest).not.toHaveProperty('retention_days');
+    // Only the allowed fields go with a person.
+    expect(a.importRequest.contacts[0]).toMatchObject({ label: 'Amy', job_title: 'Director', company: 'Acme', city: 'Kuala Lumpur' });
+    expect(Object.keys(a.importRequest.contacts[0]).sort()).toEqual(
+      ['city', 'company', 'contact_record_id', 'email', 'job_title', 'label', 'link_id', 'phone'].sort()
+    );
     expect(a.batch.link_ids).toEqual(a.importRequest.contacts.map((c) => c.link_id));
     expect(a.batch).toMatchObject({ venture_id: 'venture_x', expires_in_days: 14 });
     expect(a.batch.link_ids.length).toBeLessThanOrEqual(INVITE_BATCH_MAX);
     expect(a.importKey).not.toBe(a.batchKey);
     expect(Object.values(a.names).sort()).toEqual(['Amy', 'Bo']);
+  });
+
+  it('leaves the business out of the batch when there is none', () => {
+    expect(buildInviteAttempt(undefined, people).batch).not.toHaveProperty('venture_id');
   });
 
   it('is the same attempt for the same people in any order, and new for others', () => {

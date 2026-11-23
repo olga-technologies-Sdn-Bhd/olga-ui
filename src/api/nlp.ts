@@ -11,6 +11,9 @@ import type {
   UpsertIntentBody,
   UpsertIntentRequest,
   UpsertIntentResponse,
+  PrimaryIntentHistoryPage,
+  PrimaryIntentPreview,
+  PrimaryIntentPreviewRequest,
   VentureIntentSetRequest,
   VentureIntentSetResponse,
 } from './types';
@@ -73,10 +76,22 @@ export const nlpApi = {
   getIntent: async (intentId: string) =>
     withEtag(await client.send<IntentBody>('GET', `/v1/intents/${encodeURIComponent(intentId)}`, undefined, nlp())),
 
-  // A business's OFFER and WANT, sent together (SCI). 202 = accepted, not yet
-  // scored: poll getIntent for both IDs until MATCH_READY (stop on FAILED).
-  // Core insists the Idempotency-Key equals intent_set_id, so it is set here
-  // and callers cannot send them apart. Retry with the same body only.
+  // The primary intent: preview first (replay-safe, no Idempotency-Key), show
+  // preview_text, then save with the preview's values passed back unchanged.
+  previewPrimaryIntent: (body: PrimaryIntentPreviewRequest, options?: RequestOptions) =>
+    client.post<PrimaryIntentPreview>('/v1/primary-intents/preview', body, nlp(options)),
+
+  getPrimaryIntentHistory: (params?: { limit?: number; cursor?: string | null }, options?: RequestOptions) =>
+    client.get<PrimaryIntentHistoryPage>(
+      `/v1/primary-intents/history?limit=${params?.limit ?? 50}${params?.cursor ? `&cursor=${encodeURIComponent(params.cursor)}` : ''}`,
+      nlp(options)
+    ),
+
+  // A business's OFFER and WANT, sent together. 202 = accepted; the scores are
+  // being recalculated, so read Core's /v1/sci/summary until projection_status
+  // is READY. The Idempotency-Key must equal intent_set_id, so it is set here
+  // and callers cannot send them apart. Retry with the same body only. A second
+  // change of tags within 24 hours is 409 RESOURCE_STATE_CONFLICT.
   submitVentureIntentSet: (body: VentureIntentSetRequest, options?: RequestOptions) =>
     client.post<VentureIntentSetResponse>('/v1/venture-intent-sets', body, nlp({ ...options, idempotencyKey: body.intent_set_id })),
 

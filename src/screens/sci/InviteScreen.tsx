@@ -16,7 +16,6 @@ import { HomeStackParamList } from '../../navigation/types';
 import {
   attemptSignature,
   buildInviteAttempt,
-  CONTACT_RETENTION_DAYS,
   DeviceContact,
   deviceContactsFrom,
   DIAL_CODES,
@@ -361,7 +360,7 @@ export function InviteScreen({ navigation, route }: Props) {
           {/* Placeholder wording: to be confirmed by Ol-ga before release. */}
           <Text style={styles.body}>
             To invite people, Ol-ga needs to read your contacts. Only the people you pick, up to {INVITE_BATCH_MAX} at a time, are sent to Ol-ga, with their
-            name and their email or phone number. Ol-ga keeps them for {CONTACT_RETENTION_DAYS} days to show how well each person fits your business.
+            name, their email or phone number, and their job title, company and city if you have them saved. Ol-ga uses them to show how well each person fits your business, and keeps them as long as its policy says.
           </Text>
         </Card>
         <Button label="Continue" loading={phase === 'reading'} onPress={start} />

@@ -6,9 +6,9 @@ import { newId } from './ids';
 // Inviting people the member knows. Contact details are sensitive: they stay
 // in memory, are sent only to Core (never NLP), and are never logged.
 
-// Product: contacts are kept for a year; an invitation stays valid for two weeks
-// (the guide's example). A batch holds at most 20 people.
-export const CONTACT_RETENTION_DAYS = 365;
+// An invitation stays valid for two weeks (the contract's example). A batch
+// holds at most 20 people. How long contacts are kept is the backend's policy:
+// the app doesn't send or show a retention period.
 export const INVITE_VALID_DAYS = 14;
 export const INVITE_BATCH_MAX = 20;
 export const IMPORT_MAX = 500;
@@ -22,11 +22,29 @@ export type RawContact = {
   familyName?: string | null;
   emailAddresses?: { email: string }[];
   phoneNumbers?: { number: string }[];
+  company?: string | null;
+  jobTitle?: string | null;
+  postalAddresses?: { city?: string | null }[];
 };
 
 // assumedCode: the phone was saved without a country code and the member's
 // chosen one was put in front.
-export type DeviceContact = { id: string; name: string; email: string | null; phone: string | null; assumedCode?: boolean };
+export type DeviceContact = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  // Only these may be collected besides the name, phone and email.
+  jobTitle: string | null;
+  company: string | null;
+  city: string | null;
+  assumedCode?: boolean;
+};
+
+const clean = (value: string | null | undefined, max: number): string | null => {
+  const text = (value ?? '').trim().replace(/\s+/g, ' ');
+  return text ? text.slice(0, max) : null;
+};
 
 // "0044 ..." is "+44 ...". A number saved without a country code gets
 // dialCode (e.g. "+91") in front, minus its leading 0; with no dialCode it
@@ -52,7 +70,16 @@ export function deviceContactsFrom(raw: RawContact[], dialCode?: string): Device
     const phone = full ?? assumed;
     if (!email && !phone) continue;
     const name = (c.displayName || `${c.givenName ?? ''} ${c.familyName ?? ''}`).trim().replace(/\s+/g, ' ') || email || phone || '';
-    people.push({ id: c.recordID, name: name.slice(0, LABEL_MAX), email, phone, ...(assumed ? { assumedCode: true } : {}) });
+    people.push({
+      id: c.recordID,
+      name: name.slice(0, LABEL_MAX),
+      email,
+      phone,
+      jobTitle: clean(c.jobTitle, 250),
+      company: clean(c.company, 250),
+      city: clean((c.postalAddresses ?? []).find((a) => a.city?.trim())?.city, 250),
+      ...(assumed ? { assumedCode: true } : {}),
+    });
   }
   return people.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -70,22 +97,31 @@ export type InviteAttempt = {
   imported: boolean;
 };
 
-export const attemptSignature = (ventureId: string, people: DeviceContact[]) =>
-  `${ventureId}|${people.map((p) => p.id).sort().join(',')}`;
+export const attemptSignature = (ventureId: string | undefined, people: DeviceContact[]) =>
+  `${ventureId ?? ''}|${people.map((p) => p.id).sort().join(',')}`;
 
-export function buildInviteAttempt(ventureId: string, people: DeviceContact[], now = Date.now()): InviteAttempt {
+export function buildInviteAttempt(ventureId: string | undefined, people: DeviceContact[], now = Date.now()): InviteAttempt {
   const contacts: ImportContact[] = [];
   const names: Record<string, string> = {};
   for (const p of people) {
     const link_id = newId('link', now);
     names[link_id] = p.name;
-    contacts.push({ contact_record_id: newId('contact', now), link_id, label: p.name, email: p.email, phone: p.phone });
+    contacts.push({
+      contact_record_id: newId('contact', now),
+      link_id,
+      label: p.name,
+      email: p.email,
+      phone: p.phone,
+      job_title: p.jobTitle,
+      company: p.company,
+      city: p.city,
+    });
   }
   return {
     signature: attemptSignature(ventureId, people),
-    importRequest: { contacts, retention_days: CONTACT_RETENTION_DAYS },
+    importRequest: { contacts },
     importKey: newIdempotencyKey(),
-    batch: { batch_id: newId('batch', now), venture_id: ventureId, link_ids: contacts.map((c) => c.link_id), expires_in_days: INVITE_VALID_DAYS },
+    batch: { batch_id: newId('batch', now), ...(ventureId ? { venture_id: ventureId } : {}), link_ids: contacts.map((c) => c.link_id), expires_in_days: INVITE_VALID_DAYS },
     batchKey: newIdempotencyKey(),
     names,
     imported: false,

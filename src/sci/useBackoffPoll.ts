@@ -2,10 +2,10 @@ import { useIsFocused } from '@react-navigation/native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
-// 2, 5, 10, then every 15 seconds: the guide's pace for waiting on scoring.
-export const SCI_POLL_DELAYS_MS = [2000, 5000, 10000, 15000];
-// Stop on its own after this long and leave a manual refresh.
-export const SCI_POLL_MAX_MS = 3 * 60 * 1000;
+// While scores are recalculating: look every 3-5 seconds, and stop after 60
+// seconds with a manual refresh (the work carries on in the background).
+export const SCI_POLL_DELAYS_MS = [3000, 4000, 5000];
+export const SCI_POLL_MAX_MS = 60 * 1000;
 
 type Options = {
   enabled: boolean;
