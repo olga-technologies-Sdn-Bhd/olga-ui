@@ -140,7 +140,7 @@ android {
         applicationId olgaApplicationId
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode 8
         versionName "1.0"
         // Claimed by react-native-app-auth to catch the <scheme>://auth
         // redirect back from Entra External ID's hosted sign-in page.
