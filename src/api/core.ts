@@ -15,6 +15,14 @@ import type {
   PendingInvitation,
   ResendInvitationResponse,
   SciSummary,
+  SciReachOutPage,
+  CreateOutcomeRequest,
+  DiscoveryPreference,
+  InAppNotificationPage,
+  NotificationPreference,
+  NotificationPreferenceRequest,
+  OutcomeDecision,
+  RelationshipOutcome,
   SciPage,
   VentureBody,
   MemberReportRequest,
@@ -90,14 +98,14 @@ export function memberPictureSource(memberId: string, size: PictureSize, version
   };
 }
 
-// The SCI list is read a page at a time. limit is 1-100 (default 50); the
+// SCI lists are read a page at a time. limit is 1-100 (default 50); the
 // cursor is Core's own and goes back exactly as it came, only URL-encoded.
 export const SCI_PAGE_SIZE = 50;
 
-export function sciPath(ventureId: string, params: { limit?: number; cursor?: string | null } = {}) {
+export function pagedPath(base: string, params: { limit?: number; cursor?: string | null } = {}) {
   const limit = Math.min(100, Math.max(1, Math.floor(params.limit ?? SCI_PAGE_SIZE)));
   const cursor = params.cursor ? `&cursor=${encodeURIComponent(params.cursor)}` : '';
-  return `/v1/ventures/${encodeURIComponent(ventureId)}/sci?limit=${limit}${cursor}`;
+  return `${base}?limit=${limit}${cursor}`;
 }
 
 export const coreApi = {
@@ -165,11 +173,56 @@ export const coreApi = {
   acceptInvitation: (token: string, options?: RequestOptions) =>
     client.post<AcceptInvitationResponse>(`/v1/invitations/${encodeURIComponent(token)}/accept`, undefined, options),
 
-  getVentureSci: (ventureId: string, params?: { limit?: number; cursor?: string | null }, options?: RequestOptions) =>
-    client.get<SciPage>(sciPath(ventureId, params), options),
-
-  // All businesses at once, for the Home card.
+  // The Social Capital Index (SCI), the member's own (not per business).
+  // Summary: counts, projection_status and the goal. Contacts: the people, with
+  // flags that say what counts. Reach-out: who to contact next, in rank order.
   getSciSummary: (options?: RequestOptions) => client.get<SciSummary>('/v1/sci/summary', options),
+
+  getSciContacts: (params?: { limit?: number; cursor?: string | null }, options?: RequestOptions) =>
+    client.get<SciPage>(pagedPath('/v1/sci/contacts', params), options),
+
+  getSciReachOut: (params?: { limit?: number; cursor?: string | null }, options?: RequestOptions) =>
+    client.get<SciReachOutPage>(pagedPath('/v1/sci/reach-out', params), options),
+
+  // Verified relationship outcomes. Only for a Connected member; points count
+  // once both members confirm. There is no list call yet, so keep what create
+  // returns.
+  createRelationshipOutcome: async (body: CreateOutcomeRequest, options?: RequestOptions) =>
+    withEtag(await client.send<RelationshipOutcome>('POST', '/v1/relationship-outcomes', body, options)),
+
+  decideRelationshipOutcome: async (outcomeId: string, decision: OutcomeDecision, options?: RequestOptions) =>
+    withEtag(
+      await client.send<RelationshipOutcome>(
+        'POST',
+        `/v1/relationship-outcomes/${encodeURIComponent(outcomeId)}/decisions`,
+        { decision },
+        options
+      )
+    ),
+
+  // In-app notifications (metadata only) and their preferences.
+  getNotifications: (params?: { limit?: number; cursor?: string | null }, options?: RequestOptions) =>
+    client.get<InAppNotificationPage>(pagedPath('/v1/notifications', { limit: 20, ...params }), options),
+
+  updateNotificationPreference: async (body: NotificationPreferenceRequest, options?: RequestOptions) =>
+    withEtag(await client.send<NotificationPreference>('PATCH', '/v1/me/notification-preferences', body, options)),
+
+  // Who may find this member by phone or email. Off by default. Read first,
+  // then write with the ETag from the read.
+  getDiscoveryPreference: async (options?: RequestOptions) =>
+    withEtag(await client.send<DiscoveryPreference>('GET', '/v1/me/discovery-preference', undefined, options)),
+
+  updateDiscoveryPreference: async (
+    body: { find_by_phone: boolean; find_by_email: boolean },
+    ifMatch: string,
+    options?: RequestOptions
+  ) =>
+    withEtag(
+      await client.send<DiscoveryPreference>('PUT', '/v1/me/discovery-preference', body, {
+        ...options,
+        headers: { ...options?.headers, 'If-Match': ifMatch },
+      })
+    ),
 
   // Imported people with their latest invitation (limit 1-100).
   listImportedContacts: (cursor?: string | null, limit = 100) =>

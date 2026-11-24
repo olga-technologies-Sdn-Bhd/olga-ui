@@ -1,33 +1,54 @@
-import type { SciContact } from '../api/types';
+import type { SciContact, SciLifecycle, SciReachOut, SciSummary } from '../api/types';
 
-// The score is the server's, shown as a rounded whole number with its band.
-// Nothing is recalculated here. The bands are from the guide: Emerging 10-24,
-// Relevant 25-49, Strong 50-74, Exact 75-100. Below 10 has no band yet.
-export function displayScore(score: number): number {
-  return Math.min(100, Math.max(0, Math.round(score)));
+// Scores, bands, lifecycle states and counts are the server's, shown as sent.
+// Nothing here works out a score or a band; it only words what the server says.
+
+// Whole number, 0-100. null when the server sent no score.
+export function displayScore(score: number | null | undefined): number | null {
+  return typeof score === 'number' && Number.isFinite(score) ? Math.min(100, Math.max(0, Math.round(score))) : null;
 }
 
-export type Band = 'Emerging' | 'Relevant' | 'Strong' | 'Exact';
+// The server's band: REPOSITORY (under 10), WAITLIST (10-29), NETWORK (30+).
+const BAND_LABEL: Record<string, string> = { REPOSITORY: 'Repository', WAITLIST: 'Waitlist', NETWORK: 'Network' };
+export const bandLabel = (band: string): string | null => BAND_LABEL[band] ?? null;
 
-// Uses the rounded number, so the band always matches what is on screen.
-export function scoreBand(score: number): Band | null {
-  const s = displayScore(score);
-  if (s >= 75) return 'Exact';
-  if (s >= 50) return 'Strong';
-  if (s >= 25) return 'Relevant';
-  if (s >= 10) return 'Emerging';
-  return null;
-}
+const LIFECYCLE_LABEL: Record<string, string> = {
+  ESTIMATED: 'Estimated',
+  INVITED: 'Invited',
+  JOINED: 'Joined',
+  REQUEST_PENDING: 'Request pending',
+  CONNECTED: 'Connected',
+  REMOVED: 'Removed',
+};
+export const lifecycleLabel = (state: SciLifecycle): string => LIFECYCLE_LABEL[state] ?? humanize(state);
 
-// "CLIENT" -> "Client", "KEY_SUPPLIER" -> "Key supplier".
-export function roleLabel(role: string): string {
-  const words = role.trim().toLowerCase().replace(/_+/g, ' ');
+// "KEY_SUPPLIER" -> "Key supplier".
+export function humanize(code: string): string {
+  const words = code.trim().toLowerCase().replace(/_+/g, ' ');
   return words ? words[0].toUpperCase() + words.slice(1) : '';
+}
+
+// Removed and blocked people may stay as frozen history, but are not active.
+export const isHistory = (c: Pick<SciContact, 'lifecycle_state' | 'frozen_at'>): boolean =>
+  c.lifecycle_state === 'REMOVED' || !!c.frozen_at;
+
+// Counts as big numbers with separators; never capped (1742 shows as 1,742).
+export const formatCount = (n: number): string => n.toLocaleString('en-US');
+
+// Scores are up to date when the server says READY; anything else means they
+// are being recalculated and the last numbers stay on screen.
+export const isRecalculating = (summary: Pick<SciSummary, 'projection_status'> | null | undefined): boolean =>
+  !!summary && summary.projection_status !== 'READY';
+
+// Safe to read from a server answer of any shape (an older or newer server must
+// never crash a screen): a count that is not a number is treated as unknown.
+export function countOrNull(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 // A page that follows: new people go on the end, people already shown are
 // updated where they are. Cursors may repeat a row, so this never doubles one.
-export function appendPage(existing: SciContact[], page: SciContact[]): SciContact[] {
+export function appendPage<T extends { link_id: string }>(existing: T[], page: T[]): T[] {
   const next = [...existing];
   const at = new Map(next.map((c, i) => [c.link_id, i]));
   for (const c of page) {
@@ -43,39 +64,13 @@ export function appendPage(existing: SciContact[], page: SciContact[]): SciConta
 }
 
 // A fresh first page (a refresh): it leads, and anyone loaded from later pages
-// who isn't on it stays below. Scores are never dropped while they update.
-export function refreshFirstPage(existing: SciContact[], firstPage: SciContact[]): SciContact[] {
+// who isn't on it stays below.
+export function refreshFirstPage<T extends { link_id: string }>(existing: T[], firstPage: T[]): T[] {
   const ids = new Set(firstPage.map((c) => c.link_id));
   return appendPage(firstPage, existing.filter((c) => !ids.has(c.link_id)));
 }
 
-// Scoring is done when there is something to show and nothing is updating.
-export function scoringSettled(items: SciContact[]): boolean {
-  return items.length > 0 && items.every((c) => !c.is_stale);
-}
-
-// "How it has shifted" (prototype v10): people counted by how they relate to
-// the business, from the server's role and competitor flag. Working in the
-// same space wins over the role.
-export type ShiftGroup = 'clients' | 'partners' | 'space' | 'none';
-
-export const SHIFT_LABEL: Record<ShiftGroup, string> = {
-  clients: 'Prospective clients',
-  partners: 'Delivery partners',
-  space: 'Working in your space',
-  none: 'No active overlap',
-};
-
-export function shiftGroup(c: SciContact): ShiftGroup {
-  if (c.competitor_overlay) return 'space';
-  const role = c.relationship_role.trim().toUpperCase();
-  if (role === 'CLIENT') return 'clients';
-  if (role === 'SUPPLIER' || role === 'PARTNER') return 'partners';
-  return 'none';
-}
-
-export function shiftCounts(items: SciContact[]): Record<ShiftGroup, number> {
-  const counts: Record<ShiftGroup, number> = { clients: 0, partners: 0, space: 0, none: 0 };
-  for (const c of items) counts[shiftGroup(c)]++;
-  return counts;
+// Reach-out items name only a link_id; the name comes from the contact list.
+export function reachOutName(item: Pick<SciReachOut, 'link_id'>, contacts: SciContact[]): string {
+  return contacts.find((c) => c.link_id === item.link_id)?.label ?? 'Someone you know';
 }

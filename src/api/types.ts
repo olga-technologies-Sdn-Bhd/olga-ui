@@ -654,58 +654,6 @@ export type VentureBody = {
   e_tag?: string;
 };
 
-// POST /v1/venture-intent-sets (NLP) -> 202. intent_set_id must equal the
-// Idempotency-Key header. Make new IDs for all three on every update.
-export type VentureIntentSetRequest = {
-  intent_set_id: string;
-  venture_id: string;
-  offer_intent_id: string;
-  want_intent_id: string;
-  offer_text: string;
-  want_text: string;
-  expires_at: string;
-  // Must not be null. SCI reads only `competitor` and `qualification_met`.
-  structured_intent: { competitor?: boolean; qualification_met?: boolean };
-  category?: string;
-  industry?: string;
-  geography?: string;
-  language?: string;
-};
-
-export type VentureIntentSummary = {
-  intent_id: string;
-  status: string; // PROCESSING ... MATCH_READY, or FAILED
-  model_version: string;
-  preprocessing_version: string;
-  normalized_hash?: string;
-  language?: string;
-  contains_pii: boolean;
-  updated_at?: string;
-};
-
-export type VentureIntentSetResponse = {
-  intent_set_id: string;
-  venture_id: string;
-  offer: VentureIntentSummary;
-  want: VentureIntentSummary;
-};
-
-// POST /v1/contacts/imports -> 200. 1-500 contacts, each with an email or a
-// phone; IDs max 64 chars and not repeated in the request. Never sent to NLP,
-// never logged.
-export type ImportContact = {
-  contact_record_id: string;
-  link_id: string;
-  label: string; // max 250
-  email?: string | null;
-  phone?: string | null;
-};
-
-export type ImportContactsRequest = {
-  contacts: ImportContact[];
-  retention_days: number; // 30-730
-};
-
 export type ImportContactsResponse = {
   imported_count: number;
   link_ids: string[];
@@ -741,49 +689,6 @@ export type AcceptInvitationResponse = {
   connection_id: string;
   conversation_id: string;
   link_id: string;
-};
-
-// GET /v1/ventures/{venture_id}/sci. Show the server's score as it is.
-export type SciContact = {
-  link_id: string;
-  contact_member_id?: string; // absent until the contact is linked to a member
-  label: string;
-  score: number;
-  relationship_role: string; // e.g. CLIENT, SUPPLIER
-  competitor_overlay: boolean;
-  is_stale: boolean; // keep the score visible and show "Updating"
-  origin_type: string;
-  scored_at: string;
-  e_tag?: string;
-};
-
-export type SciPage = {
-  items: SciContact[];
-  next_cursor?: string | null; // pass back unchanged; null/absent = last page
-};
-
-// GET /v1/sci/summary: every business at once. Each contact counts once, at
-// its best score. Bands: Emerging 10-24, Relevant 25-49, Strong 50-74,
-// Exact 75-100 (the server's numbers, never worked out here).
-export type SciBands = { emerging: number; relevant: number; strong: number; exact: number };
-
-export type SciVentureSummary = {
-  venture_id: string;
-  name: string;
-  contact_count: number;
-  top_score?: number | null;
-  average_score?: number | null;
-  stale_count: number;
-  last_scored_at?: string | null;
-};
-
-export type SciSummary = {
-  venture_count: number;
-  contact_count: number;
-  bands: SciBands;
-  average_score?: number | null;
-  last_scored_at?: string | null;
-  ventures: SciVentureSummary[];
 };
 
 export type InvitationStatus = 'APPROVED' | 'OPENED' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
@@ -858,4 +763,243 @@ export type PendingInvitation = {
   venture_name?: string | null;
   invited_at: string;
   expires_at: string;
+};
+
+// ---- SCI Mobile Integration Contract v1.0 (22 Nov 2026) ----
+// Everything below is the server's: scores, bands, layers, goals and counts
+// are shown as sent and never worked out in the app.
+
+// GET /v1/sci/summary. sci_count counts accepted, Connected people whose rounded
+// primary-intent score is 30 or more. It is never capped (1,742 shows as 1,742).
+export type SciGoalMilestone = { percent: number; reached_at: string };
+
+export type SciGoal = {
+  goal_id: string;
+  goal_value: number;
+  goal_sequence: number;
+  owner_type: string;
+  progress_percent: number;
+  target_at?: string | null;
+  milestones: SciGoalMilestone[];
+};
+
+// projection_status is READY once scores are up to date; anything else
+// (e.g. RECALCULATING) means they are being worked out.
+export type SciSummary = {
+  sci_count: number;
+  potential_count: number;
+  waitlist_count: number;
+  repository_count: number;
+  total_contact_count: number;
+  core_count: number;
+  month_change: number;
+  intent_update_count: number;
+  projection_status: string;
+  projection_version: number;
+  scorer_version?: string | null;
+  scoring_config_id?: string | null;
+  as_of: string;
+  goal?: SciGoal | null; // null for company or event-organiser owners
+  e_tag?: string;
+};
+
+// ESTIMATED, INVITED, JOINED, REQUEST_PENDING, CONNECTED or REMOVED.
+export type SciLifecycle = 'ESTIMATED' | 'INVITED' | 'JOINED' | 'REQUEST_PENDING' | 'CONNECTED' | 'REMOVED' | (string & {});
+
+// REPOSITORY (under 10), WAITLIST (10-29) or NETWORK (30 and over).
+export type SciBand = 'REPOSITORY' | 'WAITLIST' | 'NETWORK' | (string & {});
+
+// GET /v1/sci/contacts. The flags are the authority on what counts.
+export type SciContact = {
+  link_id: string;
+  contact_member_id?: string | null;
+  label: string;
+  lifecycle_state: SciLifecycle;
+  score?: number | null; // whole number; an estimated score is capped at 85 by the server
+  band: SciBand;
+  is_estimated: boolean;
+  counts_in_sci: boolean;
+  counts_in_potential: boolean;
+  projection_state: string;
+  frozen_at?: string | null;
+  freeze_reason?: string | null;
+  layer_code?: string | null;
+  layer_ordinal?: number | null;
+  outcome_points: number;
+  tie_strength: number;
+  reason_code?: string | null;
+  score_calculated_at?: string | null;
+  last_activity_at?: string | null;
+  projection_version: number;
+  as_of: string;
+  e_tag?: string;
+};
+
+export type SciPage = {
+  items: SciContact[];
+  next_cursor?: string | null; // pass back unchanged; null/absent = last page
+};
+
+// GET /v1/sci/reach-out: shown in the order sent, never re-sorted.
+export type SciReachOut = {
+  recommendation_id: string;
+  link_id: string;
+  contact_member_id: string;
+  reason_code: string;
+  match_score: number;
+  relevance_score: number;
+  rank: number;
+  projection_version: number;
+  generated_at: string;
+  expires_at: string;
+};
+
+export type SciReachOutPage = {
+  items: SciReachOut[];
+  next_cursor?: string | null;
+};
+
+// NLP POST /v1/primary-intents/preview (no Idempotency-Key needed). 1-4,000
+// characters each for offer and want; 1-50 distinct tags.
+export type PrimaryIntentPreviewRequest = {
+  offer_text: string;
+  want_text: string;
+  tags: string[];
+};
+
+// Pass canonical_tags, tag_fingerprint and previewed_at back unchanged on save.
+export type PrimaryIntentPreview = {
+  canonical_tags: string[];
+  tag_fingerprint: string;
+  previewed_at: string;
+  preview_text: string;
+};
+
+// NLP GET /v1/primary-intents/history: metadata only (the contract has no
+// endpoint that returns the whole current intent).
+export type PrimaryIntentHistoryPage = {
+  items: Record<string, unknown>[];
+  next_cursor?: string | null;
+};
+
+// NLP POST /v1/venture-intent-sets -> 202 with projection_status RECALCULATING.
+// intent_set_id must equal the Idempotency-Key. One request makes or updates
+// both the offer and the want: /v1/intents is not called for this flow.
+export type VentureIntentSetRequest = {
+  intent_set_id: string;
+  venture_id: string;
+  offer_intent_id: string;
+  want_intent_id: string;
+  offer_text: string;
+  want_text: string;
+  expires_at: string;
+  structured_intent: { tags: string[] };
+  category?: string | null;
+  industry?: string | null;
+  geography?: string | null;
+  language?: string | null;
+  tags: string[];
+  tag_fingerprint: string;
+  previewed_at: string;
+};
+
+export type VentureIntentSetResponse = {
+  intent_set_id: string;
+  venture_id: string;
+  projection_status?: string;
+  offer?: { intent_id: string; status: string };
+  want?: { intent_id: string; status: string };
+};
+
+// POST /v1/contacts/imports. Only a name, phone, email, job title, company,
+// industry and city may be collected. retention_days is left out: retention is
+// the backend's policy. Never sent to NLP, never logged.
+export type ImportContact = {
+  contact_record_id: string;
+  link_id: string;
+  label: string; // max 250
+  email?: string | null;
+  phone?: string | null;
+  job_title?: string | null;
+  company?: string | null;
+  industry?: string | null;
+  city?: string | null;
+};
+
+export type ImportContactsRequest = {
+  contacts: ImportContact[];
+};
+
+// POST /v1/relationship-outcomes: only for a Connected member.
+export type OutcomeType = 'MEETING' | 'INTRODUCTION' | 'RESULT';
+
+export type CreateOutcomeRequest = {
+  outcome_id: string;
+  contact_member_id: string;
+  outcome_type: OutcomeType;
+  occurred_at: string;
+  result_type?: string | null; // required for RESULT, max 32
+};
+
+export type OutcomeDecision = 'CONFIRM' | 'DENY' | 'WITHDRAW';
+
+export type RelationshipOutcome = {
+  outcome_id: string;
+  outcome_type: string;
+  status: string;
+  initiated_by_member_id: string;
+  contact_member_id: string;
+  occurred_at: string;
+  confirmation_due_at: string;
+  verified_at?: string | null;
+  withdrawal_due_at?: string | null;
+  valid_until?: string | null;
+  points: number; // zero until both members confirm
+  confirmation_count: number;
+  e_tag?: string;
+};
+
+// GET /v1/notifications: template and resource metadata only, no title or body,
+// and no read or dismiss call yet (a gap in the contract).
+export type InAppNotification = {
+  notification_id: string;
+  purpose_code: string;
+  resource_type?: string | null;
+  resource_id?: string | null;
+  template_code: string;
+  status: string;
+  scheduled_at: string;
+  expires_at: string;
+  created_at: string;
+  e_tag?: string;
+};
+
+export type InAppNotificationPage = {
+  items: InAppNotification[];
+  next_cursor?: string | null;
+};
+
+// PATCH /v1/me/notification-preferences. Times are local, "22:00:00", with an
+// IANA timezone_id. No WhatsApp or SMS channel in this phase.
+export type NotificationPreferenceRequest = {
+  purpose_code: string;
+  push_enabled: boolean;
+  email_enabled: boolean;
+  quiet_start_local?: string | null;
+  quiet_end_local?: string | null;
+  timezone_id?: string | null;
+};
+
+export type NotificationPreference = NotificationPreferenceRequest & {
+  e_tag?: string;
+  updated_at: string;
+};
+
+// GET/PUT /v1/me/discovery-preference. Off by default. PUT sends the ETag from
+// the read in If-Match.
+export type DiscoveryPreference = {
+  find_by_phone: boolean;
+  find_by_email: boolean;
+  e_tag?: string;
+  updated_at: string;
 };

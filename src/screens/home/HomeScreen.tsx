@@ -4,12 +4,13 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { Check, ChevronRight, Mic, SlidersHorizontal, Sparkles, Ticket, TrendingUp, UsersRound } from 'lucide-react-native';
 import { ElementRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Animated, AppState, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { coreApi } from '../../api/core';
 import type { Meeting, SciSummary } from '../../api/types';
 import { Avatar } from '../../components/Avatar';
 import { CapitalOrb } from '../../components/CapitalOrb';
+import { countOrNull, formatCount, isRecalculating } from '../../sci/score';
 import { PendingInvitations } from '../sci/PendingInvitations';
 import { ComingSoonModal } from '../../components/ComingSoonModal';
 import { GoLiveMark } from '../../components/GoLiveMark';
@@ -26,14 +27,6 @@ import { useTheme } from '../../theme/ThemeContext';
 import { fonts, semibold } from '../../theme/typography';
 import { OlgaMark } from '../../components/OlgaMark';
 import { OLGA_PROMPTS } from './OlgaAgentScreen';
-
-// Bands of the Social Capital Index, strongest first (the server's bands).
-const SCI_BANDS = [
-  ['exact', 'Exact'],
-  ['strong', 'Strong'],
-  ['relevant', 'Relevant'],
-  ['emerging', 'Emerging'],
-] as const;
 
 type Props = CompositeScreenProps<NativeStackScreenProps<HomeStackParamList, 'Home'>, BottomTabScreenProps<MainTabParamList>>;
 
@@ -186,9 +179,11 @@ export function HomeScreen({ navigation }: Props) {
   const photo = PHOTOS[period];
   const { requests: nearbyRequests, setMode: setGoLiveMode } = useNearby();
 
-  // Team builds count the people scored for this member's businesses (each
-  // once, at their best score); everyone else sees confirmed relationships.
-  const shownCount = TEAM_TOOLS ? (sci ? sci.contact_count : null) : relationships;
+  // Team builds show the Social Capital Index from Ol-ga (sci_count: accepted,
+  // Connected people scoring 30 or more); everyone else sees confirmed
+  // relationships. A count the server doesn't send is shown as "–", never
+  // allowed to crash the screen.
+  const shownCount = TEAM_TOOLS ? countOrNull(sci?.sci_count) : relationships;
 
   const loadNetwork = useCallback(async () => {
     const [connections, page] = await Promise.all([coreApi.getConnections().catch(() => null), coreApi.getMeetings().catch(() => null)]);
@@ -208,6 +203,20 @@ export function HomeScreen({ navigation }: Props) {
       loadNetwork();
     }, [refreshIfStale, loadNetwork]),
   );
+
+  // Coming back to the app: the Social Capital Index is looked at again first.
+  useEffect(() => {
+    if (!TEAM_TOOLS) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        coreApi
+          .getSciSummary()
+          .then(setSci)
+          .catch(() => undefined);
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   // Status bar icons match the title over the photo (the banner keeps the
   // photo at the top), back to the usual style when Home is left.
@@ -527,14 +536,10 @@ export function HomeScreen({ navigation }: Props) {
               <CapitalOrb size={76} />
               <View style={styles.flex} collapsable={false}>
                 <View style={styles.countRow}>
-                  <Text style={styles.count}>{shownCount === null ? '–' : shownCount.toLocaleString('en-US')}</Text>
+                  <Text style={styles.count}>{shownCount === null ? '–' : formatCount(shownCount)}</Text>
                 </View>
-                <Text style={styles.countLabel}>{TEAM_TOOLS ? 'People scored for your businesses' : 'Confirmed professional relationships'}</Text>
-                {TEAM_TOOLS && sci && sci.contact_count > 0 && (
-                  <Text style={styles.bands}>
-                    {SCI_BANDS.map(([key, label]) => `${label} ${sci.bands[key]}`).join('  ·  ')}
-                  </Text>
-                )}
+                <Text style={styles.countLabel}>{TEAM_TOOLS ? 'People in your Social Capital Index' : 'Confirmed professional relationships'}</Text>
+                {TEAM_TOOLS && sci && isRecalculating(sci) && <Text style={styles.bands}>Updating your scores…</Text>}
                 {changesThisMonth > 0 && (
                   <View style={styles.delta}>
                     {/* Growth: an up-trend mark before the count. */}

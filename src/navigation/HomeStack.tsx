@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { OlgaAgentScreen } from '../screens/home/OlgaAgentScreen';
 import { BlockedMembersScreen } from '../screens/profile/BlockedMembersScreen';
+import { DiscoveryScreen } from '../screens/profile/DiscoveryScreen';
 import { DeleteAccountScreen } from '../screens/profile/DeleteAccountScreen';
 import { HowYouAppearScreen } from '../screens/profile/HowYouAppearScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -25,6 +26,7 @@ export function HomeStack() {
       <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
       <Stack.Screen name="HowYouAppear" component={HowYouAppearScreen} />
       <Stack.Screen name="BlockedMembers" component={BlockedMembersScreen} />
+      <Stack.Screen name="Discovery" component={DiscoveryScreen} />
       <Stack.Screen name="Business" component={BusinessScreen} />
       <Stack.Screen name="OfferWant" component={OfferWantScreen} />
       <Stack.Screen name="Sci" component={SciScreen} />
